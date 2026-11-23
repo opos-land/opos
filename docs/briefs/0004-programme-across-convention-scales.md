@@ -9,7 +9,19 @@
 - Companions: [research](0004-programme-across-convention-scales/research.md) (facts and their
   sources), [personas](0004-programme-across-convention-scales/personas.md) (the two synthetic
   walkthroughs), [wireframes](0004-programme-across-convention-scales/wireframes/index.html) (87
-  screens in 17 sections, and 16 role journeys drawn over them)
+  screens in 17 sections, and 16 role journeys drawn over them),
+  [develop status](0004-programme-across-convention-scales/develop-status.md) (what the running
+  application does against this brief, as of 2026-11-23),
+  [clickable prototype](0004-programme-across-convention-scales/prototype/index.html) (every role
+  and journey inside what OPOS already has, see [Clickable prototype](#clickable-prototype))
+- Updated: 2026-11-23, where develop made a sentence untrue or an open question sharper: the photo
+  ([4.11](#411-roles)), the public profile ([Q5](#q5-where-does-a-programme-person-live)), the
+  built ticket type ([4.9](#49-entitlements-and-the-module-border)), the scanner
+  ([4.2](#42-seat-ladder-and-allocation-method)), the edition page ([4.6](#46-programme-release)),
+  sections [7](#7-what-changes-against-docsproductmd), [8](#8-work-order) and [12](#12-risks), and
+  [Q4](#q4-what-enters-the-mvp), [Q20](#q20-where-do-entitlements-live)–[Q22](#q22-where-does-the-speaker-discount-rule-live),
+  [Q25](#q25-which-personal-data-of-programme-people-is-collected-and-shown) and
+  [Q33](#q33-who-sets-up-a-room-scanner-tickets-alone-or-the-programme-too)
 
 One programme module, configured per convention, serving four real talk-centric conventions:
 Nordcon, Fantasmagoria, Dni Fantastyki (DF) and Pyrkon. Worldcon is a stress test of the model,
@@ -249,6 +261,14 @@ full" on the item and in now and next. The like count is never presented as sign
 **Rung 2 needs no ticket:** any signed-in account may sign up. A condition on a ticket or its day
 is an entitlement and waits for [step 8](#8-work-order).
 
+**The scanner at the room is a second mode of the built scanner.** Develop has the scanner of
+[spec 0007](../specs/0007-scanner.md): a phone with no account, paired to one edition by an org
+with tickets write, up to 20 an edition, reading a buyer's QR code alone and marking entry and
+items handed out, each once. Rung 4 adds to that device, under tickets
+([Q33](#q33-who-sets-up-a-room-scanner-tickets-alone-or-the-programme-too)), rather than building
+another: a scanner named for a room reads a reservation code, not the order's, shows the room's
+current item and counts the people let in, where the gate's scanner marks a line once.
+
 ### 4.3 Building spectrum
 
 Rungs 2 and 3 are parallel channels: one edition can run a call in some blocks and recruitment in
@@ -289,24 +309,33 @@ Changes, likes, calendars and exports all hang on the item staying the same item
 
 ### 4.5 Programme person
 
-| Part                     | Rule                                                                                                                                                                                                                                             |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Programme person         | an entry at tenant level (the convention brand), optionally linked to one account: display name (a pseudonym is fine), bio, links, a contact address for the team; a photo once file uploads exist                                               |
-| Group                    | a programme person whose members are accounts, such as a club; it names one contact member who confirms and receives mail                                                                                                                        |
-| Cast entry               | person × item × role × state (invited, confirmed, declined), with participation on site or remote, and a recording consent and a photo consent, each given apart and never ticked in advance                                                     |
-| Edition                  | shows the people cast in it; a person with no item in an edition does not appear in its portal                                                                                                                                                   |
-| Entry without an account | the team creates it; it carries the person's display name on published items and nothing else in public until the person claims it with a link sent to their address (secret, single use, for that address)                                      |
-| Merge                    | merging two entries asks first in a modal and can be undone within the edition; cast entries and confirmations move to the surviving entry, and the team picks each profile field                                                                |
-| Who edits an entry       | an org with programme write in an edition where the person is cast; a merge or a profile change shows in every edition of the convention, and the merge modal says so ([Q29](#q29-which-permission-creates-edits-and-merges-a-programme-person)) |
-| Bio                      | up to 100 words; no limit for a guest of honour                                                                                                                                                                                                  |
-| New edition              | copies nothing about people: entries stay at tenant level, the new edition has no cast until items are cast, and nobody is emailed; a person hears of the new edition when cast                                                                  |
-| Account deletion         | unlinks the entry and takes its profile; the item stays and shows "host removed at their request" *(for the legal check)*                                                                                                                        |
+| Part                     | Rule                                                                                                                                                                                                                                                                |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Programme person         | an entry at tenant level (the convention brand), optionally linked to one account: display name (a pseudonym is fine), bio, links, a contact address for the team; a photo as [Q25](#q25-which-personal-data-of-programme-people-is-collected-and-shown) settles it |
+| Group                    | a programme person whose members are accounts, such as a club; it names one contact member who confirms and receives mail                                                                                                                                           |
+| Cast entry               | person × item × role × state (invited, confirmed, declined), with participation on site or remote, and a recording consent and a photo consent, each given apart and never ticked in advance                                                                        |
+| Edition                  | shows the people cast in it; a person with no item in an edition does not appear in its portal                                                                                                                                                                      |
+| Entry without an account | the team creates it; it carries the person's display name on published items and nothing else in public until the person claims it with a link sent to their address (secret, single use, for that address)                                                         |
+| Merge                    | merging two entries asks first in a modal and can be undone within the edition; cast entries and confirmations move to the surviving entry, and the team picks each profile field                                                                                   |
+| Who edits an entry       | an org with programme write in an edition where the person is cast; a merge or a profile change shows in every edition of the convention, and the merge modal says so ([Q29](#q29-which-permission-creates-edits-and-merges-a-programme-person))                    |
+| Bio                      | up to 100 words; no limit for a guest of honour                                                                                                                                                                                                                     |
+| New edition              | copies nothing about people: entries stay at tenant level, the new edition has no cast until items are cast, and nobody is emailed; a person hears of the new edition when cast                                                                                     |
+| Account deletion         | unlinks the entry and takes its profile; the item stays and shows "host removed at their request" *(for the legal check)*                                                                                                                                           |
 
 **Why tenant level.** Speakers stay in the tenant of their item
 ([ARCHITECTURE.md, Invariants](../ARCHITECTURE.md#invariants), 8). An entry per tenant keeps that,
 and a returning speaker is the same person next year; per edition, a convention retypes its
-regulars yearly; a profile shared across conventions, as in Sessionize, is a new read across
-tenants ([Q5](#q5-where-does-a-programme-person-live)).
+regulars yearly. A profile shared across conventions, as in Sessionize, now exists as the
+account's public profile ([spec 0016](../specs/0016-public-profile.md)): platform level, published
+by its account and read by anyone, so the programme reads no other tenant to show it.
+
+**The account's public profile.** Develop gives every account a public name with a nickname, an
+avatar and a profile it publishes, and the programme already links a speaker's public name to that
+profile. The profile is the account's alone: no org edits it, and the admin takes it down but
+changes nothing it says. A tenant-level entry holding its own display name, bio and links for a
+person with an account would be a second public face of the same speaker, edited by orgs.
+[Q5](#q5-where-does-a-programme-person-live) chooses how the two relate; the table above holds as
+it stands for an entry without an account under every option.
 
 **This changes the glossary.** "Speaker: an account an org assigns to a programme item"
 ([PRODUCT.md 3](../PRODUCT.md#3-glossary)) becomes "a programme person cast on a programme item";
@@ -341,6 +370,9 @@ cancelled item stays in the programme with the time of the change and cannot be 
 Only a draft is deleted. Before any item is published the portal says when the programme comes
 out and already lists the guests
 ([ab-small-before-release](0004-programme-across-convention-scales/wireframes/16-portal-sign-ups-lottery-declines-and-empty-states.html#ab-small-before-release)).
+That belongs on the edition's page develop already has
+([spec 0014](../specs/0014-edition-list-and-edition-page.md)), which today always links "See the
+programme": until the first publication the link gives way to the date, and the guests follow it.
 The programme's first publication needs the edition to be published first, which Edition settings
 does ([4.11](#411-roles)).
 
@@ -451,8 +483,32 @@ screens show only hours and cast, and say "set in Tickets"
 by this model the programme and the scanner depend on them. Sign-ups at rung 2 need no
 entitlement; everything from rung 3 up waits for the registrations owner.
 
-The shop brief ([0001](0001-convention-shop.md)) binds nothing, but the first tickets spec will fix
-the shape of a ticket type, so these points are best agreed first:
+**The ticket type is already fixed.** This section asked that the points below be agreed before
+the first tickets spec fixed the shape of a ticket type. The tickets specs
+([0002](../specs/0002-shop-setup.md)–[0011](../specs/0011-pre-edition-reminder.md), drafts whose
+code is merged) and the shop built on them fixed it without them: a ticket type has a sale window,
+a capacity, age bands, price tiers, supporter prices, perks as text and an exclusion from discounts
+([catalog](../specs/0003-catalog.md), T1–T8); the scanner marks entry once an order
+([scanner](../specs/0007-scanner.md)). A paid order is attached to its account and makes nobody an
+attendee yet, since registrations wait for their owner
+([checkout and orders](../specs/0004-checkout-and-orders.md), A3 and its open question), and the
+ticket holder is a name kept with the order, never on an account (A4). Step 8 therefore extends a
+built model, in a spec of its own with the domain owner of tickets:
+
+- **valid days** on a ticket type, read by the scanner (entry once a day, not once an order) and by
+  a sign-up rule on the ticket's day;
+- **a sign-up count** (tokens) with its opening and priority, as a number the programme reads,
+  apart from the perks, which stay text for the buyer;
+- **whose entitlement it is:** the account the paid order is attached to, once a registration
+  exists, not the ticket holder's name; a ticket bought for someone else gives its holder nothing
+  in the programme until it reaches their account *(assumption)*;
+- **a ticket without admission**, which the glossary rules out ("ticket: admission to an
+  edition"), stays a Worldcon need for step 10;
+- **the speaker discount** as discount codes the shop already has, down to free entry
+  ([discount codes](../specs/0008-discount-codes.md)), issued from the hours the programme hands
+  over ([Q22](#q22-where-does-the-speaker-discount-rule-live)).
+
+The shop brief's points, against what Pyrkon and Worldcon need:
 
 | Shop brief                                                     | Pyrkon                                   | Worldcon                                         |
 | -------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------ |
@@ -465,22 +521,23 @@ the shape of a ticket type, so these points are best agreed first:
 
 ### 4.10 Personal data
 
-| Data                                                                                             | Who sees it                                                                                                                                                                                 | Basis *(for the legal check)*                                                                            | How long                                                              |
-| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Display name, bio, links of a person cast on a published item; a photo once file uploads exist   | everyone                                                                                                                                                                                    | consent when proposing or claiming; without an account, only the display name, as in a printed programme | while the programme is public; removed on request or account deletion |
-| Contact address of a programme person                                                            | orgs with programme access where the person is cast                                                                                                                                         | needed to run the item                                                                                   | 12 months after their last edition, unless linked to an account       |
-| Entry without an account (what the team typed)                                                   | the team only, until claimed                                                                                                                                                                | legitimate interest in running the item                                                                  | as above; deletable on request without an account                     |
-| Co-panelists' email addresses                                                                    | hidden from the cast until the domain owner decides (issues 44–46); speakers write through the team                                                                                         | —                                                                                                        | —                                                                     |
-| Phone numbers                                                                                    | not collected for people; a service point's desk line is the convention's, not a person's                                                                                                   | —                                                                                                        | —                                                                     |
-| Speaker availability, maximum items per day                                                      | the team only                                                                                                                                                                               | needed to schedule                                                                                       | until the edition ends                                                |
-| "Not with" preferences                                                                           | the team: a private flag "Check the panel with me before casting"; the team sees that the person asked to be consulted and a Message action, never a name, a list or free text about anyone | the person's request                                                                                     | until the edition ends                                                |
-| A speaker's accessibility needs                                                                  | not collected; the proposal lists item needs (a microphone, a step-free room)                                                                                                               | special-category data: the owner and the legal check                                                     | —                                                                     |
-| Recording and photo consent                                                                      | the team, on each cast entry                                                                                                                                                                | consent, withdrawable for future recordings                                                              | with the cast entry                                                   |
-| Who signed up for an item                                                                        | orgs with programme access; never public or at the door                                                                                                                                     | needed to run the item                                                                                   | until the edition ends, then counts only                              |
-| Likes                                                                                            | the count is public, who liked is not ([PRODUCT.md 7](../PRODUCT.md#7-modules)); a shared schedule link carries a revocable secret                                                          | the user's action                                                                                        | until taken back or the account goes                                  |
-| Proposals and assessments                                                                        | the proposer sees their own and its decision; assessments are team only                                                                                                                     | the submission                                                                                           | declined ones deleted when the edition ends                           |
-| Team-only data: assessments, availability, the "check with me" flag, decline reasons, team notes | orgs with programme write; whether programme read sees it is [Q31](#q31-who-assesses-and-who-decides-on-a-proposal-and-what-does-a-team-member-in-its-cast-see)                             | needed to run the item                                                                                   | until the edition ends                                                |
-| Legal name for a badge check                                                                     | tickets, not the programme                                                                                                                                                                  | tickets' rules                                                                                           | tickets' rules                                                        |
+| Data                                                                                                                  | Who sees it                                                                                                                                                                                 | Basis *(for the legal check)*                                                                                                                 | How long                                                                    |
+| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Display name, bio, links of a person cast on a published item; a photo as Q25 settles it                              | everyone                                                                                                                                                                                    | consent when proposing or claiming; without an account, only the display name, as in a printed programme                                      | while the programme is public; removed on request or account deletion       |
+| Public name, avatar and published profile of a speaker with an account ([spec 0016](../specs/0016-public-profile.md)) | everyone: the public name on the item, the profile and the avatar on the profile's own page; the programme shows no avatar (A6)                                                             | the account's own publication ([0071](../adr/0071-let-anyone-read-the-profile-an-account-published.md)); the avatar is public from its upload | until the account withdraws it, the admin takes it down or the account goes |
+| Contact address of a programme person                                                                                 | orgs with programme access where the person is cast                                                                                                                                         | needed to run the item                                                                                                                        | 12 months after their last edition, unless linked to an account             |
+| Entry without an account (what the team typed)                                                                        | the team only, until claimed                                                                                                                                                                | legitimate interest in running the item                                                                                                       | as above; deletable on request without an account                           |
+| Co-panelists' email addresses                                                                                         | hidden from the cast until the domain owner decides (issues 44–46); speakers write through the team                                                                                         | —                                                                                                                                             | —                                                                           |
+| Phone numbers                                                                                                         | not collected for people; a service point's desk line is the convention's, not a person's                                                                                                   | —                                                                                                                                             | —                                                                           |
+| Speaker availability, maximum items per day                                                                           | the team only                                                                                                                                                                               | needed to schedule                                                                                                                            | until the edition ends                                                      |
+| "Not with" preferences                                                                                                | the team: a private flag "Check the panel with me before casting"; the team sees that the person asked to be consulted and a Message action, never a name, a list or free text about anyone | the person's request                                                                                                                          | until the edition ends                                                      |
+| A speaker's accessibility needs                                                                                       | not collected; the proposal lists item needs (a microphone, a step-free room)                                                                                                               | special-category data: the owner and the legal check                                                                                          | —                                                                           |
+| Recording and photo consent                                                                                           | the team, on each cast entry                                                                                                                                                                | consent, withdrawable for future recordings                                                                                                   | with the cast entry                                                         |
+| Who signed up for an item                                                                                             | orgs with programme access; never public or at the door                                                                                                                                     | needed to run the item                                                                                                                        | until the edition ends, then counts only                                    |
+| Likes                                                                                                                 | the count is public, who liked is not ([PRODUCT.md 7](../PRODUCT.md#7-modules)); a shared schedule link carries a revocable secret                                                          | the user's action                                                                                                                             | until taken back or the account goes                                        |
+| Proposals and assessments                                                                                             | the proposer sees their own and its decision; assessments are team only                                                                                                                     | the submission                                                                                                                                | declined ones deleted when the edition ends                                 |
+| Team-only data: assessments, availability, the "check with me" flag, decline reasons, team notes                      | orgs with programme write; whether programme read sees it is [Q31](#q31-who-assesses-and-who-decides-on-a-proposal-and-what-does-a-team-member-in-its-cast-see)                             | needed to run the item                                                                                                                        | until the edition ends                                                      |
+| Legal name for a badge check                                                                                          | tickets, not the programme                                                                                                                                                                  | tickets' rules                                                                                                                                | tickets' rules                                                              |
 
 ### 4.11 Roles
 
@@ -573,7 +630,20 @@ owner:
 - The "not with" wish is only the private flag "Check the panel with me before casting": the team
   sees "asked to be consulted before the panel is cast" and a Message action, never a name list
   ([4.10](#410-personal-data)).
-- No photo, and no place for one, until file uploads exist.
+- *Out of date:* "no photo, and no place for one, until file uploads exist". Develop has file
+  uploads and images ([spec 0012](../specs/0012-file-storage.md),
+  [spec 0013](../specs/0013-image-variants.md)) and an avatar on every account
+  ([spec 0016](../specs/0016-public-profile.md)); what keeps a photo out of the programme is now a
+  rule, the profile's A6 ("the programme shows none") and PRODUCT.md 11, which puts an avatar
+  beside a speaker beyond the MVP. The wireframes still draw no photo, and four annotations still
+  give the old reason
+  ([ab-dni-people](0004-programme-across-convention-scales/wireframes/10-portal-programme-people-and-guests.html#ab-dni-people),
+  [ab-dni-speaker-profile](0004-programme-across-convention-scales/wireframes/12-portal-the-speaker-from-acceptance-to-the-day-of-the-item.html#ab-dni-speaker-profile),
+  [j01-d-people](0004-programme-across-convention-scales/wireframes/j01-anonymous-visitor-finding-the-programme.html#j01-d-people),
+  [j05-d-profile](0004-programme-across-convention-scales/wireframes/j05-speaker-invitation-confirmation-the-day.html#j05-d-profile)):
+  read them as "no photo until
+  [Q25](#q25-which-personal-data-of-programme-people-is-collected-and-shown) settles it", which
+  recommends none in the programme's first version.
 - Turning a feature off asks no modal, since the same settings screen turns it back on
   ([0023](../adr/0023-ask-in-a-modal-before-an-action-that-cannot-be-undone.md)) *(assumption)*.
 - Pyrkon's day release is made by a clock at 07:00 each convention morning *(assumption)*.
@@ -946,58 +1016,83 @@ Two screens of sections 1–17 appear in no journey: `ab-dni-form` (the item for
 Nordcon and Pyrkon) and `ab-dni-allday` (a display rule, not a step of any role); nor do the four
 Worldcon screens, which no role meets.
 
+### Clickable prototype
+
+[prototype/index.html](0004-programme-across-convention-scales/prototype/index.html) is one
+self-contained page: open it in a browser from a checkout (GitHub shows it as source). It draws
+the programme module of this brief inside what develop already has, in the applications' own look:
+the portal with its account, shop, tickets and public profiles, the panel with its team, edition
+settings and shop, and the admin application. A bar above the product picks the role of
+[4.11](#411-roles), the convention with its settings of [4.12](#412-settings-coverage), a sample
+person and the clock; a drawer lists the journeys J01–J16 and jumps to any step. Screens that exist
+on develop carry an "Exists on develop" tag, a proposal added to one "Not on develop"; programme
+screens carry none, since they are this brief's proposal. Nothing is saved or sent, and starting a
+journey resets the sample data.
+
+Checked in a browser: every step of every journey can be clicked through with the product's own
+controls (239 arrows), every page renders for every role on every convention at desktop and phone
+width, and a page a role may not open shows the panel's No permissions page. A few steps are events
+the product does not carry (time passes, an email arrives, another person acts): the bar offers
+them as buttons. Counts at convention scale (Pyrkon's 2,214 items) are stated, while lists show a
+sample. Where a question is still open, the screens follow its recommended default; they settle
+nothing the brief leaves to the team.
+
 ## 7. What changes against docs/PRODUCT.md
 
 [PRODUCT.md](../PRODUCT.md), [ARCHITECTURE.md](../ARCHITECTURE.md) and the records hold over this
 brief. These are the places where the proposal differs from them, for the domain owner and the team
 to decide; nothing changes in the documents until a spec carries it.
 
-| Rule today                                                                                                                                           | Proposal                                                                                                                                                                                                                                                                                            | Who decides                                |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| Speaker: an account an org assigns to a programme item ([3](../PRODUCT.md#3-glossary))                                                               | a programme person cast on a programme item, optionally linked to an account ([4.5](#45-programme-person))                                                                                                                                                                                          | programme owner; a decision record         |
-| An org assigns speakers by a confirmed account's address, up to 10 per item ([5.1](../PRODUCT.md#51-permissions-and-roles))                          | cast entries of programme persons with a role and a state; 10 per item stays the platform limit; a lower limit is an edition parameter (Fantasmagoria 6, Pyrkon 4); a call limits the co-hosts a proposer invites, within the limit on new addresses                                                | programme owner                            |
-| An edition holds up to 1000 programme items ([5.1](../PRODUCT.md#51-permissions-and-roles))                                                          | paging and a higher limit, since Pyrkon has 2,000–2,400                                                                                                                                                                                                                                             | the team                                   |
-| Like: a mark adding an item to the personal schedule ([3](../PRODUCT.md#3-glossary))                                                                 | also a subscription to the item's changes ([Q18](#q18-does-a-like-subscribe-to-changes)); a person cannot be liked                                                                                                                                                                                  | programme owner                            |
-| Reviews are in the MVP and in step 9 of its flow ([2](../PRODUCT.md#2-mvp-goal-and-end-to-end-flow), [11](../PRODUCT.md#11-mvp-scope-vs-beyond-mvp)) | a switch per edition, off by default; step 9 turns it on ([Q12](#q12-can-reviews-be-turned-off-per-edition))                                                                                                                                                                                        | the domain owner of reviews                |
-| A speaker reads the reviews of their own items ([7](../PRODUCT.md#7-modules))                                                                        | unchanged: the speaker and the team read a review                                                                                                                                                                                                                                                   | the domain owner of reviews                |
-| Speaker profiles, rooms and the block schedule are beyond the MVP ([11](../PRODUCT.md#11-mvp-scope-vs-beyond-mvp))                                   | rooms, blocks and person profiles return to the MVP as optional data ([Q4](#q4-what-enters-the-mvp))                                                                                                                                                                                                | the team                                   |
-| File uploads are beyond the MVP ([11](../PRODUCT.md#11-mvp-scope-vs-beyond-mvp))                                                                     | a speaker photo and presentation files wait for them; a profile has no photo until then                                                                                                                                                                                                             | the team                                   |
-| Push notifications are beyond the MVP ([11](../PRODUCT.md#11-mvp-scope-vs-beyond-mvp))                                                               | unchanged: email and a subscribed calendar ([Q17](#q17-which-channel-carries-notifications))                                                                                                                                                                                                        | the team                                   |
-| Tickets without a purchase are beyond the MVP ([11](../PRODUCT.md#11-mvp-scope-vs-beyond-mvp))                                                       | a registration without a purchase and an org's grant become sources of entitlements, in step 8                                                                                                                                                                                                      | the owners of tickets and of registrations |
-| Custom roles are beyond the MVP ([11](../PRODUCT.md#11-mvp-scope-vs-beyond-mvp))                                                                     | unchanged: no "head of programme" or "zone coordinator" role; a block is a filter by default, and an edition may make its blocks boundaries, which needs the programme permission scoped to blocks ([Q11](#q11-is-a-block-a-filter-or-a-boundary))                                                  | the team                                   |
-| Permissions are none, read or write per resource ([5.1](../PRODUCT.md#51-permissions-and-roles))                                                     | programme write may be limited to blocks in an edition whose blocks are boundaries; the anti-escalation rule then also covers blocks: only the head or settings write assigns them, and nobody grants a block they do not hold ([5.2](../PRODUCT.md#52-anti-escalation-policy), [4.11](#411-roles)) | the team; a decision record                |
-| Edition settings and Access open with the convention's settings permission (the panel today)                                                         | the programme's settings, switches, dictionaries, rooms and publication sit in the Programme area and open with the programme permission; Edition settings and Access stay with settings, and publishing the edition comes before the programme's first publication ([4.11](#411-roles))            | the team                                   |
-| Programme read gives read access, and nothing says whether it exports ([5.1](../PRODUCT.md#51-permissions-and-roles))                                | programme read may also export items and cast as CSV, without contact addresses, sign-ups or likes ([Q32](#q32-what-does-an-export-hold-and-may-programme-read-take-it))                                                                                                                            | programme owner                            |
-| An org deletes any programme item (the panel and the API today)                                                                                      | a published item is hidden or cancelled, never deleted; only a draft is deleted ([4.6](#46-programme-release))                                                                                                                                                                                      | programme owner                            |
-| Programme items, speakers, likes and reviews are edition-level ([4](../PRODUCT.md#4-business-model--tenant-and-edition))                             | programme persons are tenant-level; switches, dictionaries and the cast stay on the edition                                                                                                                                                                                                         | the team                                   |
-| Hours always show in the convention's zone ([9](../PRODUCT.md#9-languages-markets-and-time-zones))                                                   | unchanged ([Q19](#q19-does-an-online-item-show-the-viewers-time))                                                                                                                                                                                                                                   | the team                                   |
-| One content language per convention ([9](../PRODUCT.md#9-languages-markets-and-time-zones))                                                          | unchanged: a bio has one language; the item language says what the item is held in, not a translation                                                                                                                                                                                               | —                                          |
-| Account deletion takes likes, reviews, memberships and registrations ([10](../PRODUCT.md#10-personal-data-and-privacy))                              | it also unlinks a programme person and takes its profile; an entry without an account is deleted on request ([4.10](#410-personal-data))                                                                                                                                                            | programme owner, with the legal check      |
-| The scanner checks tickets ([3](../PRODUCT.md#3-glossary))                                                                                           | at rung 4 it also checks an accepted sign-up at a room                                                                                                                                                                                                                                              | the domain owner of tickets                |
-| Speakers stay in the tenant of their item ([ARCHITECTURE.md, Invariants](../ARCHITECTURE.md#invariants), 8)                                          | holds: a programme person is tenant-level, and nothing reads across tenants                                                                                                                                                                                                                         | —                                          |
+| Rule today                                                                                                                                                                                                                                                                         | Proposal                                                                                                                                                                                                                                                                                            | Who decides                                |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| Speaker: an account an org assigns to a programme item ([3](../PRODUCT.md#3-glossary))                                                                                                                                                                                             | a programme person cast on a programme item, optionally linked to an account ([4.5](#45-programme-person))                                                                                                                                                                                          | programme owner; a decision record         |
+| An org assigns speakers by a confirmed account's address, up to 10 per item ([5.1](../PRODUCT.md#51-permissions-and-roles))                                                                                                                                                        | cast entries of programme persons with a role and a state; 10 per item stays the platform limit; a lower limit is an edition parameter (Fantasmagoria 6, Pyrkon 4); a call limits the co-hosts a proposer invites, within the limit on new addresses                                                | programme owner                            |
+| An edition holds up to 1000 programme items ([5.1](../PRODUCT.md#51-permissions-and-roles))                                                                                                                                                                                        | paging and a higher limit, since Pyrkon has 2,000–2,400                                                                                                                                                                                                                                             | the team                                   |
+| Like: a mark adding an item to the personal schedule ([3](../PRODUCT.md#3-glossary))                                                                                                                                                                                               | also a subscription to the item's changes ([Q18](#q18-does-a-like-subscribe-to-changes)); a person cannot be liked                                                                                                                                                                                  | programme owner                            |
+| Reviews are in the MVP and in step 9 of its flow ([2](../PRODUCT.md#2-mvp-goal-and-end-to-end-flow), [11](../PRODUCT.md#11-mvp-scope-vs-beyond-mvp))                                                                                                                               | a switch per edition, off by default; step 9 turns it on ([Q12](#q12-can-reviews-be-turned-off-per-edition))                                                                                                                                                                                        | the domain owner of reviews                |
+| A speaker reads the reviews of their own items ([7](../PRODUCT.md#7-modules))                                                                                                                                                                                                      | unchanged: the speaker and the team read a review                                                                                                                                                                                                                                                   | the domain owner of reviews                |
+| Rooms and the block schedule are beyond the MVP; the public profile is in it, while a speaker's items on the profile and an avatar beside a speaker in the programme are beyond ([11](../PRODUCT.md#11-mvp-scope-vs-beyond-mvp))                                                   | rooms and blocks return to the MVP as optional data ([Q4](#q4-what-enters-the-mvp)); a person's items show on the edition's people list, not on the account's profile ([Q5](#q5-where-does-a-programme-person-live))                                                                                | the team; the domain owner of profile      |
+| File uploads are in the MVP as far as a feature's spec asks for them ([11](../PRODUCT.md#11-mvp-scope-vs-beyond-mvp)); the programme shows no avatar ([spec 0016](../specs/0016-public-profile.md), A6)                                                                            | the programme's first spec asks for none; a photo beside a speaker and presentation files follow [Q25](#q25-which-personal-data-of-programme-people-is-collected-and-shown)                                                                                                                         | the team; the domain owner of profile      |
+| Push notifications are beyond the MVP ([11](../PRODUCT.md#11-mvp-scope-vs-beyond-mvp))                                                                                                                                                                                             | unchanged: email and a subscribed calendar ([Q17](#q17-which-channel-carries-notifications))                                                                                                                                                                                                        | the team                                   |
+| Tickets issued ahead with no order are beyond the MVP ([11](../PRODUCT.md#11-mvp-scope-vs-beyond-mvp)); free entry is a 100% discount code, and a paid order makes nobody an attendee until registrations have their owner ([spec 0004](../specs/0004-checkout-and-orders.md), A3) | a registration without a purchase and an org's grant become sources of entitlements, in step 8, which extends the built ticket type ([4.9](#49-entitlements-and-the-module-border))                                                                                                                 | the owners of tickets and of registrations |
+| Custom roles are beyond the MVP ([11](../PRODUCT.md#11-mvp-scope-vs-beyond-mvp))                                                                                                                                                                                                   | unchanged: no "head of programme" or "zone coordinator" role; a block is a filter by default, and an edition may make its blocks boundaries, which needs the programme permission scoped to blocks ([Q11](#q11-is-a-block-a-filter-or-a-boundary))                                                  | the team                                   |
+| Permissions are none, read or write per resource ([5.1](../PRODUCT.md#51-permissions-and-roles))                                                                                                                                                                                   | programme write may be limited to blocks in an edition whose blocks are boundaries; the anti-escalation rule then also covers blocks: only the head or settings write assigns them, and nobody grants a block they do not hold ([5.2](../PRODUCT.md#52-anti-escalation-policy), [4.11](#411-roles)) | the team; a decision record                |
+| Edition settings and Access open with the convention's settings permission (the panel today)                                                                                                                                                                                       | the programme's settings, switches, dictionaries, rooms and publication sit in the Programme area and open with the programme permission; Edition settings and Access stay with settings, and publishing the edition comes before the programme's first publication ([4.11](#411-roles))            | the team                                   |
+| Programme read gives read access, and nothing says whether it exports ([5.1](../PRODUCT.md#51-permissions-and-roles))                                                                                                                                                              | programme read may also export items and cast as CSV, without contact addresses, sign-ups or likes ([Q32](#q32-what-does-an-export-hold-and-may-programme-read-take-it))                                                                                                                            | programme owner                            |
+| An org deletes any programme item (the panel and the API today)                                                                                                                                                                                                                    | a published item is hidden or cancelled, never deleted; only a draft is deleted ([4.6](#46-programme-release))                                                                                                                                                                                      | programme owner                            |
+| Programme items, speakers, likes and reviews are edition-level ([4](../PRODUCT.md#4-business-model--tenant-and-edition))                                                                                                                                                           | programme persons are tenant-level; switches, dictionaries and the cast stay on the edition                                                                                                                                                                                                         | the team                                   |
+| Hours always show in the convention's zone ([9](../PRODUCT.md#9-languages-markets-and-time-zones))                                                                                                                                                                                 | unchanged ([Q19](#q19-does-an-online-item-show-the-viewers-time))                                                                                                                                                                                                                                   | the team                                   |
+| One content language per convention ([9](../PRODUCT.md#9-languages-markets-and-time-zones))                                                                                                                                                                                        | unchanged: a bio has one language; the item language says what the item is held in, not a translation                                                                                                                                                                                               | —                                          |
+| Account deletion takes likes, reviews, memberships and registrations ([10](../PRODUCT.md#10-personal-data-and-privacy))                                                                                                                                                            | it also unlinks a programme person and takes its profile; an entry without an account is deleted on request ([4.10](#410-personal-data))                                                                                                                                                            | programme owner, with the legal check      |
+| The scanner checks tickets ([3](../PRODUCT.md#3-glossary)); the built one reads a buyer's QR code and marks entry and items handed out, each once ([7](../PRODUCT.md#7-modules))                                                                                                   | at rung 4 a room mode of the same device also checks an accepted sign-up at a room ([4.2](#42-seat-ladder-and-allocation-method))                                                                                                                                                                   | the domain owner of tickets                |
+| Speakers stay in the tenant of their item ([ARCHITECTURE.md, Invariants](../ARCHITECTURE.md#invariants), 8)                                                                                                                                                                        | holds: a programme person is tenant-level, and nothing reads across tenants                                                                                                                                                                                                                         | —                                          |
 
 ## 8. Work order
 
 A module without an owner and a spec gets no code. The order follows dependencies: what the most
 conventions need first, Worldcon-only items last. Tickets is a parallel track that gates only steps
-8 and 9. **P\*** marks Pyrkon in the scenario where OPOS is its programme back office and feeds its
+8 and 9; it is no longer ahead of the programme but built, so the track extends it. Step 1 starts
+from the programme as develop has it, the item with its speakers, likes and My schedule, inside
+the panel's and the portal's existing shells; [develop status](0004-programme-across-convention-scales/develop-status.md)
+lists what each role and capability has today, and what develop built that the steps below reuse:
+file uploads, the account's public profile, the shop, the scanner and the edition's page. **P\*** marks Pyrkon in the scenario where OPOS is its programme back office and feeds its
 own app and eBilet ([Q23](#q23-does-opos-replace-pyrkons-app-and-ebilet-or-feed-them)); full
 replacement comes only after step 9.
 
-| Step  | Scope                                                                                                                                                                                                                                                                                                                                                                                                    | Code                                               | After this step OPOS serves |
-| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | --------------------------- |
-| 0     | Name the owners of the programme and of attendee registrations; talks with the organisers of the four conventions ([11](#11-checks-with-real-people)); choose the pilot                                                                                                                                                                                                                                  | none                                               | —                           |
-| 1     | The item model: rooms, blocks, format, theme line, age rating, content warnings, language, accessibility, entry labels, length and all-day, item identity and code, states and marks; the dictionaries; field visibility; portal filters, search, now and next, empty states; "likely full" and "Room full"; the Programme area and its settings under the programme permission; the first-run checklist | after the spec                                     | —                           |
-| 2     | Programme people: entries at tenant level, groups, cast with role and state, merge, claim; guest list and profiles in the portal; confirmation per item and the decline path; the speaker's schedule                                                                                                                                                                                                     | after Q5                                           | —                           |
-| 3     | Release and changes (variant B): changelog, releases, change marks, cancel and move with the recipients preview, room and accessibility conflicts, email notifications, announcements, subscribed calendar; printouts and an export for typesetting                                                                                                                                                      | after Q6 and Q17                                   | N                           |
-| 4     | Import and re-import from a sheet, import errors, completeness check, conflicts across the edition, the panel grid and item list, KonOpas export with stable ids and changes, a CSV export for programme read, a new edition from the previous one, paging past 1,000 items; blocks assigned to orgs as a filter                                                                                         | after the spec                                     | N                           |
-| 5     | Call for proposals with proposal selection, the decision outbox and the reserve list; open candidacy, availability, panel composition; blocks as a boundary, before Pyrkon's zones decide on proposals                                                                                                                                                                                                   | after the spec                                     | N D P\*                     |
-| 6     | Sign-ups for any signed-in account: first come with a waiting list, promotion, cancelling, smaller-room rule                                                                                                                                                                                                                                                                                             | after Q14–Q16                                      | N D P\*                     |
-| 7     | Reviews under the domain owner's rules                                                                                                                                                                                                                                                                                                                                                                   | after the owner                                    | N F D P\*                   |
-| Track | The tickets spec, with room for entitlements, valid days and a ticket type without admission, agreed before it fixes the ticket type                                                                                                                                                                                                                                                                     | with the tickets owner                             | —                           |
-| 8     | Attendee registrations and entitlements: registration without a purchase, grants, list import, the ticket condition on sign-ups                                                                                                                                                                                                                                                                          | after the registrations owner and the tickets spec | N F D P\*                   |
-| 9     | Limit per person and priority from entitlements; split, forfeit, the scanner at the room                                                                                                                                                                                                                                                                                                                 | after step 8                                       | N F D P                     |
-| 10    | Worldcon-only or on request: the lottery (earlier if Pyrkon confirms it), the viewer's time, online access and membership entitlements, a working draft per item, the eligible-list export, the speaker discount data for tickets, badge collection, volunteer duties, transfer and upgrade                                                                                                              | separate records                                   | —                           |
+| Step  | Scope                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Code                                        | After this step OPOS serves |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- | --------------------------- |
+| 0     | Name the owners of the programme and of attendee registrations; talks with the organisers of the four conventions ([11](#11-checks-with-real-people)); choose the pilot                                                                                                                                                                                                                                                                                                  | none                                        | —                           |
+| 1     | The item model: rooms, blocks, format, theme line, age rating, content warnings, language, accessibility, entry labels, length and all-day, item identity and code, states and marks; the dictionaries; field visibility; portal filters, search, now and next, empty states, and "the programme comes out on…" on the existing edition page; "likely full" and "Room full"; the Programme area and its settings under the programme permission; the first-run checklist | after the spec                              | —                           |
+| 2     | Programme people: entries at tenant level, groups, cast with role and state, merge, claim, and how an entry linked to an account shows its public profile; guest list and people pages in the portal; confirmation per item and the decline path; the speaker's schedule                                                                                                                                                                                                 | after Q5                                    | —                           |
+| 3     | Release and changes (variant B): changelog, releases, change marks, cancel and move with the recipients preview, room and accessibility conflicts, email notifications, announcements, subscribed calendar; printouts and an export for typesetting                                                                                                                                                                                                                      | after Q6 and Q17                            | N                           |
+| 4     | Import and re-import from a sheet, import errors, completeness check, conflicts across the edition, the panel grid and item list, KonOpas export with stable ids and changes, a CSV export for programme read, a new edition from the previous one, paging past 1,000 items; blocks assigned to orgs as a filter                                                                                                                                                         | after the spec                              | N                           |
+| 5     | Call for proposals with proposal selection, the decision outbox and the reserve list; open candidacy, availability, panel composition; blocks as a boundary, before Pyrkon's zones decide on proposals                                                                                                                                                                                                                                                                   | after the spec                              | N D P\*                     |
+| 6     | Sign-ups for any signed-in account: first come with a waiting list, promotion, cancelling, smaller-room rule                                                                                                                                                                                                                                                                                                                                                             | after Q14–Q16                               | N D P\*                     |
+| 7     | Reviews under the domain owner's rules                                                                                                                                                                                                                                                                                                                                                                                                                                   | after the owner                             | N F D P\*                   |
+| Track | Extend the built ticket type and scanner for entitlements: valid days, a sign-up count apart from the perks, whose entitlement a paid order gives ([4.9](#49-entitlements-and-the-module-border)); a ticket type without admission stays in step 10                                                                                                                                                                                                                      | a spec with the tickets owner               | —                           |
+| 8     | Attendee registrations and entitlements: registration without a purchase, grants, list import, the ticket condition on sign-ups                                                                                                                                                                                                                                                                                                                                          | after the registrations owner and the track | N F D P\*                   |
+| 9     | Limit per person and priority from entitlements; split, forfeit, the room mode of the built scanner                                                                                                                                                                                                                                                                                                                                                                      | after step 8                                | N F D P                     |
+| 10    | Worldcon-only or on request: the lottery (earlier if Pyrkon confirms it), the viewer's time, online access and membership entitlements, a working draft per item, the eligible-list export, the speaker discount data for tickets, badge collection, volunteer duties, transfer and upgrade                                                                                                                                                                              | separate records                            | —                           |
 
 ```mermaid
 flowchart TD
@@ -1009,10 +1104,10 @@ flowchart TD
     S3 --> S6["6. Sign-ups, first come"]
     S1 --> S7["7. Reviews"]
     OR["Reviews rules from the domain owner"] --> S7
-    T["Track: tickets spec with room for entitlements"] --> S8["8. Registrations and entitlements"]
+    T["Track: extend the built ticket type"] --> S8["8. Registrations and entitlements"]
     OW["Owner of attendee registrations"] --> S8
     S6 --> S8
-    S8 --> S9["9. Limits, split, forfeit, scanner"]
+    S8 --> S9["9. Limits, split, forfeit, room scanner"]
     S9 --> S10["10. Worldcon-only and on request"]
 ```
 
@@ -1215,6 +1310,8 @@ Walkthrough 2's plan holds one row per finding, with whom to recruit and what to
 | Configuration instead of decisions                                                                                                        | a parameter appears only when two real conventions need different values; the role journeys' settings hold sixteen parameters and settings and 22 newly assumed values, and a new one (waiting list, reserve list, cast limit, item code, block scope, attendee reports) stays out of the model until an organiser confirms the value that differs |
 | The release model is hard to reverse                                                                                                      | decide Q6 with a decision record before step 3                                                                                                                                                                                                                                                                                                     |
 | Attendee registrations, without an owner, sit in the middle of the dependencies                                                           | rung 2 sign-ups need no entitlement; everything above waits for the owner                                                                                                                                                                                                                                                                          |
+| The ticket type and the scanner were built before entitlements were agreed                                                                | step 8 extends them in a spec of its own with the domain owner of tickets ([4.9](#49-entitlements-and-the-module-border)); no programme rule reads a perk's text                                                                                                                                                                                   |
+| Two public faces of one speaker: the account's public profile and a programme person edited by orgs                                       | [Q5](#q5-where-does-a-programme-person-live)'s recommended default: a linked entry shows the account's public name and profile, and orgs edit only what the convention owns                                                                                                                                                                        |
 | Entitlements grow into a rules engine                                                                                                     | a closed list of types; a type only with the module that checks it                                                                                                                                                                                                                                                                                 |
 | Personal data of people who never signed up to OPOS                                                                                       | team-only entries until claimed, the table in 4.10, the legal check                                                                                                                                                                                                                                                                                |
 | Clock events: a lottery draw, a forfeit, the hour to take a freed seat, a day release, and what each does while a convention is suspended | a separate actor in the permission model, shared with the expiry of orders in the shop brief                                                                                                                                                                                                                                                       |
@@ -1251,17 +1348,55 @@ Each question has options and a recommended default. Wireframe annotations cite 
 
 #### Q4. What enters the MVP?
 
-- Options: rooms, blocks and person profiles as optional data, with file uploads and push still
-  beyond; everything as PRODUCT.md 11 says.
+- Options: rooms, blocks and person profiles as optional data, with push still beyond; everything
+  as PRODUCT.md 11 says.
 - **Recommended:** the first: a small convention never sees what it has not filled, and a large
   one cannot start without it.
+- *Develop:* file uploads are already in the MVP as far as a feature's spec asks for them, and the
+  account's public profile is built ([PRODUCT.md 11](../PRODUCT.md#11-mvp-scope-vs-beyond-mvp)).
+  What a person profile adds to the MVP is therefore the programme's part only: the entry, the
+  people list and, for a person without an account, the display name ([Q5](#q5-where-does-a-programme-person-live)).
 
 ### The model
 
 #### Q5. Where does a programme person live?
 
-- Options: tenant level, optionally linked to an account; edition level; platform level.
-- **Recommended:** tenant level ([4.5](#45-programme-person)).
+Develop sharpened this question: every account now has a public profile
+([spec 0016](../specs/0016-public-profile.md)), platform level and the account's alone, and the
+programme links a speaker's public name to it. The question is no longer only where an entry
+lives, but which public face a speaker with an account has.
+
+- Options:
+  - **A. The entry as 4.5 wrote it:** tenant level, optionally linked to an account, with its own
+    display name, bio and links that orgs edit. A speaker with an account has two profiles, the
+    account's and the convention's, which can say different things.
+  - **B. The account's profile alone:** a speaker is an account, as today; no entry, so no person
+    without an account, no group and no guest the team types (J06 and Nordcon's guests fail).
+  - **C. An entry that defers to the profile:** a tenant-level entry carries the cast, the team's
+    contact address, the group's members and the guest-of-honour mark. Unlinked, it shows the
+    display name the team typed, and nothing else in public (4.5). Linked to an account, it shows
+    the account's public name and links to its profile while that is published; the team's typed
+    name and bio no longer show, and no org edits what the account shows.
+  - **D. Edition level:** an entry per edition, retyped each year.
+- **Recommended:** C, at tenant level ([4.5](#45-programme-person)). One public face per person,
+  owned by the person: the admin changes nothing a profile says (spec 0016, T11), and an org should
+  not either. Speakers stay in the tenant of their item, since the entry and the cast are
+  tenant-level and the profile is already read by anyone. People without an account keep working.
+  Consequences to carry into the spec:
+  - the edition's people list and a person's page are the programme's, since the profile shows
+    nothing an account did, its items among them (spec 0016, P6), and PRODUCT.md 11 keeps a
+    speaker's items on the profile beyond the MVP;
+  - the bio rule of 4.5 (100 words, no limit for a guest of honour) applies to what the team types
+    for an unlinked entry; a linked speaker's description is the profile's, up to 500 characters;
+    a convention's own words about a guest of honour are the convention's text on the entry, shown
+    beside the profile, not in place of it *(assumption)*;
+  - a claim links the entry and replaces the typed name by the account's public name; nothing the
+    team typed is copied into the account's profile;
+  - a withdrawn or taken-down profile leaves the public name on the item without a link (spec
+    0016, P11), as today.
+- Open with it, for the domain owners of the programme and of profile: whether the people list may
+  show a linked speaker's avatar ([Q25](#q25-which-personal-data-of-programme-people-is-collected-and-shown)),
+  and whether a speaker may keep a convention-specific display name apart from the public name.
 
 #### Q6. Which release model?
 
@@ -1399,9 +1534,18 @@ Each question has options and a recommended default. Wireframe annotations cite 
 
 - Options: attendee registrations; tickets; a new module.
 - **Recommended:** attendee registrations, so the programme works without a shop; agreed with the
-  domain owner of tickets before the tickets spec fixes the ticket type. Open with it: which
-  permission opens attendees' entitlements in the panel, since PRODUCT.md 5.1 has none for
-  registrations; the screens say "set in Tickets" until it is named.
+  domain owner of tickets, now as an extension of the ticket type the shop already built
+  ([4.9](#49-entitlements-and-the-module-border)). Open with it: which permission opens
+  attendees' entitlements in the panel, since PRODUCT.md 5.1 has none for registrations; the
+  screens say "set in Tickets" until it is named.
+- *Develop:* the tickets specs fixed the ticket type without valid days, a sign-up count, a ticket
+  without admission or a link to an entitlement, and a paid order is attached to its account but
+  makes nobody an attendee until registrations have their owner
+  ([spec 0004](../specs/0004-checkout-and-orders.md), A3). Two points are sharper: an entitlement
+  belongs to an account, while the ticket names its holder by a name kept with the order (A4), so
+  a ticket bought for someone else needs a way to reach its holder's account; and whoever owns
+  registrations decides whether the registration A3 describes is the first source of
+  entitlements.
 - *Walkthrough 2:* at Fantasmagoria the head would find workshop sign-ups open to any signed-in
   account with the ticket condition "later", and would move the day rule to shop text and the door
   (F-B1, a barrier); at Pyrkon "Open in Tickets" on the programme settings led into a refusal
@@ -1412,6 +1556,11 @@ Each question has options and a recommended default. Wireframe annotations cite 
 - Options: admission and programme sign-ups now, online access and membership when a second real
   convention needs them; all four now; a wider list including discounts and badges.
 - **Recommended:** the first. A speaker discount and a badge are not entitlements.
+- *Develop:* the built scanner already checks admission from the order's QR code, with no
+  entitlement, and marks entry once an order ([spec 0007](../specs/0007-scanner.md)). Admission
+  as an entitlement type is needed only once days are checked or a source other than an order
+  (a registration without a purchase, a grant, an import) admits; programme sign-ups are the first
+  type the programme itself reads.
 
 #### Q22. Where does the speaker discount rule live?
 
@@ -1421,6 +1570,10 @@ Each question has options and a recommended default. Wireframe annotations cite 
   The badge collection screen
   ([ab-pyrkon-badge](0004-programme-across-convention-scales/wireframes/14-panel-the-programme-during-the-convention.html#ab-pyrkon-badge))
   is a Tickets screen, which the programme permission does not open.
+- *Develop:* the shop has discount codes per edition, by percent or amount, with a usage limit and
+  a validity window, down to free entry ([spec 0008](../specs/0008-discount-codes.md)). A speaker
+  discount can be a code tickets issues from the hours the programme hands over, with no new
+  kind of price; whether one code per speaker or a shared one is the tickets owner's to say.
 
 #### Q23. Does OPOS replace Pyrkon's app and eBilet, or feed them?
 
@@ -1450,6 +1603,16 @@ Each question has options and a recommended default. Wireframe annotations cite 
   whether a short bio of a guest, typed by the team, is public before the entry is claimed; by
   4.5 it is not, so a guest without an account shows by name only until the legal check allows an
   exception.
+- **The photo.** The brief waited for file uploads; develop has them, with an avatar on every
+  account, public from its upload ([spec 0016](../specs/0016-public-profile.md), A2), and a
+  programme that shows none (A6). Options: no photo in the programme, the profile's page showing
+  the avatar, as today; the account's avatar beside a linked speaker on the item and the people
+  list, which changes A6 and PRODUCT.md 11; a photo of an entry without an account that the team
+  uploads, a convention's file, for a guest of honour.
+- **Recommended for the photo:** none in the programme's first version, so its spec asks for no
+  upload; the linked speaker's avatar next, asked of the domain owner of profile, since the avatar
+  is already public; a photo the team uploads of a person only after the legal check, with that
+  person's consent.
 
 ### On site
 
@@ -1521,6 +1684,12 @@ A programme person lives at convention level, while the programme permission is 
   ([ab-role-scanner-setup](0004-programme-across-convention-scales/wireframes/j15-tickets-org-where-tickets-touch-the-programme.html#ab-role-scanner-setup)).
 - *Walkthrough 2:* the Pyrkon tickets org would be refused programme read altogether and ask the
   head for it (Y-M3); one of the two found the room's items on the scanner setup.
+- *Develop:* the scanner is built under tickets write ([spec 0007](../specs/0007-scanner.md)): a
+  named device paired by a code, up to 20 an edition, reading QR codes alone and marking a line
+  once. A room scanner is a second mode of it ([4.2](#42-seat-ladder-and-allocation-method)),
+  which sharpens three points for the tickets owner: whether a room scanner counts against the 20;
+  whether its page counts the people let in, where the gate's counts hand-outs; and whether the
+  room's items reach it from the programme without the tickets org holding programme read.
 
 #### Q34. Who enters the items of partners?
 
@@ -1559,10 +1728,10 @@ In the order of how many other decisions each blocks:
 3. **The programme person** (Q5, Q29): what an entry is, where it lives, how it links to an
    account, which permission edits it.
 4. **The release model** (Q6): snapshots or the current state with a changelog.
-5. **The MVP scope** (Q4, Q12): rooms, blocks, profiles, file uploads, notifications, reviews as a
-   switch.
+5. **The MVP scope** (Q4, Q12): rooms, blocks, the programme's part of profiles, a photo (Q25),
+   notifications, reviews as a switch.
 6. **Blocks and switch rights** (Q11, Q10), and with them who assesses proposals (Q31).
-7. **The home of entitlements** (Q20), with the domain owner of tickets, before the tickets spec
-   fixes the ticket type.
+7. **The home of entitlements** (Q20), with the domain owner of tickets, as the extension of the
+   ticket type the shop already built.
 8. **Personal data of programme people** (Q25), before the first screen with an entry without an
    account.

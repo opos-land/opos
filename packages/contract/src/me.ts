@@ -1,8 +1,20 @@
 import { SUPPORTED_LOCALES } from '@opos/i18n'
 import { z } from 'zod'
 import { accountRoute, level, timestamp } from './common'
+import { plainLine } from './text'
 
-const name = z.string().trim().min(1).max(100)
+const name = plainLine(100)
+const nickname = plainLine(50)
+
+/**
+ * Where the nickname stands in an account's public name: between the first and the last name, or
+ * after them.
+ */
+export const NAME_ORDERS = ['nickname-middle', 'nickname-last'] as const
+
+export const nameOrderSchema = z.enum(NAME_ORDERS)
+
+export type NameOrder = z.infer<typeof nameOrderSchema>
 
 /** An interface theme an account can choose. */
 export const themeSchema = z.enum(['light', 'dark'])
@@ -14,6 +26,8 @@ export const accountSchema = z.object({
   email: z.string(),
   firstName: z.string().nullable(),
   lastName: z.string().nullable(),
+  nickname: z.string().nullable(),
+  nameOrder: nameOrderSchema,
   /** The account's interface language; `null` means detect it from Accept-Language. */
   locale: z.enum(SUPPORTED_LOCALES).nullable(),
   /** The account's interface theme; `null` means follow the system's. */
@@ -38,6 +52,8 @@ export const updateAccountSchema = z
   .object({
     firstName: name.nullable(),
     lastName: name.nullable(),
+    nickname: nickname.nullable(),
+    nameOrder: nameOrderSchema,
     locale: z.enum(SUPPORTED_LOCALES).nullable(),
     theme: themeSchema.nullable(),
   })
@@ -90,7 +106,8 @@ export const meContract = {
     .route({
       method: 'PATCH',
       path: '/me',
-      summary: 'Change the name, the interface language or the theme of the signed-in account',
+      summary:
+        'Change the name, its nickname and order, the interface language or the theme of the signed-in account',
     })
     .input(z.object({ body: updateAccountSchema }))
     .output(accountSchema),

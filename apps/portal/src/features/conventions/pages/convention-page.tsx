@@ -11,26 +11,24 @@ import {
   Page,
   Section,
 } from '../../../shared/ui'
-import {
-  activeEditionOptions,
-  conventionOptions,
-  editionsOptions,
-  programItemsOptions,
-} from '../api/conventions'
-import { ProgramList } from '../components/program-list'
+import { MyOrders } from '../../shop'
+import { activeEditionOptions, conventionOptions, editionsOptions } from '../api/conventions'
+import { ConventionLogo } from '../components/convention-logo'
+import { EditionSummary } from '../components/edition-summary'
 import { useConventionTime } from '../hooks/use-convention-time'
+import { otherEditions } from '../model/edition-order'
 
-/** A convention's page: the active edition's programme and the other editions. */
+/**
+ * A convention's page: its name and logo, for a signed-in account its orders in the convention,
+ * its active edition as that edition's own page shows it, and its other published editions, the
+ * coming ones first.
+ */
 export function ConventionPage() {
   const { tenantSlug = '' } = useParams()
   const convention = useQuery(conventionOptions(tenantSlug))
   usePageTitle(convention.data?.name)
   const active = useQuery(activeEditionOptions(tenantSlug))
   const editions = useQuery(editionsOptions(tenantSlug))
-  const items = useQuery({
-    ...programItemsOptions(tenantSlug, active.data?.slug ?? ''),
-    enabled: Boolean(active.data),
-  })
   const time = useConventionTime(convention.data?.timezone ?? 'UTC')
   const base = `/conventions/${tenantSlug}`
 
@@ -43,10 +41,18 @@ export function ConventionPage() {
     )
   }
 
-  const { name, timezone } = convention.data
-  const others = editions.data?.filter((edition) => !edition.isActive) ?? []
+  const { name, timezone, logo } = convention.data
+  const others = otherEditions(editions.data ?? [])
   return (
-    <Page title={name}>
+    <Page
+      title={
+        <span className="flex items-center gap-3">
+          <ConventionLogo tenantSlug={tenantSlug} logo={logo} variant="large" />
+          {name}
+        </span>
+      }
+    >
+      <MyOrders tenantSlug={tenantSlug} timeZone={timezone} />
       {active.isPending ? (
         <LoadingView />
       ) : active.isError ? (
@@ -58,21 +64,18 @@ export function ConventionPage() {
           <ErrorMessage error={active.error} />
         )
       ) : (
-        <Section title={active.data.name}>
-          <p className="text-muted-foreground text-sm">
-            {time.dates(active.data.startsAt, active.data.endsAt)}
-          </p>
-          {items.isPending ? (
-            <LoadingView />
-          ) : items.isError ? (
-            <ErrorMessage error={items.error} />
-          ) : (
-            <ProgramList
-              items={items.data}
-              timeZone={timezone}
-              editionPath={`${base}/${active.data.slug}`}
-            />
-          )}
+        <Section
+          title={
+            <Link to={`${base}/${active.data.slug}`} className={linkClass}>
+              {active.data.name}
+            </Link>
+          }
+        >
+          <EditionSummary
+            edition={active.data}
+            timeZone={timezone}
+            editionPath={`${base}/${active.data.slug}`}
+          />
         </Section>
       )}
       {editions.isError && !isNotFound(editions.error) && <ErrorMessage error={editions.error} />}

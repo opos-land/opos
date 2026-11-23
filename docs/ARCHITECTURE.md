@@ -15,18 +15,23 @@ graph LR
     api -->|secret key| auth["Supabase Auth"]
     api --> pg[("Postgres")]
     auth --> pg
+    api -->|bucket key| s3[("S3 bucket")]
+    api -->|signed| imgproxy["imgproxy"]
+    imgproxy -->|signed address| s3
 ```
 
-| Part                | Role                                                                                                                                                                                                           |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/api`          | NestJS, Drizzle ([0005](adr/0005-build-the-api-with-nestjs-and-drizzle.md)), oRPC ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)): the only backend, and the only holder of a Supabase address or key |
-| `apps/panel`        | the organizers' SPA, desktop-first; later also the scanner under `/scanner`                                                                                                                                    |
-| `apps/portal`       | the attendees' SPA, mobile-first: landing page, account, convention pages, likes, schedule                                                                                                                     |
-| `apps/admin`        | the admins' SPA: the conventions with their suspension and deletion, the reset of an account's two-factor authentication, the log ([0029](adr/0029-ship-four-web-applications.md))                             |
-| `packages/contract` | the oRPC contract with zod schemas, the single source of the API's shape                                                                                                                                       |
-| `packages/db`       | schema, migrations, database roles, seed, verification, the scripts that grant the admin role and take it away                                                                                                 |
-| `packages/i18n`     | locales, detection, formatters and the shared catalog                                                                                                                                                          |
-| Supabase            | a hosted project per environment, in the EU: Postgres and Supabase Auth only, the Data API off ([0003](adr/0003-use-hosted-supabase-for-postgres-and-auth-only.md))                                            |
+| Part                | Role                                                                                                                                                                                                                                                                                                                                                |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/api`          | NestJS, Drizzle ([0005](adr/0005-build-the-api-with-nestjs-and-drizzle.md)), oRPC ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)): the only backend, and the only holder of a Supabase address or key                                                                                                                                      |
+| `apps/panel`        | the organizers' SPA, desktop-first; later also the scanner under `/scanner`                                                                                                                                                                                                                                                                         |
+| `apps/portal`       | the attendees' SPA, mobile-first: home page with the list of editions, account, convention and edition pages, likes, schedule                                                                                                                                                                                                                       |
+| `apps/admin`        | the admins' SPA: the conventions with their suspension and deletion, the reset of an account's two-factor authentication, the log ([0029](adr/0029-ship-four-web-applications.md))                                                                                                                                                                  |
+| `packages/contract` | the oRPC contract with zod schemas, the single source of the API's shape                                                                                                                                                                                                                                                                            |
+| `packages/db`       | schema, migrations, database roles, seed, verification, the scripts that grant the admin role and take it away                                                                                                                                                                                                                                      |
+| `packages/i18n`     | locales, detection, formatters and the shared catalog                                                                                                                                                                                                                                                                                               |
+| Supabase            | a hosted project per environment, in the EU: Postgres and Supabase Auth only, the Data API off ([0003](adr/0003-use-hosted-supabase-for-postgres-and-auth-only.md))                                                                                                                                                                                 |
+| S3 bucket           | the uploaded files, one private bucket per environment, in the EU and encrypted at rest; the API holds its key, which opens it alone ([0041](adr/0041-keep-uploaded-files-in-an-s3-bucket-behind-the-api.md)), and so does the seed, on `local` and `dev`, for its demo files ([0045](adr/0045-let-the-seed-put-its-demo-files-into-the-bucket.md)) |
+| imgproxy            | makes an image's master and its variants, reached by the API alone with signed requests, reading one object at an address the API signed for a minute ([0042](adr/0042-keep-a-cleaned-master-of-an-image-and-make-its-variants-in-imgproxy.md))                                                                                                     |
 
 - The packages have no build step; only the translation catalogs compile.
 - **The BFF boundary**
@@ -36,15 +41,22 @@ graph LR
   ESLint preset refuses the import, [bff-boundary.mjs](../scripts/bff-boundary.mjs) the rest (a
   hook, `pre-commit`, and CI over the built bundles), and every e2e scenario a request that leaves
   the API and the page's own origin.
+- **Files** are uploaded and read through the API alone: no browser reaches the bucket or
+  imgproxy. The storage in `apps/api/src/modules/files` knows a file's owner, an account, a
+  convention or an edition, and nothing of what it is for; a feature declares its kinds of file,
+  with the variants of a kind of images, and its own routes take and serve them under its own
+  requirement. A file never changes, keeps only the inert types PDF, JPEG, PNG and WebP, each
+  checked against its content, and an image is kept as a cleaned master, decoded only by imgproxy.
 - **The admin** works in the admin application, through the admin routes of the API
   ([0029](adr/0029-ship-four-web-applications.md)). Only granting the admin role and taking it
   away are scripts, run on the server as `postgres` (`pnpm db:admin:grant`,
   `pnpm db:admin:revoke`): no route and no screen does either.
 
-Deployment is decided but not built
-([0012](adr/0012-host-each-environment-on-a-vps-with-compose-and-traefik.md),
-[0013](adr/0013-connect-to-postgres-directly-with-verified-tls.md),
-[0014](adr/0014-back-up-production-beyond-supabase.md)); the modules
+Dev's deployment is described in [infra](../infra/README.md) but not running yet
+([0033](adr/0033-host-dev-on-the-teams-coolify-server-and-leave-productions-hosting-open.md)); a
+deployed environment reaches its database directly, with TLS verified against Supabase's CA
+([0039](adr/0039-verify-postgres-tls-against-the-supabase-ca-trusted-by-node.md)). The backups are
+decided but not built ([0014](adr/0014-back-up-production-beyond-supabase.md)); the modules
 [waiting for their domain owner](#modules-waiting-for-their-domain-owner) have only their rules.
 
 ## Tenant isolation
@@ -54,13 +66,13 @@ Row-level multitenancy under RLS, not only a `where` in code
 `tenant_id` (never only an `edition_id`), a composite foreign key to its parent's `(id, tenant_id)`
 and an index starting with `tenant_id`.
 
-| Role                                    | May                                                                                                                               | Used by                                                                                                         |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `postgres`                              | owns the OPOS tables; `BYPASSRLS`, not a superuser                                                                                | migrations, `db:*` scripts, the seed, the backup; never the running API                                         |
-| `opos_app`                              | `select`; `insert`, `delete` and per-column `update` only where the API writes; bypasses nothing, owns nothing, member of no role | the API                                                                                                         |
-| `opos_app_global`                       | `BYPASSRLS`; `select` on the columns the cross-tenant queries read, nothing else                                                  | `GlobalDbService` alone                                                                                         |
-| `opos_admin`                            | `BYPASSRLS`; only what the admin routes read and write, its reads by column                                                       | `AdminDbService` alone ([0030](adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)) |
-| `anon`, `authenticated`, `service_role` | nothing in `public`                                                                                                               | nobody                                                                                                          |
+| Role                                    | May                                                                                                                               | Used by                                                                                                                               |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `postgres`                              | owns the OPOS tables; `BYPASSRLS`, not a superuser                                                                                | migrations, `db:*` scripts, the seed, the backup; never the running API                                                               |
+| `opos_app`                              | `select`; `insert`, `delete` and per-column `update` only where the API writes; bypasses nothing, owns nothing, member of no role | the API                                                                                                                               |
+| `opos_app_global`                       | `BYPASSRLS`; `select` on the columns the cross-tenant queries read, nothing else                                                  | `GlobalDbService` alone                                                                                                               |
+| `opos_admin`                            | `BYPASSRLS`; only what the admin routes read and write, its reads by column                                                       | `AdminDbService` and `AdminProfilesDb` alone ([0030](adr/0030-guard-admin-access-with-its-own-role-application-and-second-factor.md)) |
+| `anon`, `authenticated`, `service_role` | nothing in `public`                                                                                                               | nobody                                                                                                                                |
 
 `pnpm db:roles` ([roles.ts](../packages/db/src/roles.ts)) sets the runtime roles up with their
 timeouts and strips Supabase's default grants; it runs on every new database, after a change to it
@@ -78,12 +90,24 @@ and after every restore.
   transaction goes on for a suspended tenant: the check sits where the transaction opens, so it
   holds for every way in (`403` `tenant.suspended`;
   [0031](adr/0031-suspend-a-tenant-before-deleting-it.md)).
-- **Global tables.** `accounts` and `account_recovery_codes` have no RLS: column privileges limit
-  them, and the API reaches there only the account a verified token, a fresh session or a signed
-  hook names. Another account is read only in a tenant transaction, through a tenant table or by a
-  confirmed email behind a write permission and a rate limit of the tenant; or behind
-  `@RequireAdmin`, as a tenant's head, as an account an entry of the log names, or by its email
-  address for a new tenant's first head and for a reset of two-factor authentication.
+- **Global tables.** `accounts`, `account_recovery_codes`, `account_files`, `account_profiles`,
+  `account_avatars` and `profile_reports` have no RLS: column privileges limit them, and the API
+  reaches there only the account a verified token, a fresh session or a signed hook names; the
+  sweep alone removes an account's file nothing points at.
+  Another account is read only in a tenant transaction, through a tenant table, by a confirmed
+  email behind a write permission and a rate limit of the tenant, or by the confirmed email of
+  an order as it is paid and of the recipient of an order's email as it is written, for its
+  language alone, which answers nothing to anyone; by its own publication, as the profile it
+  published and the avatar it uploaded, which answer its public name and never its identifier
+  or its email address
+  ([0071](adr/0071-let-anyone-read-the-profile-an-account-published.md)); or behind
+  `@RequireAdmin`, as a tenant's head, as an account an entry of the log names, as an account
+  whose profile was reported or taken down, or by its email address for a new tenant's first
+  head, for a reset of two-factor authentication and for its profile.
+  `opos_app` never sets the identifier of a profile's page or what a takedown sets, and reads
+  nothing a report says; an avatar is a row added and removed, never changed. A change of a
+  profile, of its avatar or of its reports holds the profile's row first, as a takedown does, so
+  that neither overtakes the other.
   The admin's tables are global too, and `opos_app` and `opos_app_global` hold nothing on them:
   `admins` is written by `postgres` alone, each grant bound to the one verified factor its account
   holds; `admin_actions` only grows, each entry dated by the database, a grant and a withdrawal
@@ -93,27 +117,51 @@ and after every restore.
 **Cross-tenant queries** run only in
 [GlobalDbService](../apps/api/src/common/database/global-db.service.ts):
 
-| Query                 | Bound                                                                                                         |
-| --------------------- | ------------------------------------------------------------------------------------------------------------- |
-| a tenant by slug      | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address |
-| `GET /me/memberships` | the session's account; expired memberships left out, and the editions of a suspended tenant                   |
-| `GET /me/schedule`    | the session's own likes; published editions only, of tenants not suspended                                    |
-| `DELETE /me`          | the session's account; answers only whether it is a tenant's last head                                        |
+| Query                                  | Bound                                                                                                                                                           |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| a tenant by slug                       | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address                                                   |
+| `GET /me/memberships`                  | the session's account; expired memberships left out, and the editions of a suspended tenant                                                                     |
+| `GET /me/schedule`                     | the session's own likes; published editions only, of tenants not suspended                                                                                      |
+| `GET /public/editions`                 | publication: the published editions of tenants not suspended, with the columns anyone reads of each one convention at a time                                    |
+| `DELETE /me`                           | the session's account; answers only whether it is a tenant's last head                                                                                          |
+| the sweep of files                     | the API's own job; the identifiers, owners and kinds of files, and whether a feature's row points at one                                                        |
+| a payment attempt by its identifier    | the address of a provider's notification; it answers the tenant and the provider alone, and nothing counts before the provider's signature holds                |
+| the orders whose hold ended            | the API's own job; identifiers alone, of tenants not suspended                                                                                                  |
+| the emails of orders that are due      | the API's own job; identifiers alone, of tenants not suspended                                                                                                  |
+| a scanner by a hash                    | the pairing code or the token the caller sent, by its hash; it answers the scanner and its tenant alone, and the device is judged in that tenant's transaction  |
+| an order link by a hash                | the token the caller sent, by its hash; it answers the link's tenant alone, and the link and its order are read in that tenant's transaction                    |
+| the editions whose reminder may be due | the API's own job; identifiers and the tenant's time zone alone, of published editions of tenants not suspended                                                 |
+| a published profile by its identifier  | the account's own publication: the public name and what the profile's page shows, of a profile published and not taken down, and nothing that names the account |
+| whose avatar a file is                 | the avatar is public from its upload; it answers the account to the API alone, which then serves the file                                                       |
 
 A new one is bound by the session's account or its confirmed email address, a secret the caller
-proved (a signature, a link or device token) or the API's own job; it joins this table and puts its
-columns into `globalReads` of [verify.ts](../packages/db/src/verify.ts).
+proved (a signature, a link or device token), the API's own job, or publication: an edition's,
+for what anyone already reads one convention at a time
+([0043](adr/0043-list-every-published-edition-on-the-portals-home-page.md)), or an account's own,
+of its profile and its avatar
+([0071](adr/0071-let-anyone-read-the-profile-an-account-published.md)); it joins this table
+and puts its columns into `globalReads` of [verify.ts](../packages/db/src/verify.ts). What a query
+bound by publication answers is the schema of its route: a field added there is public at once,
+for every convention, or for every account that published its profile.
 
 **The admin routes** read and write across tenants on `opos_admin`, only in
-[AdminDbService](../apps/api/src/modules/admin/admin-db.service.ts) and only behind
-`@RequireAdmin`: their bound is the admin role of the session's account. They never open a tenant
-transaction, read nothing of a tenant's team but its heads and nothing of its editions or
-programme, and write each change with its entry of the log in one transaction; what the role may
-reach is in `adminReads`, `adminWrites`, `adminInserts` and `adminUpdates` of verify.ts.
+[AdminDbService](../apps/api/src/modules/admin/admin-db.service.ts) and in
+[AdminProfilesDb](../apps/api/src/modules/admin/admin-profiles.db.ts), which takes its connection
+from it, and only behind `@RequireAdmin`: their bound is the admin role of the session's account.
+They never open a tenant transaction, read nothing of a tenant's team but its heads and nothing
+of its editions or programme, and write each change with its entry of the log in one transaction.
+Of a profile they read what it shows, its state and its reports, and write a takedown, a
+restoring, a closed report and a cleared name, never what a profile says
+([0074](adr/0074-take-a-profile-down-with-a-reason-and-change-nothing-it-says.md)). What the role
+may reach is in `adminReads`, `adminWrites`, `adminInserts` and `adminUpdates` of verify.ts.
 
 **Migrations.** RLS, grants and triggers are hand-written in the PR of their table; a merged
 migration never changes. `opos_app` never updates `id`, `tenant_id` or a column pointing at an
-account or another row. `tenants` rows are inserted, deleted, suspended and given a new slug only by
+account or another row, but for two pointers of an order's line that its constraints keep
+within its edition and its tenant: the variant a merchandise line names
+([0058](adr/0058-let-the-api-change-the-variant-an-order-line-names.md)) and the scanner that
+marked a line handed out
+([0065](adr/0065-let-the-api-name-the-scanner-that-marked-a-hand-out.md)). `tenants` rows are inserted, deleted, suspended and given a new slug only by
 `opos_admin`, behind the admin routes, and by the seed; `opos_app` updates `name`, `default_locale`
 and `timezone` alone. Nothing is written into `auth`; OPOS's triggers on `auth.users` and
 `auth.mfa_factors` are listed in verify.ts. A `security definer` function pins `search_path = ''`
@@ -124,24 +172,26 @@ case in [verify.test.ts](../packages/db/test/verify.test.ts);
 
 ## Invariants
 
-| #   | Invariant                                                                                                  | Enforced by                                                                                                                                                                     |
-| --- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | At most one active edition per tenant                                                                      | a partial unique index; activation locks the tenant row                                                                                                                         |
-| 2   | At least one `head` per tenant, also against deleting the last head's account                              | constraint triggers deferred to commit, locking the tenant row                                                                                                                  |
-| 3   | An edition membership stays in the tenant of its membership and edition                                    | composite foreign keys                                                                                                                                                          |
-| 4   | A tenant write carries the tenant of the context                                                           | `TenantContextService.tx()`; `WITH CHECK`                                                                                                                                       |
-| 5   | Every `auth.users` row has exactly one `accounts` row                                                      | an insert trigger, a cascading foreign key                                                                                                                                      |
-| 6   | A `head` never expires and holds no tenant-level permission                                                | check constraints                                                                                                                                                               |
-| 7   | An attendee registration stays in its edition's tenant and goes with its account                           | a composite foreign key, a cascade                                                                                                                                              |
-| 8   | Speakers, likes and reviews stay in the tenant of their programme item                                     | composite foreign keys                                                                                                                                                          |
-| 9   | A limit on what is sold holds under concurrent sales                                                       | a sale locks the rows carrying the limit before counting                                                                                                                        |
-| 10  | Two scans of one ticket never act on the same state                                                        | a conditional update or a row lock, never a read first                                                                                                                          |
-| 11  | A scanner works only inside its tenant and edition                                                         | its tenant's context; every query filters on its edition                                                                                                                        |
-| 12  | `accounts.mfaEnabledAt` is set exactly while a verified factor exists                                      | the trigger on `auth.mfa_factors`, locking the account row                                                                                                                      |
-| 13  | A tenant is deleted only while suspended                                                                   | the statement that deletes it judges the suspension itself                                                                                                                      |
-| 14  | The slug of a deleted tenant is never a tenant's again; the seed alone frees the slugs of its demo tenants | triggers of `tenants`: one retires the slug with the tenant, one refuses it after the unique index, and any slug above READ COMMITTED, where it could not see one retired since |
+| #   | Invariant                                                                                                                   | Enforced by                                                                                                                                                                                                                                   |
+| --- | --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | At most one active edition per tenant                                                                                       | a partial unique index; activation locks the tenant row                                                                                                                                                                                       |
+| 2   | At least one `head` per tenant, also against deleting the last head's account                                               | constraint triggers deferred to commit, locking the tenant row                                                                                                                                                                                |
+| 3   | An edition membership stays in the tenant of its membership and edition                                                     | composite foreign keys                                                                                                                                                                                                                        |
+| 4   | A tenant write carries the tenant of the context                                                                            | `TenantContextService.tx()`; `WITH CHECK`                                                                                                                                                                                                     |
+| 5   | Every `auth.users` row has exactly one `accounts` row                                                                       | an insert trigger, a cascading foreign key                                                                                                                                                                                                    |
+| 6   | A `head` never expires and holds no tenant-level permission                                                                 | check constraints                                                                                                                                                                                                                             |
+| 7   | An attendee registration stays in its edition's tenant and goes with its account                                            | a composite foreign key, a cascade                                                                                                                                                                                                            |
+| 8   | Speakers, likes and reviews stay in the tenant of their programme item                                                      | composite foreign keys                                                                                                                                                                                                                        |
+| 9   | A limit on what is sold holds under concurrent sales and changes of the limit                                               | a sale, and a change of a capacity, a stock or a discount code's limit, lock the rows carrying the limit in one fixed order before counting, a discount code's last ([0053](adr/0053-lock-the-rows-that-carry-a-limit-in-one-fixed-order.md)) |
+| 10  | Two scans of one ticket never act on the same state                                                                         | a hand-out is one update that matches only a line not yet handed out, by a scanner and in the panel alike                                                                                                                                     |
+| 11  | A scanner works only inside its tenant and edition                                                                          | the transaction of the tenant its token named; every query filters on that tenant, and a scan reads the orders of the scanner's edition alone                                                                                                 |
+| 12  | `accounts.mfaEnabledAt` is set exactly while a verified factor exists                                                       | the trigger on `auth.mfa_factors`, locking the account row                                                                                                                                                                                    |
+| 13  | A tenant is deleted only while suspended                                                                                    | the statement that deletes it judges the suspension itself                                                                                                                                                                                    |
+| 14  | The slug of a deleted tenant is never a tenant's again; the seed alone frees the slugs of its demo tenants                  | triggers of `tenants`: one retires the slug with the tenant, one refuses it after the unique index, and any slug above READ COMMITTED, where it could not see one retired since                                                               |
+| 15  | An order holds at most one ticket                                                                                           | a partial unique index                                                                                                                                                                                                                        |
+| 16  | What an order names is never deleted from under it: its edition, what it sold, what its ticket holder answered and accepted | foreign keys that do not cascade ([0048](adr/0048-keep-what-an-order-names-with-foreign-keys-that-do-not-cascade.md))                                                                                                                         |
 
-Invariants 7 and 9–11 belong to [modules not built yet](#modules-waiting-for-their-domain-owner);
+Invariant 7 belongs to a [module not built yet](#modules-waiting-for-their-domain-owner);
 [invariants.test.ts](../packages/db/test/invariants.test.ts),
 [tenants.test.ts](../packages/db/test/tenants.test.ts) and
 [accounts.test.ts](../packages/db/test/accounts.test.ts) cover the database-side ones.
@@ -156,7 +206,8 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - Tenant-level permissions (`settings`, `branding`, `shop`) never grant edition-level ones
   (`program`, `websiteContent`, `tickets`).
 - A non-member gets `403` before any edition is looked up. For a member, a row of another tenant or
-  of another parent than the path names, and an identifier that is not a uuid, are `404`.
+  of another parent than the path names, and an identifier that is not a uuid, are `404`; so is a
+  row of another parent that a body names.
 - A tenant route takes exactly one of `@RequireTenant`, `@RequireEdition` or, as the exception,
   `@InTenant`: no membership, so the handler's filters are its only guard, and no write lock, so it
   lowers nobody's access. Each applies `JwtAuthGuard`.
@@ -211,13 +262,21 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   any permission check, by invariant 12, so an older token loses access at once.
 - A redirect, Google sign-in's included, leads only to a path of the application that started it.
 - The cookies are safe only while no subdomain serves content a tenant controls: the feature that
-  first does moves them to `__Host-` names.
+  first does moves them to `__Host-` names. The API serves the files a tenant or an account
+  uploaded from its own origin, but only inert types, under their stored type with `nosniff`, a
+  content security policy that allows nothing and sandboxes them, a resource policy of the same
+  site, and a PDF as a download. Dev's hosts sit under `opos.land` too, so they move
+  before production is deployed
+  ([0034](adr/0034-address-dev-under-dev-opos-land-in-a-dns-zone-of-its-own.md)).
 
 ## API conventions
 
 - The contract is the single source of the API: a route starts from `publicRoute`, `accountRoute`,
-  `tenantRoute` or `adminRoute` of [common.ts](../packages/contract/src/common.ts)
-  ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)). An admin route lives under `/admin/`,
+  `tenantRoute`, `adminRoute` or `scannerRoute` of [common.ts](../packages/contract/src/common.ts)
+  ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)). A scanner's route is called by a
+  device with no session and no membership, named by its token in `Authorization: Bearer`, the
+  one bearer credential the API takes
+  ([0059](adr/0059-pair-a-scanner-with-a-code-and-know-it-by-a-token.md)). An admin route lives under `/admin/`,
   and nothing else does.
 - An error is `{ code, params?, message }`, its code in
   [errors.ts](../packages/contract/src/errors.ts). The UI shows the code through the catalog, never
@@ -229,24 +288,52 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   commit (`afterCommit`), and its failure is logged while the response stands; a send the business
   cannot lose keeps an outbox. A call to Supabase Auth outside a transaction answers with its own
   failure.
+- **A route that takes a file** (`takesFile` in the contract, `@TakesFile` in the API) is a write:
+  its requirement is judged, then the file in its JSON body, up to 21 MB, is received outside every
+  transaction, then its one transaction keeps it; every other route keeps the default body limit.
+  **A route that serves a file** (`servesFile`, `@ServesFile`) is judged in a short transaction and
+  reads the bucket outside every transaction. A public route serves only a file that is for
+  everyone, after its own check in a short transaction of the tenant its address names, or, for an
+  avatar, after the cross-tenant lookup of whose avatar the file is, and never takes one. A route
+  of the account takes a file the same way, with the session in place of the requirement and the
+  account's own transaction. The routes that take a file share one rate limit per
+  account. The bucket or imgproxy out of reach stops nothing else of the API.
+- **A route that asks outside before it writes** (`@Prepares`), as connecting a payment provider
+  account does, is a write: its requirement is judged, then the call out runs outside every
+  transaction, then its one transaction judges the actor again and acts on the answer. An answer
+  for an actor refused meanwhile is stored nowhere. A route that asks no membership may prepare
+  too, as placing an account's order does for its bot check, and one that asks outside between
+  its writes (`@CallsOut`), as the start of a payment attempt does, runs its handler outside
+  every transaction and opens its tenant's own.
+- **The API's own jobs** run in each process, each safe with several: the sweep of files daily
+  behind an advisory lock, so one process sweeps at a time, removing, once older than 24 hours,
+  a file's row nothing points at and an object no row explains; the expiry of orders every
+  minute and the outbox of their emails every quarter of a minute, each claiming a row under a
+  lock another process skips; the reminders before an edition every five minutes, each queued
+  under a lock of its edition's shop row, so a second process finds it gone out; the removal of
+  the profile reports closed twelve months before, daily, which two processes do once. A job finds its
+  rows across tenants by identifiers alone, passes a suspended tenant's by, and acts on each in
+  its own tenant's transaction.
 - Every route has a default rate limit per account, or per address without a session; a route open
   to abuse adds its own in code
   ([route-rate-limit.ts](../apps/api/src/common/rate-limit/route-rate-limit.ts)).
 - A log line written on purpose names no token, password or email address; an unexpected error is
   logged whole, never sent in the body.
 
-| Status | Meaning                                                                                  | Default code                               |
-| ------ | ---------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `400`  | validation; `params.field` names the field                                               | `request.invalid`                          |
-| `401`  | no valid session; a stale sign-in, `aal1` and Supabase Auth's refusals have their own    | `session.invalid`                          |
-| `403`  | insufficient permission; anti-escalation, `Origin` and a suspended tenant have their own | `permission.denied`                        |
-| `404`  | absent or of another tenant                                                              | `request.not-found`                        |
-| `409`  | an invariant or unique constraint, by constraint name                                    | always specific                            |
-| `410`  | an invitation expired or revoked                                                         | `invitation.expired`, `invitation.revoked` |
-| `415`  | a body that is not JSON                                                                  | `request.invalid`                          |
-| `429`  | rate limit, with `Retry-After`                                                           | `request.rate-limited`                     |
-| `500`  | unexpected; no details in the body                                                       | `server.error`                             |
-| `503`  | a write waiting too long; Supabase Auth out of reach                                     | `request.busy`, `server.unavailable`       |
+| Status | Meaning                                                                                                            | Default code                                                 |
+| ------ | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| `400`  | validation; `params.field` names the field                                                                         | `request.invalid`                                            |
+| `401`  | no valid session; a stale sign-in, `aal1` and Supabase Auth's refusals have their own                              | `session.invalid`                                            |
+| `403`  | insufficient permission; anti-escalation, `Origin` and a suspended tenant have their own                           | `permission.denied`                                          |
+| `404`  | absent or of another tenant                                                                                        | `request.not-found`                                          |
+| `409`  | an invariant or unique constraint, by constraint name; an owner's files over its limit                             | always specific                                              |
+| `410`  | an invitation expired or revoked                                                                                   | `invitation.expired`, `invitation.revoked`                   |
+| `413`  | a file over its kind's limit, or an image over 50 megapixels                                                       | `file.too-large`                                             |
+| `415`  | a body that is not JSON                                                                                            | `request.invalid`                                            |
+| `422`  | a file whose content is not what its type says, or not of its kind's types; credentials a payment provider refuses | `file.type-refused`, `provider.credentials-refused`          |
+| `429`  | rate limit, with `Retry-After`                                                                                     | `request.rate-limited`                                       |
+| `500`  | unexpected; no details in the body                                                                                 | `server.error`                                               |
+| `503`  | a write waiting too long; Supabase Auth, the bucket, imgproxy or a payment provider out of reach                   | `request.busy`, `server.unavailable`, `provider.unavailable` |
 
 ## Frontends
 
@@ -265,9 +352,14 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   `src/styles.test.ts` fails on a class Tailwind cannot build. No AI-generated graphics
   ([PRODUCT.md](PRODUCT.md#8-design-and-public-image)).
 - The portal is mobile-first: 360 px first, one column, no horizontal scrolling.
+- A picture someone uploaded comes from the API's own address, in a variant its kind declares, and
+  takes its width and height from the API, so that the page keeps its place before it loads. A
+  deployed application's content security policy allows pictures from the API alone beside its own.
 - The browser holds no session state: no token, no cookie read, the account from `GET /me`. A `401`
   brings one refresh shared by the tabs; only a refresh answered `401` signs out, `unavailable` never
-  does, and `mfa-required` shows no account data.
+  does, and `mfa-required` shows no account data. The one token a browser keeps is a scanner's, on
+  the panel's `/scanner`: it is no session of an account, is sent with no cookie, and opens the
+  scanner's routes alone.
 - Nothing of one account outlives it: a sign-out or another account clears caches and permissions in
   every tab, each tenant has its own API client, and a page to return to belongs to the account that
   left it.
@@ -295,6 +387,21 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   authentication off, asks first in a modal that names what goes, says what goes with it and that
   it cannot be undone; only the modal's own button acts. A change the same screen reverses asks
   nothing ([0023](adr/0023-ask-in-a-modal-before-an-action-that-cannot-be-undone.md)).
+- An entity, anything a list holds with an identity of its own, is added and changed on pages of
+  its own: a new one at `new` under the address of its list, an existing one at its id there. The
+  list holds the links to those pages and never a form; a page links back, and after adding or
+  deleting leads to the entity's own page or to the list. What the list reverses by itself stays in
+  the row: moving it, hiding it, ending a discount code. A part saved with its entity, such as a
+  price tier, a variant or a speaker, stays in that entity's form; `src/app/pages.test.ts` of the
+  panel refuses a mutation that creates an entity outside a page routed at `new` and an entity's
+  form outside such a page and the entity's own, and that of the admin application the first
+  ([0066](adr/0066-add-and-change-an-entity-on-a-page-of-its-own.md)).
+- A list of entities is a table, a row an entity, and a row whose entity has a page of its own
+  opens that page from anywhere in it: the row is the `LinkRow` of `shared/ui` and the entity's
+  name in it a `RowLink`, which stays the way a keyboard and a screen reader reach the page. A
+  control inside the row keeps its own press; `src/app/tables.test.ts` of the panel and of the
+  admin application refuses a plain link in a table cell
+  ([0067](adr/0067-list-entities-in-a-table-whose-row-opens-the-entitys-page.md)).
 - A tracker, anything the portal does not strictly need (analytics, a pixel, an embed, a script,
   stylesheet or font from another origin, its cookies), is an entry of the consent feature's
   `TRACKERS`, started by that feature alone after the visitor allowed its category. Only it creates
@@ -314,7 +421,13 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   [glossary.ts](../packages/i18n/src/glossary.ts) declares it with the context `glossary`, the `pl`
   catalog of `packages/i18n` holds its Polish rendering, and every message reuses it. A new term
   enters glossary.ts before its first use in the interface.
-- The API returns codes, never sentences, and renders emails in the recipient's language.
+- The API returns codes, never sentences, and renders emails in the recipient's language. The one
+  sentence it passes on is a payment provider's own, as its module gives it in each language it
+  has: the wording of the provider's consent, and where the money of a payment is. An email about
+  a takedown quotes the admin's sentence for the account as it was written, marked as a quote.
+- An account is named to everyone by `publicName` of [names.ts](../packages/i18n/src/names.ts)
+  alone: it quotes the nickname as the reader's language does and names an account with no part
+  of a name "Anon".
 - Dates go through `Intl` with an explicit time zone: a tenant's dates, programme times included,
   in the tenant's `timezone`, never the browser's; a date with no tenant, such as an invitation's
   expiry, in the browser's. Numbers go through `Intl.NumberFormat`, money in minor units with its
@@ -323,35 +436,90 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 
 ## Environments
 
-|             | Local                 | Dev                                          | Production                         |
-| ----------- | --------------------- | -------------------------------------------- | ---------------------------------- |
-| `OPOS_ENV`  | `local`               | `dev`                                        | `production`                       |
-| Supabase    | the CLI's local stack | a Free project of its own                    | the Pro project, `eu-central-1`    |
-| Addresses   | `*.opos.localhost`    | a domain of its own, never under `opos.land` | `opos.land`                        |
-| Deployed by | the developer         | a push to `develop`                          | a push to `main`, after a reviewer |
+|             | Local                   | Dev                                       | Production                         |
+| ----------- | ----------------------- | ----------------------------------------- | ---------------------------------- |
+| `OPOS_ENV`  | `local`                 | `dev`                                     | `production`                       |
+| Supabase    | the CLI's local stack   | a Free project of its own                 | the Pro project, `eu-central-1`    |
+| Addresses   | `*.opos.localhost`      | `dev.opos.land`, in a DNS zone of its own | `opos.land`                        |
+| Hosting     | the developer's machine | a shared Coolify server                   | not decided                        |
+| Deployed by | the developer           | a push to `develop`                       | a push to `main`, after a reviewer |
 
-- `OPOS_ENV` is the one switch between environments; Mailpit and a fake payment provider serve
-  `local` and `dev`.
-- Dev and production are not deployed yet; their hosting is decided in
-  [0012](adr/0012-host-each-environment-on-a-vps-with-compose-and-traefik.md).
+- `OPOS_ENV` is the one switch between environments; a fake payment provider serves `local` and
+  `dev`. Each environment has a bucket of its own, Dev's holding demo files, in a Scaleway project
+  that holds it alone, so that the API's key opens it and nothing else, and its deployment runs
+  imgproxy beside the API
+  ([0069](adr/0069-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md));
+  the local stack and CI run Versity Gateway as the bucket and imgproxy in containers beside
+  Supabase's, which
+  `pnpm stack:init` and `pnpm stack:up` start ([compose.yaml](../infra/local/compose.yaml)). Mailpit takes the mail of `local` and `dev`, so neither sends to anyone; production sends
+  through Scaleway's Transactional Email, from its own domain
+  ([0036](adr/0036-keep-every-secret-in-scaleway-secret-manager-and-give-ci-only-the-values-it-uses.md)).
+- Dev and production are not deployed yet. Dev runs in a project of its own on a shared Coolify
+  server, made by the server's owner; the deployment makes only environments inside it. Production
+  never shares a server with Dev
+  ([0033](adr/0033-host-dev-on-the-teams-coolify-server-and-leave-productions-hosting-open.md)).
+- Dev's addresses sit in a zone delegated from `opos.land`: no credential that changes Dev's
+  records reaches production's
+  ([0034](adr/0034-address-dev-under-dev-opos-land-in-a-dns-zone-of-its-own.md)).
 - A working checkout never points at Dev or production: no `supabase link`, remote URL, project
   reference or token in a `.env` or `mise.local.toml`. The `db:*` scripts, the seed and the schema
   tests refuse a remote host unless `OPOS_ENV` names its environment
   ([migration-url.ts](../packages/db/src/migration-url.ts)).
-- Secrets belong to one environment each and are never committed.
+- The infrastructure of Dev and production changes only through the `deploy:*` commands, which
+  apply the OpenTofu units from an operator's machine, under their own identity; no workflow runs
+  them, and an agent never runs one that applies, destroys, imports or sets a secret
+  ([0035](adr/0035-describe-the-infrastructure-in-opentofu-units-run-by-terragrunt.md)).
+- A release comes from CI: once the checks of a push to `develop` passed, Dev deploys the commit
+  they passed, through a push to Coolify's webhook signed with a secret that can deploy and change
+  nothing; CI never reaches Coolify's API
+  ([0075](adr/0075-release-dev-from-ci-through-a-signed-webhook.md)). Started by hand, the
+  `release-dev` workflow releases the head of `develop` the same way, once CI's checks of its push
+  passed, and no other commit.
+- Secrets belong to one environment each and are never committed. A deployed environment keeps each
+  in the Secret Manager of its own Scaleway project. An operator signs in with a key of their own
+  that expires the same day; CI never reaches Scaleway, and OpenTofu copies what it uses into
+  GitHub, a value only some branches may use into an environment that admits those branches alone
+  ([0036](adr/0036-keep-every-secret-in-scaleway-secret-manager-and-give-ci-only-the-values-it-uses.md)).
 - The seed refuses production, and production data never leaves it
-  ([PRODUCT.md](PRODUCT.md#10-personal-data-and-privacy)).
-- Supabase Auth settings live in [config.toml](../supabase/config.toml), never in a dashboard alone.
+  ([PRODUCT.md](PRODUCT.md#10-personal-data-and-privacy)). Dev's deployment runs it on every
+  release while its `env.yaml` says so, in the tools container after the verification and before
+  the API starts, so Dev's demo data is the seed's again after each release.
+- Supabase Auth settings live in [config.toml](../supabase/config.toml) for the local stack and in
+  [infra/modules/supabase](../infra/modules/supabase) for a deployed project, never in a dashboard
+  alone; [supabase-auth.test.mjs](../scripts/supabase-auth.test.mjs) keeps the two equal. A deployed
+  project is made by hand; OpenTofu changes only what is inside it.
 
 ## Tooling and versions
 
-- [mise.toml](../mise.toml) pins Node and the Supabase CLI, `packageManager` pnpm; `engines` repeats
-  both, and a mismatch aborts the install.
+- [mise.toml](../mise.toml) pins Node, the Supabase CLI, gitleaks, the linters and the tools of the
+  deploy commands: OpenTofu, Terragrunt and the CLIs of Scaleway and GitHub. `packageManager` pins
+  pnpm, `engines` repeats Node and pnpm, and a mismatch aborts the install.
+- [mise.lock](../mise.lock) holds every tool's download and its checksum for each platform of
+  `lockfile_platforms`, and changes in the same commit as a pin; an install checks the download
+  against it, and CI installs from it alone, refusing a tool it does not hold
+  ([0077](adr/0077-lock-the-tools-checksums-in-mise-lock.md)).
 - A root script is the command, and it runs as `pnpm <name>` without mise. A mise task of the same
   name in [mise-tasks.toml](../mise-tasks.toml) runs it and says what it does, so `mise tasks` lists
   the commands; turbo stays the runner and mise caches nothing. The tasks stay out of `mise.toml`,
   which turbo hashes, and [mise-tasks.test.mjs](../scripts/mise-tasks.test.mjs) keeps both lists
-  equal ([0024](adr/0024-list-the-root-commands-as-mise-tasks-that-run-the-pnpm-scripts.md)).
+  equal ([0024](adr/0024-list-the-root-commands-as-mise-tasks-that-run-the-pnpm-scripts.md)). A
+  command's prefix names what it acts on, `stack` the local stack, `infra` the code in `infra/`
+  without a sign-in and `deploy` a deployed environment, and the command has one name in its root
+  script, its task, its script's file, its messages and the documents
+  ([0079](adr/0079-name-the-root-commands-by-what-they-act-on.md)). Every task runs the root
+  script of its name and nothing else, so `pnpm <name>` and `mise run <name>` do the same. A task's
+  description fits one row of the list; who may run a command and what its flags do are its
+  `--help`, which `mise run` hands on to a script that answers it. The
+  deploy commands are one Node script tested like the others, driving tools that come from mise; no
+  shell script runs on an operator's machine
+  ([0070](adr/0070-run-the-deploy-commands-as-node-scripts.md)). `infra:graph` only reads the
+  checkout, and `infra:check`, `infra:images` and `infra:lock` only run the tools from mise. A
+  command that drives a tool from mise runs as `pnpm <name>` only where mise's tools are on the
+  path.
+- The infrastructure lives in [infra](../infra/README.md): an environment is one directory with
+  one `env.yaml`, its plain settings and the names of its secrets, and nothing else configures it.
+  Every provider is pinned to an exact version with its lock file committed, at least 7 days old
+  like a dependency; `mise run infra:check` validates every unit without a sign-in.
 - `minimumReleaseAge` refuses a version younger than 7 days; an urgent fix is a deliberate
   `minimumReleaseAgeExclude`, a transitive one a scoped `overrides` entry naming the advisory
   ([0015](adr/0015-run-a-pnpm-turborepo-monorepo-with-pinned-tools.md)).
@@ -359,11 +527,11 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   `pnpm --dir apps/<app> exec shadcn`, never `npx shadcn@latest` or `pnpm dlx`, which pass
   `minimumReleaseAge` by; the CLI's MCP server is not used
   ([0021](adr/0021-run-the-shadcn-skill-through-the-pinned-cli.md)).
-- turbo ([turbo.json](../turbo.json)) declares only what a rule needs: catalogs compile before `dev`,
+- turbo ([turbo.json](../turbo.json)) declares only what a rule needs: catalogs compile before `local`,
   `build` and `test`; side effects such as `db:*` are never cached; runtime variables stay out of
   the hash; the schema and API suites never share the stack at once.
 - No `.env` at the root: each application, `packages/db` and `supabase/` keep their own beside a
-  committed `.env.example` naming every variable, secrets empty; `pnpm infra:init` fills them, and
+  committed `.env.example` naming every variable, secrets empty; `pnpm stack:init` fills them, and
   the API validates its own on start ([env.ts](../apps/api/src/config/env.ts)).
 - The local stack publishes its ports on every interface: bind the container engine to `127.0.0.1`.
 
@@ -389,40 +557,190 @@ tenant and accounts and only reads the seed.
 [ci.yml](../.github/workflows/ci.yml) runs on every PR and every push to `develop` and `main`, in
 three jobs: `check` (format, typecheck, lint, the tests, the tests-first, migration, database and
 catalog checks, the BFF boundary over the built bundles), `e2e`, and `secrets` (gitleaks over the
-whole history, `pnpm audit` on high advisories).
+whole history of the checked commit, a PR's merge or a push, and over no other branch; `pnpm audit`
+on high advisories). lefthook `pre-commit` runs the same gitleaks over the staged changes, so a
+secret is stopped before it enters a commit
+([0078](adr/0078-scan-the-staged-changes-for-secrets-before-a-commit.md)).
 
 - PRs target `develop`, where CI blocks nothing. `main` changes only through a PR from `develop`
   with the three jobs green ([protect-main.json](../.github/rulesets/protect-main.json);
   [0017](adr/0017-integrate-on-develop-and-release-through-main.md)).
 - A workflow reads the repository only, pins every action by a full commit hash, and passes
-  `${{ github.* }}` to a `run` step only through `env`
-  ([ci-shape.test.mjs](../scripts/ci-shape.test.mjs)).
+  `${{ github.* }}` to a `run` step only through `env`; the one job that reads more reads the
+  repository's Actions runs, for `release-dev`
+  ([ci-shape.test.mjs](../scripts/ci-shape.test.mjs)). No workflow signs in to a cloud: the
+  secrets it reads are those OpenTofu writes into GitHub
+  ([0036](adr/0036-keep-every-secret-in-scaleway-secret-manager-and-give-ci-only-the-values-it-uses.md)).
+- turbo's remote cache is written only by a run on a push to `develop` or `main`; any other run of
+  the repository reads it, and a run without its secrets, such as a fork's, works without it.
+  GitHub admits only those two branches to the environment that holds the writing token, the
+  artifacts are signed with a key the cache server never holds, and no failure of the cache fails
+  a job
+  ([0037](adr/0037-share-a-turborepo-remote-cache-that-only-develop-and-main-write.md)).
 
 ## Modules waiting for their domain owner
 
-Reviews, tickets with payments and the scanner, and attendee registrations get no code until their
-domain owner sets their rules in the module's [spec](specs/README.md)
+Reviews and attendee registrations get no code until their domain owner sets their rules in the
+module's [spec](specs/README.md)
 ([PRODUCT.md](PRODUCT.md#7-modules), [0019](adr/0019-documents-hold-rules-the-code-holds-the-rest.md));
-the lasting ones land here. Any shape keeps tenant tables under RLS, a read across tenants as a new
+the lasting ones land here. The tickets module has its owner's rules and is built one spec at a
+time, the [shop's setup](specs/0002-shop-setup.md), the [catalog](specs/0003-catalog.md),
+[checkout and orders](specs/0004-checkout-and-orders.md),
+[order management](specs/0006-order-management.md) and the [scanner](specs/0007-scanner.md) so
+far: what no spec has built yet keeps the
+rules below. Any shape keeps tenant tables under RLS, a read across tenants as a new
 [cross-tenant query](#tenant-isolation), organizer routes behind the module's permission and the
 steps of [adding a feature](#adding-a-feature).
 
-| Module                 | Rules any shape keeps                                                                       |
-| ---------------------- | ------------------------------------------------------------------------------------------- |
-| reviews                | invariant 8; deleted with the item or the author's account; organizer routes need `program` |
-| tickets                | invariants 9 and 10; organizer routes need `tickets`, the provider configuration `shop`     |
-| scanner                | invariants 10 and 11                                                                        |
-| attendee registrations | invariant 7                                                                                 |
+| Module                 | Rules any shape keeps                                                                           |
+| ---------------------- | ----------------------------------------------------------------------------------------------- |
+| reviews                | invariant 8; deleted with the item or the author's account; organizer routes need `program`     |
+| tickets                | invariants 9, 10, 15 and 16; organizer routes need `tickets`, the provider configuration `shop` |
+| scanner                | invariants 10 and 11                                                                            |
+| attendee registrations | invariant 7                                                                                     |
 
 - **Payments.** The money goes to the convention's own provider account
-  ([0010](adr/0010-send-ticket-payments-to-the-conventions-own-account.md)); OPOS keeps only the
-  payment reference, and provider credentials encrypted with a key the API alone holds, never
-  returned. A notification counts once its signature or the provider confirms it; a repeat, or a
-  different amount, changes nothing. Only `local` and `dev` load a fake provider.
+  ([0010](adr/0010-send-ticket-payments-to-the-conventions-own-account.md)). Of a payment OPOS
+  keeps what the provider's module gives for the orgs, the amount, the time and the provider's
+  number of the transaction, and nothing of a card or a bank account; provider credentials are
+  sealed with a key of the API's environment for their tenant and provider, never returned,
+  logged or read by a route outside the shop permission
+  ([0044](adr/0044-seal-payment-provider-credentials-with-a-key-of-the-apis-environment.md)). A
+  provider is asked through one port, [payments](../apps/api/src/modules/payments), outside every
+  transaction. A notification names its attempt alone and counts once its signature holds: one
+  whose signature does not hold answers as an unknown address. A confirmation is taken in three
+  steps, a transaction that locks the order and decides, the module's call, a transaction that
+  writes the outcome, and the order is paid only in the last
+  ([0047](adr/0047-take-a-payment-in-three-steps-around-the-providers-call.md)); a repeat changes
+  nothing, and another amount than the total never pays the order. Przelewy24 is the first real
+  provider, loaded everywhere
+  ([0054](adr/0054-take-the-first-payments-through-przelewy24.md)): its module holds no table,
+  finds a transaction by the attempt's identifier, and logs nothing of a request or an answer.
+  Only `local` and `dev` load a fake provider, and only there does a sandbox account connect.
+- **The shop's setup.** What opening a shop asks of the convention, an edition-level route answers
+  as a yes or a no alone: the provider account and the seller's details stay behind `shop`,
+  until an edition's shop is open and shows its buyers the seller and names the provider. The
+  conditions are read under the tenant's write lock, and every write that would take one away
+  from an open shop is refused under the same lock. A published version of a legal document is a
+  file for everyone, served by the version's own identifier and bound to the tenant its address
+  names; it is not bound by its edition's publication, since a buyer reads what they accepted.
+- **The catalog.** What an edition sells lies in edition tables behind `tickets`. A list a row
+  carries, such as a ticket type's price tiers or an item's option axes, travels with its row as
+  a whole. A ticket type has one price at a moment or none: an exclusion constraint keeps its
+  tiers apart, and the API refuses them first by a code of its own
+  ([0046](adr/0046-keep-the-price-tiers-of-a-ticket-type-apart-with-an-exclusion-constraint.md)).
+  A statement by identifier names the parent it acts within, whoever calls it. A picture or a
+  size chart of a merchandise item, and the picture of an add-on, is a file for everyone once
+  what it shows is not hidden and its edition is published, served under the convention's address
+  by the identifier its row holds; before that the edition's orgs read it through a route of
+  their own.
+- **Checkout and orders.** A buyer needs no membership: a visitor's routes open the tenant from
+  its address and answer an unpublished edition and a suspended tenant as an unknown address; an
+  account's are tenant routes behind `@InTenant`, which answer an unpublished edition the same
+  way and a suspended tenant as every tenant route does. The reads that decide which order a
+  buyer opens filter on the tenant themselves. A cart is priced by one function of the
+  contract, which the portal runs for the running total and the API for the order
+  ([0050](adr/0050-price-a-cart-with-one-function-of-the-contract.md)); an order is placed at
+  the total the buyer saw or not at all. The routes that open an order without a sign-in take
+  its result token in a header, for 24 hours from its placing; the token and an order link are
+  stored as hashes, the QR code of a paid order sealed for its own row
+  ([0051](adr/0051-keep-an-orders-secrets-as-hashes-and-its-qr-code-sealed.md)). The bot check
+  is verified before the order's transaction, by a stand-in on `local` and `dev` and by nothing
+  that passes on production
+  ([0052](adr/0052-stand-in-for-the-bot-check-until-the-portal-has-one.md)). An email of an order
+  is queued in the transaction of its cause and sent by the outbox
+  ([0049](adr/0049-send-the-emails-of-an-order-from-an-outbox-in-the-database.md)). The
+  credentials of a provider account stay as they are while an order awaits payment: an order
+  being placed and a change of them share one lock of the tenant's account. `opos_app` never
+  updates an order's number, its prices or what a line sells, but for a merchandise line's
+  variant ([0058](adr/0058-let-the-api-change-the-variant-an-order-line-names.md)).
+- **Order management.** Every change an org makes of an order runs under the tenant's write lock
+  and locks the order's row first, then the rows that carry the limits its lines touch, in the
+  order placing takes them (invariant 9): the order a payment's confirmation takes too. A manual
+  order is priced by the contract's one function against the offer the shop would make at that
+  moment were it open, and takes the same locks
+  ([0055](adr/0055-record-a-sale-made-outside-the-shop-as-a-manual-order.md)). A cancellation and
+  a decline change the order alone and ask no provider for anything
+  ([0056](adr/0056-cancel-and-decline-an-order-without-returning-money.md)). A changed email
+  gives the order a new QR code: the old one is marked replaced once no order carries it, and
+  the links sent before are ended. A QR code is searched by its hash, which the panel makes, and
+  never travels in an address
+  ([0057](adr/0057-search-an-orders-qr-code-by-a-hash-the-panel-makes.md)). An email of an order
+  is queued without a text: the outbox writes it from the order as it stands when it is sent,
+  under the lock of the order's row, so each thing an org changes is a kind of email of its own,
+  and an email that would hand the order over to an address the order has left since is
+  withdrawn, never sent. What a sent email said is kept on its row, a subject and a text written
+  apart from the email that goes out, as for an address with no account: in the convention's
+  language and with no way to sign in. It holds neither the QR code nor the token of the order
+  link: each is noted for leaving out where the outbox makes it, never by the kind of the email,
+  and no read across tenants reaches the text
+  ([0068](adr/0068-keep-what-a-sent-email-of-an-order-said-without-what-hands-the-order-over.md)).
+  An order's page, the list of an edition's emails and what is kept of an email tell an org
+  neither whether an email address has an account nor the addresses of the orgs an alert went
+  to, and no search finds an alert by an address.
+- **Discount codes.** A code's terms never leave the API. The offer names no code: the portal
+  asks the quote for the price of the cart with the code a buyer entered, and the API prices it
+  with the contract's one function. Every code that cannot be used answers the quote alike, and
+  a quote that tries a code counts against a rate limit of its own for the client's address
+  ([0062](adr/0062-keep-a-discount-codes-terms-in-the-api-and-refuse-every-unusable-code-alike.md)).
+  A code is looked up within the edition the request names. An order names its code, and what
+  the code took off is a line of the order below zero, the only one. A use is an order that
+  holds: it is counted under the lock of the code's row, the last lock an order takes
+  (invariant 9), when an order is placed, when a payment after the hold or an org settling a
+  review takes it again, and when an org changes the limit. A code an order names is never
+  deleted: the order's foreign key refuses it.
+- **Sales reports.** The dashboard of an edition and its lists are read from the orders as they
+  are, by queries that lock nothing: a report never slows a sale. What is sold is what "Paid"
+  and "Paid - manual" orders hold; what orders awaiting payment and needing review hold is
+  counted apart, and no other order counts. A file an org exports is CSV in UTF-8 with a byte
+  order mark, its texts quoted and its fields separated by semicolons, named after the edition
+  and the list; the API exposes that name to the panel's origin. Its columns are in the language
+  the panel shows and sends with its request, a moment in it is in the convention's time zone,
+  and an amount is a number to the cent with the decimal mark of that language. A cell that
+  begins like a formula is written with a leading apostrophe. A file holds names and email
+  addresses: it is written for the org who asked, kept nowhere, and no log holds any of it; the
+  lists share a rate limit an account.
+- **The pre-edition reminder.** It goes out at 9:00 by the clock of the convention's time zone,
+  so many days before the edition's first day in that zone, and on that day alone: a reminder
+  missed on its day is not sent late. Its job queues one email a QR code that a paid order still
+  carries and notes that the reminder went out in one transaction of the edition's tenant, so it
+  is queued whole or not at all, once an edition. The email is written when it is sent, from the
+  order as it then stands: it carries the QR code, so it is withdrawn like a confirmation when
+  the order has left its address, and an order canceled since gets none.
 - **Links and devices.** A link opening an order or a ticket without a sign-in, and a scanner
   device's `Authorization: Bearer` token, carry at least 128 random bits, stored as a hash; their
   lookup returns only the ids that open the tenant context. A device's access ends no later than
   that of the org who enabled it.
+- **Buyer self-service.** An order link's token travels after the `#` of the portal's address
+  and in the body of a request, never in a path or a query; its routes name no tenant, so every
+  read behind them filters on the tenant the link's hash answered
+  ([0063](adr/0063-open-an-order-link-by-a-token-after-the-hash-found-across-tenants.md)).
+  What a link opens carries no email address and nothing of the ticket holder. Asking for a
+  fresh link answers alike for any token, and queues one at most once an hour for an order; the
+  email that carries it hands the order over, and is withdrawn like a confirmation when the order
+  has left its address. The routes of an account's own orders are tenant routes that ask for no
+  membership: their reads filter on the tenant and on the session's account, and another
+  account's order is not there. A "Buy more" order names the account's own paid order of the
+  same edition, whose row is locked before any limit; it is priced by the contract's one
+  function against what that order's ticket type offers and what was bought on its QR code, and
+  once paid joins the QR code that order then carries, while the two are under one email: an
+  order an org moved to another address is added to no longer, and shares its code with nothing
+  its old address bought
+  ([0064](adr/0064-add-to-a-paid-order-with-an-order-of-its-own-on-the-same-qr-code.md)).
+- **The scanner.** A phone becomes a scanner by spending a pairing code, which travels in a
+  request's body and after the `#` of a link, never in a path or a query; it is then known by its
+  token alone ([0059](adr/0059-pair-a-scanner-with-a-code-and-know-it-by-a-token.md)). A guard
+  names the scanner before anything of a request is read, and the device is judged at every
+  request in its tenant's transaction: revoked, ended, or enabled by an org whose access has
+  ended, it opens nothing. It is judged there by the secret the phone sent, the token or the
+  pairing code, which the scanner must still hold: a new pairing code replaces both, and the hash
+  that found the scanner across tenants was read a moment before. An org gives a new pairing
+  code only to a scanner that ends no later than its own access. A scan reads the orders of the scanner's own edition that the code
+  carries, and no email address; a code of another edition is told as such, and nothing of its
+  order is read. A hand-out is marked only under the code the scanner read, and names the
+  scanner. The list of an edition's scanners tells who enabled each by an address only to a
+  member who may read the team; another org is told its own address alone. QR codes are drawn and read in the browser, and a camera frame never leaves the phone
+  ([0060](adr/0060-read-and-draw-qr-codes-in-the-panels-browser.md)).
 
 ## Adding a feature
 
@@ -434,26 +752,26 @@ a feature does not need. The `program` slice is the reference, from its
 the code ([AGENTS.md](../AGENTS.md#tests-first)); **Enforced by** is what refuses a skipped step,
 "nothing" meaning the author and the reviewer alone.
 
-| Order | Step                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Test first                                                                                                           | Enforced by                                                                                                                                                                                                            |
-| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | Table in `packages/db/src/schema/<table>.ts` with the columns of `packages/db/src/schema/columns.ts`, exported from `packages/db/src/schema/index.ts`: its own `tenant_id`, a composite foreign key, an index starting with `tenant_id`                                                                                                                                                                                                                                                       | `packages/db/test/rls.test.ts`: `covered`, `populated()`; a foreign parent in `packages/db/test/invariants.test.ts`  | `rls.test.ts` on a table missing from `covered` or its index; the foreign key: `tenant-isolation-reviewer`                                                                                                             |
-| 2     | `pnpm --filter @opos/db db:generate --name=<table>`                                                                                                                                                                                                                                                                                                                                                                                                                                           | step 1's                                                                                                             | `scripts/check-migrations.mjs` in `pre-push` and CI ([conflicts](#a-migration-applied-or-in-conflict))                                                                                                                 |
-| 3     | `db:generate --custom --name=<table>_privileges`, written by hand before it is applied: forced RLS, `tenant_isolation`, revokes, narrowest grants, `<table>_set_updated_at`                                                                                                                                                                                                                                                                                                                   | step 1's                                                                                                             | `pnpm db:verify` in CI; `.claude/hooks/migration-reminder.mjs` reminds; the trigger: nothing                                                                                                                           |
-| 4     | New privileges in `appWrites`, `appUpdates` or `globalReads` of `packages/db/src/verify.ts`; `pnpm db:migrate`, `pnpm db:verify`                                                                                                                                                                                                                                                                                                                                                              | `rls.test.ts`: each write, `rejects an insert with another tenant id`                                                | `pnpm db:verify`; `rls.test.ts` for `globalReads`                                                                                                                                                                      |
-| 5     | Route in `packages/contract/src/<module>.ts` from `packages/contract/src/common.ts`, exported in `packages/contract/src/index.ts`; an error code in `packages/contract/src/errors.ts`, its message in `packages/i18n/src/errors.ts`                                                                                                                                                                                                                                                           | `apps/api/test/<module>.test.ts` (`apps/api/test/route-needs.ts` is no test); `packages/contract/src/errors.test.ts` | `packages/contract/src/errors.test.ts` on a code without a message; `apps/api/test/tenant-routes.test.ts`, `apps/api/test/route-requirements.test.ts` on a route not served                                            |
-| 6     | The route's need in `tenantRequirements` of `apps/api/test/route-needs.ts` or `publicRoutes` of `route-requirements.test.ts`; a write route in `writes` of `apps/api/test/tenants-editions.test.ts`, its table in `tenantState` of `apps/api/test/tenants.ts`                                                                                                                                                                                                                                 | the lists are the test                                                                                               | `route-requirements.test.ts` until listed, then every actor; `tenants-editions.test.ts` for `writes`; `tenantState`: nothing                                                                                           |
-| 7     | Module in `apps/api/src/modules/<name>`, registered in `apps/api/src/app.module.ts`: an `@Implement` method per route with `@RequireTenant`, `@RequireEdition` or `@InTenant`, which bring `JwtAuthGuard` (`401` `session.invalid`, `session.mfa-required`) and at `write` the queue and lock; an account route `@UseGuards(JwtAuthGuard)`; a repository on `TenantContextService.tx()`, rows found inside the path's parent                                                                  | `apps/api/test/<module>.test.ts`, with another tenant's and edition's identifiers                                    | `tenant-routes.test.ts`, `route-requirements.test.ts`, `apps/api/test/mfa-guard.test.ts`; `apps/api/test/tenant-filters.test.ts` for a repository that decides access; a forgotten parent: `tenant-isolation-reviewer` |
-| 8     | Rows in `packages/db/src/seed.ts`, then `pnpm db:seed` twice                                                                                                                                                                                                                                                                                                                                                                                                                                  | any test of `packages/db`                                                                                            | `packages/db/test/seed.test.ts`; a missing seed: nothing                                                                                                                                                               |
-| 9     | Feature in `apps/panel/src/features` or `apps/portal/src/features` with `api/`, `pages/`, `index.ts`, routed in `apps/panel/src/app/router.tsx` or `apps/portal/src/app/router.tsx`; a panel page uses `useCurrentTenant()` and `NoPermissionView`; every page `usePageTitle`; a page needing a session inside `RequireSession`, which answers `mfa-required` and `unavailable`; a new top-level panel path joins `RESERVED_TENANT_SLUGS` of `packages/db/src/schema/tenants.ts`, a migration | `apps/panel/src/features/program/pages/program-page.test.tsx` shows the shape                                        | ESLint; `src/app/pages.test.ts`; `scripts/bff-boundary.mjs`; `RequireSession` and reserved paths: nothing                                                                                                              |
-| 10    | Strings in Lingui macros, `pnpm i18n:extract`, `pl` in the application's `src/locales/pl.po` (`apps/panel`, `apps/portal`, `apps/admin`); a new term first in `packages/i18n/src/glossary.ts`                                                                                                                                                                                                                                                                                                 | a `packages/i18n` test for the glossary; none for a catalog                                                          | `pnpm i18n:check`; a bare literal: `i18n-reviewer`                                                                                                                                                                     |
-| 11    | A scenario in `e2e/specs` for a new flow, on its own rows through `e2e/fixtures/index.ts`                                                                                                                                                                                                                                                                                                                                                                                                     | the scenario                                                                                                         | the `e2e` job; none written: nothing                                                                                                                                                                                   |
-| 12    | The documents, through `docs-sync`, where a rule changed; a record in `docs/adr` for each decision the feature made; the spec marked `Implemented`                                                                                                                                                                                                                                                                                                                                            | none                                                                                                                 | `.claude/skills/docs-sync/scripts/check-doc-links.mjs`; `.claude/agent-docs.test.mjs` for the shape of records and specs; the truth of the text: nothing                                                               |
-| 13    | `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:scripts`, `pnpm db:verify`, `pnpm i18n:check`, `pnpm format:check`; for the UI `pnpm test:e2e` and a click-through, the portal on a phone viewport; `tenant-isolation-reviewer` and `i18n-reviewer` where they apply                                                                                                                                                                                                                   | none                                                                                                                 | the `check` and `e2e` jobs; the agents and the click-through: nothing                                                                                                                                                  |
+| Order | Step                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Test first                                                                                                           | Enforced by                                                                                                                                                                                                            |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | Table in `packages/db/src/schema/<table>.ts` with the columns of `packages/db/src/schema/columns.ts`, exported from `packages/db/src/schema/index.ts`: its own `tenant_id`, a composite foreign key, an index starting with `tenant_id`                                                                                                                                                                                                                                                                                                                                                                                                                                                    | `packages/db/test/rls.test.ts`: `covered`, `populated()`; a foreign parent in `packages/db/test/invariants.test.ts`  | `rls.test.ts` on a table missing from `covered` or its index; the foreign key: `tenant-isolation-reviewer`                                                                                                             |
+| 2     | `pnpm db:generate --name=<table>`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | step 1's                                                                                                             | `scripts/check-migrations.mjs` in `pre-push` and CI ([conflicts](#a-migration-applied-or-in-conflict))                                                                                                                 |
+| 3     | `db:generate --custom --name=<table>_privileges`, written by hand before it is applied: forced RLS, `tenant_isolation`, revokes, narrowest grants, `<table>_set_updated_at`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | step 1's                                                                                                             | `pnpm db:verify` in CI; `.claude/hooks/migration-reminder.mjs` reminds; the trigger: nothing                                                                                                                           |
+| 4     | New privileges in `appWrites`, `appUpdates` or `globalReads` of `packages/db/src/verify.ts`; `pnpm db:migrate`, `pnpm db:verify`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | `rls.test.ts`: each write, `rejects an insert with another tenant id`                                                | `pnpm db:verify`; `rls.test.ts` for `globalReads`                                                                                                                                                                      |
+| 5     | Route in `packages/contract/src/<module>.ts` from `packages/contract/src/common.ts`, exported in `packages/contract/src/index.ts`; an error code in `packages/contract/src/errors.ts`, its message in `packages/i18n/src/errors.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `apps/api/test/<module>.test.ts` (`apps/api/test/route-needs.ts` is no test); `packages/contract/src/errors.test.ts` | `packages/contract/src/errors.test.ts` on a code without a message; `apps/api/test/tenant-routes.test.ts`, `apps/api/test/route-requirements.test.ts` on a route not served                                            |
+| 6     | The route's need in `tenantRequirements` of `apps/api/test/route-needs.ts` or `publicRoutes` of `route-requirements.test.ts`; a write route in `writes` of `apps/api/test/tenants-editions.test.ts`, its table in `tenantState` of `apps/api/test/tenants.ts`                                                                                                                                                                                                                                                                                                                                                                                                                              | the lists are the test                                                                                               | `route-requirements.test.ts` until listed, then every actor; `tenants-editions.test.ts` for `writes`; `tenantState`: nothing                                                                                           |
+| 7     | Module in `apps/api/src/modules/<name>`, registered in `apps/api/src/app.module.ts`: an `@Implement` method per route with `@RequireTenant`, `@RequireEdition` or `@InTenant`, which bring `JwtAuthGuard` (`401` `session.invalid`, `session.mfa-required`) and at `write` the queue and lock; an account route `@UseGuards(JwtAuthGuard)`; a repository on `TenantContextService.tx()`, rows found inside the path's parent; a kind of file in `FILE_KINDS` of `apps/api/src/modules/files/kinds.ts`, with its variants for images, its pointing column in `globalReads` and granted to `opos_app_global` in the feature's migration, and its routes marked `@TakesFile` or `@ServesFile` | `apps/api/test/<module>.test.ts`, with another tenant's and edition's identifiers                                    | `tenant-routes.test.ts`, `route-requirements.test.ts`, `apps/api/test/mfa-guard.test.ts`; `apps/api/test/tenant-filters.test.ts` for a repository that decides access; a forgotten parent: `tenant-isolation-reviewer` |
+| 8     | Rows in `packages/db/src/seed.ts`, then `pnpm db:seed` twice                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | any test of `packages/db`                                                                                            | `packages/db/test/seed.test.ts`; a missing seed: nothing                                                                                                                                                               |
+| 9     | Feature in `apps/panel/src/features` or `apps/portal/src/features` with `api/`, `pages/`, `index.ts`, routed in `apps/panel/src/app/router.tsx` or `apps/portal/src/app/router.tsx`; a panel page uses `useCurrentTenant()` and `NoPermissionView`; every page `usePageTitle`; a page needing a session inside `RequireSession`, which answers `mfa-required` and `unavailable`; a new top-level panel path joins `RESERVED_TENANT_SLUGS` of `packages/db/src/schema/tenants.ts`, a migration                                                                                                                                                                                              | `apps/panel/src/features/program/pages/program-page.test.tsx` shows the shape                                        | ESLint; `src/app/pages.test.ts`; `scripts/bff-boundary.mjs`; `RequireSession` and reserved paths: nothing                                                                                                              |
+| 10    | Strings in Lingui macros, `pnpm i18n:extract`, `pl` in the application's `src/locales/pl.po` (`apps/panel`, `apps/portal`, `apps/admin`); a new term first in `packages/i18n/src/glossary.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | a `packages/i18n` test for the glossary; none for a catalog                                                          | `pnpm i18n:check`; a bare literal: `i18n-reviewer`                                                                                                                                                                     |
+| 11    | A scenario in `e2e/specs` for a new flow, on its own rows through `e2e/fixtures/index.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | the scenario                                                                                                         | the `e2e` job; none written: nothing                                                                                                                                                                                   |
+| 12    | The documents, through `docs-sync`, where a rule changed; a record in `docs/adr` for each decision the feature made; the spec marked `Implemented`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | none                                                                                                                 | `.claude/skills/docs-sync/scripts/check-doc-links.mjs`; `.claude/agent-docs.test.mjs` for the shape of records and specs; the truth of the text: nothing                                                               |
+| 13    | `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:scripts`, `pnpm db:verify`, `pnpm i18n:check`, `pnpm format:check`; for the UI `pnpm test:e2e` and a click-through, the portal on a phone viewport; `tenant-isolation-reviewer` and `i18n-reviewer` where they apply                                                                                                                                                                                                                                                                                                                                                                                                                | none                                                                                                                 | the `check` and `e2e` jobs; the agents and the click-through: nothing                                                                                                                                                  |
 
 ### A migration applied or in conflict
 
 Drizzle applies a migration only when its journal timestamp is newer than the last applied and
-compares no text: an edit of an applied migration, before it is merged, takes `pnpm infra:reset`,
+compares no text: an edit of an applied migration, before it is merged, takes `pnpm stack:reset`,
 `pnpm db:migrate` and `pnpm db:seed`. On a conflict in `packages/db/drizzle/meta/_journal.json`,
 take `origin/develop`'s `packages/db/drizzle/meta`, generate yours again under the same names with
 the hand-written SQL restored, and run `node scripts/check-migrations.mjs --base origin/develop`.

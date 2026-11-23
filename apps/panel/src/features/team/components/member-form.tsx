@@ -8,7 +8,7 @@ import { membershipsKey, useCurrentTenant, useTenantTime } from '../../tenants'
 import { membersKey, updateMemberOptions } from '../api/members'
 import { memberChange, type MemberFormValues, memberName } from '../model/member'
 import { LevelSelect } from './level-select'
-import { SettingsLabel, ShopLabel } from './permission-labels'
+import { BrandingLabel, SettingsLabel, ShopLabel } from './permission-labels'
 
 /**
  * The membership's role, both levels and expiry; only what changed is sent. Anti-escalation
@@ -23,6 +23,7 @@ export function MemberForm({ member, onSaved }: { member: Member; onSaved: () =>
   const current: MemberFormValues = {
     role: member.role,
     settingsAccess: member.settingsAccess,
+    brandingAccess: member.brandingAccess,
     shopConfigAccess: member.shopConfigAccess,
     expiresAt: member.expiresAt ? time.toInput(member.expiresAt) : '',
   }
@@ -63,6 +64,11 @@ export function MemberForm({ member, onSaved }: { member: Member; onSaved: () =>
         <FormField label={<SettingsLabel />}>
           {(control) => (
             <LevelSelect {...control} {...form.register('settingsAccess')} disabled={promoting} />
+          )}
+        </FormField>
+        <FormField label={<BrandingLabel />}>
+          {(control) => (
+            <LevelSelect {...control} {...form.register('brandingAccess')} disabled={promoting} />
           )}
         </FormField>
         <FormField label={<ShopLabel />}>

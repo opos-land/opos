@@ -2,8 +2,9 @@ import { Inject, Injectable } from '@nestjs/common'
 import { setupI18n } from '@lingui/core'
 import { activateLocale, type Locale } from '@opos/i18n'
 import { type EmailContent, type NoticeContent } from '@opos/i18n/emails'
+import { type OrderEmailContent } from '@opos/i18n/order-emails'
 import { ENV, type Env } from '../../config/env'
-import { renderLinkEmail, renderNoticeEmail } from './render'
+import { renderLinkEmail, renderNoticeEmail, renderOrderEmail } from './render'
 import { sendWithDeadline, smtpOptions } from './smtp'
 
 /** What sending takes of the environment. */
@@ -46,5 +47,42 @@ export class MailService {
     await activateLocale(i18n, message.locale)
     const { subject, text, html } = renderNoticeEmail(i18n, message.content)
     await sendWithDeadline(this.smtp, this.from, { to: message.to, subject, text, html })
+  }
+
+  /**
+   * Renders an email of an order in `locale` and sends it to `to`. Its pictures travel with it,
+   * each under the content id a part names: an email client loads nothing from another address.
+   */
+  async sendOrderEmail(message: {
+    to: string
+    locale: Locale
+    content: OrderEmailContent
+    pictures?: readonly { cid: string; filename: string; content: Buffer }[]
+  }) {
+    const i18n = setupI18n()
+    await activateLocale(i18n, message.locale)
+    const { subject, text, html } = renderOrderEmail(i18n, message.content)
+    await sendWithDeadline(this.smtp, this.from, {
+      to: message.to,
+      subject,
+      text,
+      html,
+      attachments: message.pictures?.map((picture) => ({
+        ...picture,
+        contentType: 'image/png',
+        contentDisposition: 'inline' as const,
+      })),
+    })
+  }
+
+  /**
+   * An email of an order as its subject and its text alone, in `locale`, and sent nowhere: what
+   * is kept of an email is written apart from the one that goes out.
+   */
+  async orderEmailText(message: { locale: Locale; content: OrderEmailContent }) {
+    const i18n = setupI18n()
+    await activateLocale(i18n, message.locale)
+    const { subject, text } = renderOrderEmail(i18n, message.content)
+    return { subject, text }
   }
 }

@@ -30,9 +30,11 @@ export const globalReads = [
   'editions.id',
   'editions.slug',
   'editions.starts_at',
+  'editions.ends_at',
   'editions.tenant_id',
   'editions.name',
   'editions.is_published',
+  'editions.venue_city',
   'edition_memberships.tenant_membership_id',
   'edition_memberships.edition_id',
   'edition_memberships.program_access',
@@ -45,6 +47,61 @@ export const globalReads = [
   'program_items.ends_at',
   'program_item_likes.account_id',
   'program_item_likes.program_item_id',
+  'uploaded_files.id',
+  'uploaded_files.tenant_id',
+  'uploaded_files.kind',
+  'uploaded_files.created_at',
+  'uploaded_files.width',
+  'uploaded_files.height',
+  'tenant_logos.tenant_id',
+  'tenant_logos.file_id',
+  'edition_document_versions.file_id',
+  'merchandise_item_pictures.file_id',
+  'merchandise_size_charts.file_id',
+  'add_on_pictures.file_id',
+  'payment_attempts.id',
+  'payment_attempts.tenant_id',
+  'payment_attempts.provider',
+  'orders.id',
+  'orders.tenant_id',
+  'orders.status',
+  'orders.hold_ends_at',
+  'order_emails.id',
+  'order_emails.tenant_id',
+  'order_emails.sent_at',
+  'order_emails.next_attempt_at',
+  'order_emails.withdrawn_at',
+  'scanner_devices.id',
+  'scanner_devices.tenant_id',
+  'scanner_devices.pairing_code_hash',
+  'scanner_devices.token_hash',
+  'order_links.tenant_id',
+  'order_links.token_hash',
+  'edition_shops.tenant_id',
+  'edition_shops.edition_id',
+  'edition_shops.reminder_days_before',
+  'edition_shops.reminder_sent_at',
+  'account_files.id',
+  'account_files.account_id',
+  'account_files.kind',
+  'account_files.created_at',
+  // A published profile, read by anyone: the parts of the public name, what the profile holds and
+  // the pointer at the avatar. Never an email address, and nothing a takedown says.
+  'accounts.id',
+  'accounts.first_name',
+  'accounts.last_name',
+  'accounts.nickname',
+  'accounts.name_order',
+  'account_profiles.account_id',
+  'account_profiles.public_id',
+  'account_profiles.published_at',
+  'account_profiles.description',
+  'account_profiles.pronouns',
+  'account_profiles.city',
+  'account_profiles.links',
+  'account_profiles.interests',
+  'account_avatars.account_id',
+  'account_avatars.file_id',
 ]
 
 /**
@@ -69,6 +126,8 @@ export const adminReads = [
   'accounts.email',
   'accounts.first_name',
   'accounts.last_name',
+  'accounts.nickname',
+  'accounts.name_order',
   'accounts.email_confirmed_at',
   'accounts.locale',
   'accounts.mfa_enabled_at',
@@ -84,12 +143,40 @@ export const adminReads = [
   'admin_actions.tenant_slug',
   'admin_actions.subject_account_id',
   'admin_actions.created_at',
+  'account_profiles.account_id',
+  'account_profiles.public_id',
+  'account_profiles.published_at',
+  'account_profiles.taken_down_at',
+  'account_profiles.taken_down_reason',
+  'account_profiles.taken_down_note',
+  'account_profiles.taken_down_after_report',
+  'account_profiles.review_requested_at',
+  'account_profiles.description',
+  'account_profiles.pronouns',
+  'account_profiles.city',
+  'account_profiles.links',
+  'account_profiles.interests',
+  'account_profiles.created_at',
+  'account_profiles.updated_at',
+  'account_avatars.account_id',
+  'account_avatars.file_id',
+  'account_avatars.created_at',
+  'profile_reports.id',
+  'profile_reports.account_id',
+  'profile_reports.reason',
+  'profile_reports.note',
+  'profile_reports.email',
+  'profile_reports.locale',
+  'profile_reports.created_at',
+  'profile_reports.closed_at',
 ]
 export const adminWrites = [
   'tenants INSERT',
   'tenants DELETE',
   'tenant_memberships INSERT',
   'account_recovery_codes DELETE',
+  // A takedown removes the profile's avatar.
+  'account_avatars DELETE',
 ]
 /** An entry of the log takes its identifier and its time from the database, never from the role. */
 export const adminInserts = [
@@ -99,7 +186,22 @@ export const adminInserts = [
   'admin_actions.tenant_slug',
   'admin_actions.subject_account_id',
 ]
-export const adminUpdates = ['tenants.slug', 'tenants.suspended_at']
+export const adminUpdates = [
+  'tenants.slug',
+  'tenants.suspended_at',
+  // Clearing an account's name.
+  'accounts.first_name',
+  'accounts.last_name',
+  'accounts.nickname',
+  // Taking a profile down and restoring it; never what a profile says.
+  'account_profiles.published_at',
+  'account_profiles.taken_down_at',
+  'account_profiles.taken_down_reason',
+  'account_profiles.taken_down_note',
+  'account_profiles.taken_down_after_report',
+  'account_profiles.review_requested_at',
+  'profile_reports.closed_at',
+]
 
 /**
  * The tables of the admin application. opos_app and opos_app_global hold nothing on them, a read
@@ -108,7 +210,43 @@ export const adminUpdates = ['tenants.slug', 'tenants.suspended_at']
 const adminTables = ['admins', 'admin_actions', 'retired_tenant_slugs']
 
 /** The public tables outside tenant isolation. */
-const globalTables = ['accounts', 'account_recovery_codes', ...adminTables]
+const globalTables = [
+  'accounts',
+  'account_recovery_codes',
+  'account_files',
+  'account_profiles',
+  'account_avatars',
+  'profile_reports',
+  ...adminTables,
+]
+
+/**
+ * The columns opos_app inserts where the database or another role gives the others, so the role
+ * holds no insert on the whole table: a profile takes its public identifier from the database and
+ * what a takedown sets from the admin, and a report its identifier and its times.
+ */
+export const appInserts = [
+  'account_profiles.account_id',
+  'account_profiles.description',
+  'account_profiles.pronouns',
+  'account_profiles.city',
+  'account_profiles.links',
+  'account_profiles.interests',
+  'account_profiles.published_at',
+  'profile_reports.account_id',
+  'profile_reports.reason',
+  'profile_reports.note',
+  'profile_reports.email',
+  'profile_reports.locale',
+]
+
+/**
+ * The tables opos_app reads by column alone, and the columns it reads there. Of a report of a
+ * profile the API reads which profile it is of and whether it is closed, to count the open ones
+ * and to remove an old one, and nothing a report says.
+ */
+const appColumnReadTables = ['profile_reports']
+export const appColumnReads = ['profile_reports.account_id', 'profile_reports.closed_at']
 
 /**
  * The triggers OPOS attaches to the tables of the auth schema: table, then trigger,
@@ -132,16 +270,26 @@ const authTriggers: Record<string, Record<string, string>> = {
 }
 
 /**
- * The columns opos_app updates: never `id`, `tenant_id` or a column that points a
- * row at an account or another row. A column the API starts changing joins this list in the PR
- * of the migration that grants it.
+ * The columns opos_app updates: never `id` or `tenant_id`, and never a column that points a row
+ * at an account or another row, but for the two exceptions named below, each with a record of
+ * its own: the variant of an order's line and the scanner that marked a line handed out. A
+ * column the API starts changing joins this list in the PR of the migration that grants it.
  */
 const appUpdates = [
   'account_recovery_codes.used_at',
   'accounts.first_name',
   'accounts.last_name',
+  'accounts.nickname',
+  'accounts.name_order',
   'accounts.locale',
   'accounts.theme',
+  'account_profiles.description',
+  'account_profiles.pronouns',
+  'account_profiles.city',
+  'account_profiles.links',
+  'account_profiles.interests',
+  'account_profiles.published_at',
+  'account_profiles.review_requested_at',
   'tenants.name',
   'tenants.default_locale',
   'tenants.timezone',
@@ -156,6 +304,9 @@ const appUpdates = [
   'editions.ends_at',
   'editions.is_active',
   'editions.is_published',
+  'editions.venue_name',
+  'editions.venue_address',
+  'editions.venue_city',
   'edition_memberships.program_access',
   'edition_memberships.website_content_access',
   'edition_memberships.tickets_access',
@@ -163,6 +314,116 @@ const appUpdates = [
   'program_items.description',
   'program_items.starts_at',
   'program_items.ends_at',
+  'shop_sellers.seller_name',
+  'shop_sellers.seller_address',
+  'shop_sellers.seller_registration_number',
+  'shop_sellers.contact_email',
+  'edition_shops.opened_at',
+  'edition_shops.faq_url',
+  'edition_documents.title',
+  'edition_documents.hidden_at',
+  'edition_consents.text',
+  'edition_consents.is_required',
+  'edition_consents.position',
+  'edition_consents.hidden_at',
+  'edition_shops.teen_from_age',
+  'edition_shops.adult_from_age',
+  'edition_shops.guardian_consent_form_url',
+  'edition_shops.merch_preorder_deadline',
+  'edition_shops.merch_only_enabled',
+  'edition_shops.sales_closed_message',
+  'edition_shops.pickup_information',
+  'edition_shops.reminder_days_before',
+  'edition_shops.opening_hours',
+  'edition_shops.reminder_sent_at',
+  'ticket_types.name',
+  'ticket_types.short_description',
+  'ticket_types.long_description',
+  'ticket_types.capacity',
+  'ticket_types.sale_starts_at',
+  'ticket_types.sale_ends_at',
+  'ticket_types.allows_child',
+  'ticket_types.allows_teen',
+  'ticket_types.allows_adult',
+  'ticket_types.discounts_excluded',
+  'ticket_types.shown_outside_sale_window',
+  'ticket_types.position',
+  'ticket_types.hidden_at',
+  'add_ons.name',
+  'add_ons.description',
+  'add_ons.amount_minor',
+  'add_ons.kind',
+  'add_ons.capacity',
+  'add_ons.places_left_threshold',
+  'add_ons.position',
+  'add_ons.hidden_at',
+  'merchandise_items.name',
+  'merchandise_items.description',
+  'merchandise_items.amount_minor',
+  'merchandise_items.per_order_limit',
+  'merchandise_items.pictures_illustrative',
+  'merchandise_items.position',
+  'merchandise_items.hidden_at',
+  'merchandise_option_axes.name',
+  'merchandise_option_axes.position',
+  'merchandise_option_values.label',
+  'merchandise_option_values.position',
+  'merchandise_variants.stock',
+  'merchandise_variants.hidden_at',
+  'merchandise_item_pictures.position',
+  'edition_custom_fields.label',
+  'edition_custom_fields.is_required',
+  'edition_custom_fields.position',
+  'edition_custom_fields.hidden_at',
+  'orders.status',
+  'orders.holds',
+  'orders.hold_ends_at',
+  'orders.paid_at',
+  'orders.holder_name',
+  'orders.email',
+  'orders.review_cause',
+  'orders.canceled_at',
+  'orders.cancel_reason',
+  'orders.declined_at',
+  'orders.decline_reason',
+  'order_lines.handed_out_at',
+  // The two pointers of an order's line changed in place, each kept within the line's edition
+  // and tenant by the line's constraints: the scanner that marked it handed out, and its
+  // variant, within the item it names.
+  'order_lines.handed_out_by',
+  'order_lines.merchandise_variant_id',
+  'order_qr_codes.replaced_at',
+  'order_links.ended_at',
+  'discount_codes.code',
+  'discount_codes.kind',
+  'discount_codes.percent',
+  'discount_codes.amount_minor',
+  'discount_codes.usage_limit',
+  'discount_codes.valid_from',
+  'discount_codes.valid_until',
+  'discount_codes.ended_at',
+  'scanner_devices.pairing_code_hash',
+  'scanner_devices.pairing_expires_at',
+  'scanner_devices.paired_at',
+  'scanner_devices.token_hash',
+  'scanner_devices.last_used_at',
+  'scanner_devices.revoked_at',
+  'payment_attempts.status',
+  'payment_attempts.paid_amount_minor',
+  'payment_attempts.paid_at',
+  'payment_attempts.confirmed_at',
+  'payment_attempts.money_with',
+  'payment_attempts.provider_reference',
+  'payment_attempts.failure_reason',
+  'payment_attempts.failure_code',
+  'payment_attempts.failure_message',
+  'payment_attempts.information',
+  'order_emails.sent_at',
+  'order_emails.failed_attempts',
+  'order_emails.next_attempt_at',
+  'order_emails.withdrawn_at',
+  'order_emails.subject',
+  'order_emails.body',
 ]
 
 /**
@@ -299,6 +560,75 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
     ['program_item_speakers', 'DELETE'],
     ['program_item_likes', 'INSERT'],
     ['program_item_likes', 'DELETE'],
+    ['uploaded_files', 'INSERT'],
+    ['uploaded_files', 'DELETE'],
+    ['tenant_logos', 'INSERT'],
+    ['tenant_logos', 'DELETE'],
+    ['shop_sellers', 'INSERT'],
+    ['payment_provider_accounts', 'INSERT'],
+    ['payment_provider_accounts', 'DELETE'],
+    ['edition_shops', 'INSERT'],
+    ['edition_documents', 'INSERT'],
+    ['edition_documents', 'DELETE'],
+    ['edition_document_versions', 'INSERT'],
+    ['edition_consents', 'INSERT'],
+    ['edition_consents', 'DELETE'],
+    ['ticket_types', 'INSERT'],
+    ['ticket_types', 'DELETE'],
+    ['ticket_type_price_tiers', 'INSERT'],
+    ['ticket_type_price_tiers', 'DELETE'],
+    ['ticket_type_supporter_prices', 'INSERT'],
+    ['ticket_type_supporter_prices', 'DELETE'],
+    ['ticket_type_perks', 'INSERT'],
+    ['ticket_type_perks', 'DELETE'],
+    ['add_ons', 'INSERT'],
+    ['add_ons', 'DELETE'],
+    ['ticket_type_add_ons', 'INSERT'],
+    ['ticket_type_add_ons', 'DELETE'],
+    ['merchandise_items', 'INSERT'],
+    ['merchandise_items', 'DELETE'],
+    ['ticket_type_merchandise_items', 'INSERT'],
+    ['ticket_type_merchandise_items', 'DELETE'],
+    ['merchandise_option_axes', 'INSERT'],
+    ['merchandise_option_axes', 'DELETE'],
+    ['merchandise_option_values', 'INSERT'],
+    ['merchandise_option_values', 'DELETE'],
+    ['merchandise_variants', 'INSERT'],
+    ['merchandise_variants', 'DELETE'],
+    ['merchandise_variant_values', 'INSERT'],
+    ['merchandise_item_pictures', 'INSERT'],
+    ['merchandise_item_pictures', 'DELETE'],
+    ['merchandise_size_charts', 'INSERT'],
+    ['merchandise_size_charts', 'DELETE'],
+    ['add_on_pictures', 'INSERT'],
+    ['add_on_pictures', 'DELETE'],
+    ['edition_custom_fields', 'INSERT'],
+    ['edition_custom_fields', 'DELETE'],
+    ['orders', 'INSERT'],
+    ['order_lines', 'INSERT'],
+    ['order_custom_field_answers', 'INSERT'],
+    ['order_consents', 'INSERT'],
+    ['order_accounts', 'INSERT'],
+    ['order_qr_codes', 'INSERT'],
+    ['order_qr_code_orders', 'INSERT'],
+    ['order_qr_code_orders', 'DELETE'],
+    ['payment_attempts', 'INSERT'],
+    ['order_emails', 'INSERT'],
+    ['order_links', 'INSERT'],
+    ['scanner_devices', 'INSERT'],
+    ['discount_codes', 'INSERT'],
+    ['discount_codes', 'DELETE'],
+    ['discount_code_ticket_types', 'INSERT'],
+    ['discount_code_ticket_types', 'DELETE'],
+    ['discount_code_add_ons', 'INSERT'],
+    ['discount_code_add_ons', 'DELETE'],
+    ['discount_code_merchandise_items', 'INSERT'],
+    ['discount_code_merchandise_items', 'DELETE'],
+    ['account_files', 'INSERT'],
+    ['account_files', 'DELETE'],
+    ['account_avatars', 'INSERT'],
+    ['account_avatars', 'DELETE'],
+    ['profile_reports', 'DELETE'],
   ].map((pair) => pair.join(' '))
   const overGranted = await sql<{ role: string; table: string; privilege: string }[]>`
     select r.role, c.relname as table, p.privilege
@@ -315,6 +645,8 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
         or (r.role = 'opos_app' and p.privilege in ('INSERT', 'DELETE')
           and not (c.relname || ' ' || p.privilege) = any(${appWrites}))
         or (r.role = 'opos_app' and c.relname = any(${adminTables}))
+        or (r.role = 'opos_app' and p.privilege = 'SELECT'
+          and c.relname = any(${appColumnReadTables}))
         or (r.role = 'opos_admin'
           and p.privilege in ('SELECT', 'UPDATE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN'))
         or (r.role = 'opos_admin' and p.privilege in ('INSERT', 'DELETE')
@@ -348,7 +680,11 @@ export async function verifyDatabase(sql: postgres.TransactionSql): Promise<stri
           or not (c.relname || '.' || a.attname) = any(${globalReads})))
         or (r.role = 'opos_app' and p.privilege = 'REFERENCES')
         or (r.role = 'opos_app' and p.privilege = 'INSERT'
-          and not (c.relname || ' INSERT') = any(${appWrites}))
+          and not (c.relname || ' INSERT') = any(${appWrites})
+          and not (c.relname || '.' || a.attname) = any(${appInserts}))
+        or (r.role = 'opos_app' and p.privilege = 'SELECT'
+          and c.relname = any(${appColumnReadTables})
+          and not (c.relname || '.' || a.attname) = any(${appColumnReads}))
         or (r.role = 'opos_app' and p.privilege = 'UPDATE'
           and not (c.relname || '.' || a.attname) = any(${appUpdates}))
         or (r.role = 'opos_app' and c.relname = any(${adminTables}))

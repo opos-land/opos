@@ -3,7 +3,7 @@
 .temp
 snippets
 
-# The local ES256 signing key, written by `pnpm infra:init`
+# The local ES256 signing key, written by `pnpm stack:init`
 signing_keys.json
 
 # Local environment

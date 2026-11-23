@@ -150,7 +150,10 @@ export function AreaSwitcher() {
         <>
           {seen.length > 0 && <DropdownMenuSeparator />}
           <DropdownMenuGroup>
-            <Choice to={`/${tenant.slug}/settings`} icon={<Settings2Icon />}>
+            <Choice
+              to={`/${tenant.slug}/settings${access.settingsEntry ?? ''}`}
+              icon={<Settings2Icon />}
+            >
               <Trans>Convention settings</Trans>
             </Choice>
           </DropdownMenuGroup>

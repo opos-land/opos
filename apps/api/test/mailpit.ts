@@ -19,13 +19,14 @@ async function json<T>(path: string, init?: RequestInit): Promise<T> {
 /** Every message to `address`, waiting until there are at least `count` of them. */
 export async function waitForMail(address: string, count = 1, timeoutMs = 10_000) {
   const query = encodeURIComponent(`to:"${address}"`)
-  const deadline = Date.now() + timeoutMs
+  const deadline = performance.now() + timeoutMs
   for (;;) {
     const { messages } = await json<{ messages: { ID: string }[] }>(`/search?query=${query}`)
     if (messages.length >= count) {
       return Promise.all(messages.map(({ ID }) => json<Mail>(`/message/${ID}`)))
     }
-    if (Date.now() > deadline) throw new Error(`no email to ${address} within ${timeoutMs} ms`)
+    if (performance.now() > deadline)
+      throw new Error(`no email to ${address} within ${timeoutMs} ms`)
     await new Promise((resolve) => setTimeout(resolve, 200))
   }
 }

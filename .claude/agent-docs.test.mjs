@@ -198,11 +198,14 @@ test('every decision record is numbered in order and has the shape of docs/adr/R
   })
 })
 
-test('every spec has a status of docs/specs/README.md', () => {
-  for (const name of records('docs/specs')) {
-    assert.match(name, /^[a-z0-9]+(-[a-z0-9]+)*\.md$/, `${name} is named in kebab case`)
+test('every spec is numbered in order and has a status of docs/specs/README.md', () => {
+  const names = records('docs/specs')
+  assert.ok(names.length > 0, 'docs/specs holds the specs')
+  names.forEach((name, index) => {
+    const number = String(index + 1).padStart(4, '0')
+    assert.match(name, new RegExp(`^${number}-[a-z0-9]+(-[a-z0-9]+)*\\.md$`), `${name} is spec ${number}`)
     assert.match(read(`docs/specs/${name}`), /^- Status: (Draft|Accepted|Implemented)$/m, `${name} has a status`)
-  }
+  })
 })
 
 test('the area names of AGENTS.md equal those of tests-first.mjs', () => {
@@ -222,13 +225,16 @@ test('the area names of AGENTS.md equal those of tests-first.mjs', () => {
   assert.deepEqual([...fromDocument].sort(), [...fromScript].sort())
 })
 
-test('settings deny the real .env files and leave templates readable', () => {
+test('settings deny the real .env files and printing a secret, and leave templates readable', () => {
   const { deny } = JSON.parse(read('.claude/settings.json')).permissions
   assert.deepEqual(deny, [
     'Read(./apps/*/.env)',
     'Read(./packages/*/.env)',
     'Read(./supabase/.env)',
     'Read(./supabase/signing_keys.json)',
+    'Bash(mise run deploy:secret:get:*)',
+    'Bash(pnpm deploy:secret:get:*)',
+    'Bash(node scripts/deploy.mjs secret:get:*)',
   ])
   assert.ok(
     deny.every((rule) => !rule.includes('.env.')),

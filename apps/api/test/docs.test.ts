@@ -14,7 +14,9 @@ describe('API docs', () => {
     await app.close()
   })
 
-  it('documents the session cookies and no bearer credential', async () => {
+  // An account is known by a session cookie alone. The one bearer credential is a scanner's: a
+  // device with no account, known by the token it was handed when it was paired.
+  it('documents the session cookies, and a bearer credential for a scanner alone', async () => {
     const app = await createApp()
     const res = await request(app.getHttpServer()).get('/docs/json').expect(200)
     const doc = res.body as OpenAPIObject
@@ -24,14 +26,24 @@ describe('API docs', () => {
       'adminSession',
       'panelSession',
       'portalSession',
+      'scannerDevice',
     ])
     expect(doc.components?.securitySchemes).toMatchObject({
       portalSession: { type: 'apiKey', in: 'cookie', name: 'opos_portal_access' },
       panelSession: { type: 'apiKey', in: 'cookie', name: 'opos_panel_access' },
       adminSession: { type: 'apiKey', in: 'cookie', name: 'opos_admin_access' },
+      scannerDevice: { type: 'http', scheme: 'bearer' },
     })
     expect(doc.security).toEqual([{ portalSession: [] }, { panelSession: [] }])
-    expect(JSON.stringify(doc)).not.toMatch(/bearer/i)
+    // Only the scanner's routes take it.
+    const taking = Object.entries(doc.paths ?? {}).flatMap(([path, methods]) =>
+      Object.values(methods as Record<string, { security?: Record<string, unknown>[] }>).some(
+        (operation) => operation.security?.some((scheme) => 'scannerDevice' in scheme),
+      )
+        ? [path]
+        : [],
+    )
+    expect(taking.sort()).toEqual(['/scanner/hand-outs', '/scanner/scans'])
   })
 
   it("documents an admin route with the admin application's session alone", async () => {

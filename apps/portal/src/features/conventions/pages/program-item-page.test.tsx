@@ -26,7 +26,15 @@ const panel = {
   description: 'Coastlines and rivers.',
   startsAt: '2027-06-02T08:00:00.000Z',
   endsAt: '2027-06-02T09:00:00.000Z',
-  speakers: [{ firstName: 'Kasia', lastName: 'Mazur' }],
+  speakers: [
+    {
+      firstName: 'Kasia',
+      nickname: null,
+      lastName: 'Mazur',
+      nameOrder: 'nickname-middle' as const,
+      profileId: null,
+    },
+  ],
   likeCount: 1,
 }
 
@@ -85,6 +93,13 @@ describe('ProgramItemPage', () => {
     await waitFor(() => expect(document.title).toBe('A panel on maps · Convention A 2027 · OPOS'))
   })
 
+  it("leads back to the edition's programme", async () => {
+    view()
+
+    const link = await screen.findByRole('link', { name: 'The whole programme' })
+    expect(link.getAttribute('href')).toBe('/conventions/convention-a/2027/program')
+  })
+
   it('says each date once for an item that runs past midnight in that zone', async () => {
     api.item.mockResolvedValue({
       ...panel,
@@ -115,13 +130,34 @@ describe('ProgramItemPage', () => {
     api.item.mockResolvedValue({
       ...panel,
       speakers: [
-        { firstName: 'Kasia', lastName: 'Mazur' },
-        { firstName: 'Jan', lastName: 'Kowal' },
+        ...panel.speakers,
+        { ...panel.speakers[0]!, firstName: 'Jan', nickname: 'Kowal', lastName: null },
+        { ...panel.speakers[0]!, firstName: null, lastName: null },
       ],
     })
     view()
 
-    expect(await screen.findByText('Speakers: Kasia Mazur, Jan Kowal')).toBeDefined()
+    const names = await screen.findByText(/^Speakers:/)
+    expect(names.textContent).toBe('Speakers: Kasia Mazur, Jan “Kowal”, Anon')
+    // None of the three has a published profile.
+    expect(screen.queryByRole('link', { name: 'Kasia Mazur' })).toBeNull()
+  })
+
+  // docs/specs/0016-public-profile.md, P11.
+  it('leads from a speaker to its profile while that is published', async () => {
+    api.item.mockResolvedValue({
+      ...panel,
+      speakers: [
+        { ...panel.speakers[0]!, profileId: 'p-1' },
+        { ...panel.speakers[0]!, firstName: 'Jan', lastName: 'Kowal' },
+      ],
+    })
+    view()
+
+    const link = await screen.findByRole('link', { name: 'Kasia Mazur' })
+    expect(link.getAttribute('href')).toBe('/profiles/p-1')
+    expect(screen.queryByRole('link', { name: 'Jan Kowal' })).toBeNull()
+    expect(screen.getByText(/^Speakers:/).textContent).toBe('Speakers: Kasia Mazur, Jan Kowal')
   })
 
   it('shows the not-found screen for an unknown item', async () => {

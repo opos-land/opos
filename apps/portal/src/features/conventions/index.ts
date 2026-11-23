@@ -1,3 +1,5 @@
+export { EditionDirectory } from './components/edition-directory'
 export { ConventionPage } from './pages/convention-page'
 export { EditionPage } from './pages/edition-page'
+export { EditionProgramPage } from './pages/edition-program-page'
 export { ProgramItemPage } from './pages/program-item-page'

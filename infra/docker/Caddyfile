@@ -1,0 +1,54 @@
+# Serves one built application, the panel, the portal or the admin application, behind the
+# server's proxy, which ends TLS. web.sh starts it and sets BASIC_AUTH to on or off.
+{
+	admin off
+	auto_https off
+	persist_config off
+}
+
+# Every path but the health check behind basic auth, as on Dev
+(auth-on) {
+	@guarded not path /healthz
+	basic_auth @guarded {
+		{$BASIC_AUTH_USER} {$BASIC_AUTH_HASH}
+	}
+}
+
+(auth-off) {
+}
+
+:8080 {
+	root * /srv
+	encode zstd gzip
+
+	import auth-{$BASIC_AUTH}
+
+	header {
+		# Scripts only from the application itself, calls only to it and to the API it was built for.
+		# Pictures also from that API, which serves every uploaded file, a convention's logo for one.
+		# Styles may be inline: the notifications inject theirs.
+		Content-Security-Policy "default-src 'self'; connect-src 'self' {$API_ORIGIN}; img-src 'self' data: {$API_ORIGIN}; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		Strict-Transport-Security "max-age=63072000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	# The container's health check, open with basic auth on
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	# A built file has its hash in its name: it never changes, and a missing one is a 404
+	handle /assets/* {
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+
+	# Every other path is a route of the application, which starts from index.html
+	handle {
+		header Cache-Control no-cache
+		try_files {path} /index.html
+		file_server
+	}
+}

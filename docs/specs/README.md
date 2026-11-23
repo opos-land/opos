@@ -34,15 +34,17 @@ above.
 
 ## Rules
 
-- One feature per spec, in `<feature>.md`, kebab case; English and the glossary terms; roles, never
-  personal names.
+- One feature per spec, in `NNNN-<feature>.md`, kebab case, numbered in the order the specs arrive;
+  a number never changes
+  ([0040](../adr/0040-number-the-specs-in-the-order-they-arrive.md)). English and the glossary
+  terms; roles, never personal names.
 - Details the documents keep out — tables, columns, routes, screens — belong in a spec: the code
   takes them over once built.
 - A spec follows the [checklist for adding a feature](../ARCHITECTURE.md#adding-a-feature) and keeps
   every rule of [ARCHITECTURE.md](../ARCHITECTURE.md); a rule it needs to break is a decision record
   first.
 - A spec built from a [brief](../briefs/README.md) links it; the brief binds nothing, the spec does.
-- `.claude/agent-docs.test.mjs` checks the status.
+- `.claude/agent-docs.test.mjs` checks the numbering and the status.
 
 ## Template
 

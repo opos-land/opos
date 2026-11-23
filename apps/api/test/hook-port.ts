@@ -34,17 +34,21 @@ export async function listenOnHookPort(
   port: number,
   waitMs = HOOK_PORT_WAIT_MS,
 ) {
-  const deadline = Date.now() + waitMs
+  const deadline = performance.now() + waitMs
   for (;;) {
     try {
       if (await isFree(port)) {
         await app.listen(port)
         return
       }
-      if (Date.now() > deadline) throw new Error(`port ${port} stayed taken for ${waitMs} ms`)
+      if (performance.now() > deadline)
+        throw new Error(`port ${port} stayed taken for ${waitMs} ms`)
     } catch (error) {
       // Another file took the port between the probe and the listen.
-      if ((error as { code?: unknown } | null)?.code !== 'EADDRINUSE' || Date.now() > deadline) {
+      if (
+        (error as { code?: unknown } | null)?.code !== 'EADDRINUSE' ||
+        performance.now() > deadline
+      ) {
         throw error
       }
     }

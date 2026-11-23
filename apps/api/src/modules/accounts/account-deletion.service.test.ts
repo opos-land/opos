@@ -3,6 +3,7 @@ import { type TenantContextService } from '../../common/als/tenant-context.servi
 import { type GlobalDbService } from '../../common/database/global-db.service'
 import { type ApiError } from '../../common/errors/api-error'
 import { type AuthAdminClient } from '../auth/auth-admin.client'
+import { type FilesService } from '../files/files.service'
 import { AccountDeletionService, RECENT_SIGN_IN_SECONDS } from './account-deletion.service'
 
 const ACCOUNT_ID = '00000000-0000-4000-8000-000000000001'
@@ -24,12 +25,14 @@ function service({
   }
   const global = { ownLastHead: vi.fn(() => Promise.resolve(answers.shift() ?? false)) }
   const admin = { deleteUser: vi.fn(deleteUser) }
+  const files = { forgetAccount: vi.fn(() => Promise.resolve()) }
   const deletion = new AccountDeletionService(
     context as unknown as TenantContextService,
     global as unknown as GlobalDbService,
     admin as unknown as AuthAdminClient,
+    files as unknown as FilesService,
   )
-  return { deletion, context, global, admin }
+  return { deletion, context, global, admin, files }
 }
 
 const codeOf = (promise: Promise<unknown>) =>
@@ -39,13 +42,22 @@ const codeOf = (promise: Promise<unknown>) =>
   )
 
 describe('AccountDeletionService', () => {
-  it('deletes the user of the signed-in account', async () => {
-    const { deletion, context, admin } = service()
+  it('deletes the user of the signed-in account, then the objects of its files', async () => {
+    const { deletion, context, admin, files } = service()
 
     await deletion.deleteCurrent()
 
     expect(context.signedInWithin).toHaveBeenCalledWith(RECENT_SIGN_IN_SECONDS)
     expect(admin.deleteUser).toHaveBeenCalledWith(ACCOUNT_ID)
+    expect(files.forgetAccount).toHaveBeenCalledWith(ACCOUNT_ID)
+  })
+
+  it('leaves the files of an account that stays', async () => {
+    const { deletion, files } = service({ lastHead: [true] })
+
+    await deletion.deleteCurrent().catch(() => {})
+
+    expect(files.forgetAccount).not.toHaveBeenCalled()
   })
 
   it('asks for a recent sign-in before anything else', async () => {

@@ -1,7 +1,14 @@
 import { Injectable } from '@nestjs/common'
 import { editionSlug, type PublicEdition, type PublicProgramItem } from '@opos/contract'
-import { accounts, editions, programItemLikes, programItems, programItemSpeakers } from '@opos/db'
-import { and, asc, count, desc, eq, inArray, type SQL } from 'drizzle-orm'
+import {
+  accountProfiles,
+  accounts,
+  editions,
+  programItemLikes,
+  programItems,
+  programItemSpeakers,
+} from '@opos/db'
+import { and, asc, count, desc, eq, inArray, isNotNull, type SQL } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { notFound } from '../../common/errors/api-error'
 import { isUuid } from '../../common/uuid'
@@ -13,6 +20,9 @@ const editionColumns = {
   startsAt: editions.startsAt,
   endsAt: editions.endsAt,
   isActive: editions.isActive,
+  venueName: editions.venueName,
+  venueAddress: editions.venueAddress,
+  venueCity: editions.venueCity,
 }
 
 const itemColumns = {
@@ -76,7 +86,11 @@ export class PublicRepository {
     return toEdition(row)
   }
 
-  /** Names alone: an address or account id never leaves here, nor who liked an item. */
+  /**
+   * The public name of each speaker, and the identifier of its profile while that is published:
+   * an address or account id never leaves here, nor who liked an item. A speaker with no part of
+   * a name is listed too, for a page to name "Anon".
+   */
   private async withCounters(rows: ItemRow[]): Promise<PublicProgramItem[]> {
     if (rows.length === 0) return []
     const ids = rows.map((row) => row.id)
@@ -85,12 +99,24 @@ export class PublicRepository {
       .select({
         programItemId: programItemSpeakers.programItemId,
         firstName: accounts.firstName,
+        nickname: accounts.nickname,
         lastName: accounts.lastName,
+        nameOrder: accounts.nameOrder,
+        profileId: accountProfiles.publicId,
       })
       .from(programItemSpeakers)
       .innerJoin(accounts, eq(accounts.id, programItemSpeakers.accountId))
+      // A profile that is withdrawn or taken down, which the database never holds as published,
+      // gives the programme nothing to lead to.
+      .leftJoin(
+        accountProfiles,
+        and(
+          eq(accountProfiles.accountId, programItemSpeakers.accountId),
+          isNotNull(accountProfiles.publishedAt),
+        ),
+      )
       .where(inArray(programItemSpeakers.programItemId, ids))
-      .orderBy(asc(accounts.lastName), asc(accounts.firstName))
+      .orderBy(asc(accounts.lastName), asc(accounts.firstName), asc(accounts.nickname))
     const likes = await tx
       .select({ programItemId: programItemLikes.programItemId, likes: count() })
       .from(programItemLikes)
@@ -102,9 +128,7 @@ export class PublicRepository {
       ...row,
       startsAt: row.startsAt.toISOString(),
       endsAt: row.endsAt.toISOString(),
-      speakers: (byItem.get(row.id) ?? [])
-        .filter((speaker) => speaker.firstName || speaker.lastName)
-        .map(({ firstName, lastName }) => ({ firstName, lastName })),
+      speakers: (byItem.get(row.id) ?? []).map(({ programItemId: _item, ...speaker }) => speaker),
       likeCount: likeCounts.get(row.id) ?? 0,
     }))
   }

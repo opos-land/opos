@@ -7,6 +7,9 @@ const valid = {
   slug: '2027',
   startsAt: '2027-05-01T10:00',
   endsAt: '2027-05-03T18:00',
+  venueName: '',
+  venueAddress: '',
+  venueCity: '',
 }
 const warsaw = (value: string) => fromZonedWallTime(value, 'Europe/Warsaw')?.toISOString() ?? null
 
@@ -28,6 +31,29 @@ describe('editionFormSchema', () => {
 
   it('refuses an empty name', () => {
     expect(editionFormSchema.safeParse({ ...valid, name: '   ' }).success).toBe(false)
+  })
+
+  it('takes a venue, each part on its own', () => {
+    expect(editionFormSchema.safeParse({ ...valid, venueCity: 'Poznań' }).success).toBe(true)
+    expect(
+      editionFormSchema.safeParse({
+        ...valid,
+        venueName: 'Congress Hall',
+        venueAddress: '1 Main St',
+        venueCity: 'Poznań',
+      }).success,
+    ).toBe(true)
+  })
+
+  it.each([
+    ['venueName', 201],
+    ['venueAddress', 301],
+    ['venueCity', 101],
+  ])('refuses a %s of %i characters, on its own field', (field, length) => {
+    const result = editionFormSchema.safeParse({ ...valid, [field]: 'x'.repeat(length) })
+
+    expect(result.success).toBe(false)
+    expect(result.error?.issues[0]?.path).toEqual([field])
   })
 })
 
@@ -62,7 +88,19 @@ describe('editionBody', () => {
       slug: '2027',
       startsAt: '2027-05-01T08:00:00.000Z',
       endsAt: '2027-05-03T16:00:00.000Z',
+      venueName: null,
+      venueAddress: null,
+      venueCity: null,
     })
+  })
+
+  it('sends the venue trimmed, and a part left empty or of spaces alone as none', () => {
+    expect(
+      editionBody(
+        { ...valid, venueName: '  Congress Hall ', venueAddress: '   ', venueCity: 'Poznań' },
+        warsaw,
+      ),
+    ).toMatchObject({ venueName: 'Congress Hall', venueAddress: null, venueCity: 'Poznań' })
   })
 
   it('gives up on a date that names no instant', () => {

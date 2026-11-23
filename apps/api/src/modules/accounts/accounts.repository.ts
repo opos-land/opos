@@ -12,6 +12,8 @@ const columns = {
   email: accounts.email,
   firstName: accounts.firstName,
   lastName: accounts.lastName,
+  nickname: accounts.nickname,
+  nameOrder: accounts.nameOrder,
   locale: accounts.locale,
   theme: accounts.theme,
   mfaEnabledAt: accounts.mfaEnabledAt,

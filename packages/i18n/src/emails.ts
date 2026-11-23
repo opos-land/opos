@@ -1,5 +1,6 @@
 import type { MessageDescriptor } from '@lingui/core'
 import { msg } from '@lingui/core/macro'
+import { nameRules, profileRules, takedownFacts } from './profiles'
 
 // The content of the emails the API renders in the recipient's locale: Supabase Auth's, sent when
 // the send-email hook calls it, and the organizer invitations.
@@ -71,10 +72,17 @@ export const joinedTeamEmail = (tenantName: string): EmailContent => ({
   ignore: msg`If you do not expect this, contact the head organizer of the convention.`,
 })
 
-/** An email without a link: a notice of something that happened to the account. */
+/**
+ * An email without a link: a notice of something that happened. `details` are further paragraphs
+ * below the body, in order. `quote` is a sentence a person wrote, shown as it was written and
+ * never translated, under the words that introduce it.
+ */
 export interface NoticeContent {
   subject: MessageDescriptor
   body: MessageDescriptor
+  details?: readonly MessageDescriptor[]
+  quoteIntroduction?: MessageDescriptor
+  quote?: string
   note: MessageDescriptor
 }
 
@@ -84,3 +92,69 @@ export const mfaDisabledEmail: NoticeContent = {
   body: msg`Two-factor authentication was turned off for your OPOS account. You can turn it on again in your account settings.`,
   note: msg`If you did not do this, change your password right away and turn two-factor authentication on again.`,
 }
+
+// The emails of the public profile (docs/specs/0016-public-profile.md). Those to who sent a report
+// hold no word of the report (R8); those to the account say what was done, under which rule of
+// the platform's terms, who decided and how to contest it (T5).
+
+/** To the address a report of a profile gave: the report arrived. */
+export const profileReportReceivedEmail: NoticeContent = {
+  subject: msg`We received your report of a profile`,
+  body: msg`Your report of a profile on OPOS has reached the administrators. They will look at the profile and decide whether it stays.`,
+  note: msg`We will write to this address once more, to say what was decided. If you sent no report, ignore this message.`,
+}
+
+/** To the address a report gave: the profile was taken down, or the report closed and the profile left. */
+export const profileReportOutcomeEmail = (
+  outcome: 'taken-down' | 'closed',
+  contact: string,
+): NoticeContent =>
+  outcome === 'taken-down'
+    ? {
+        subject: msg`The profile you reported was taken down`,
+        body: msg`The administrators looked at the profile you reported on OPOS and took it down. It is no longer public.`,
+        note: msg`If you have a question about this decision, write to ${contact}.`,
+      }
+    : {
+        subject: msg`The profile you reported stays`,
+        body: msg`The administrators looked at the profile you reported on OPOS and found nothing in it against the terms. It stays as it is.`,
+        note: msg`If you do not agree with this decision, write to ${contact} and say why.`,
+      }
+
+/** To the account: its profile was taken down. `note` is the admin's sentence, when one was written. */
+export const profileTakenDownEmail = (takedown: {
+  reason: string
+  afterReport: boolean
+  note: string | null
+  contact: string
+}): NoticeContent => ({
+  subject: msg`Your profile was taken down`,
+  body: msg`An administrator of OPOS took your profile down. It is no longer public, your avatar was removed, and the profile cannot be published until an administrator restores it.`,
+  details: [
+    ...(profileRules[takedown.reason] ? [profileRules[takedown.reason]!] : []),
+    takedown.afterReport ? takedownFacts.afterReport : takedownFacts.ownInitiative,
+    takedownFacts.byAPerson,
+  ],
+  ...(takedown.note
+    ? { quoteIntroduction: msg`The administrator wrote:`, quote: takedown.note }
+    : {}),
+  note: msg`You can change your profile and then ask for a review on the profile page of your account. If you do not agree with the decision, write to ${takedown.contact}.`,
+})
+
+/** To the account: its profile may be published again. */
+export const profileRestoredEmail: NoticeContent = {
+  subject: msg`Your profile can be published again`,
+  body: msg`An administrator of OPOS restored your profile. It is not public yet: publish it on the profile page of your account when you are ready.`,
+  note: msg`Your avatar was removed when the profile was taken down. You can upload one again.`,
+}
+
+/** To the account: an admin cleared its first name, nickname and last name. */
+export const nameClearedEmail = (cleared: { reason: string; contact: string }): NoticeContent => ({
+  subject: msg`The name of your account was cleared`,
+  body: msg`An administrator of OPOS cleared the name of your account: your first name, nickname and last name. Until you enter a name again, others see you as “Anon”.`,
+  details: [
+    ...(nameRules[cleared.reason] ? [nameRules[cleared.reason]!] : []),
+    takedownFacts.byAPerson,
+  ],
+  note: msg`You can enter your name again in your account settings. If you do not agree with the decision, write to ${cleared.contact}.`,
+})

@@ -23,6 +23,7 @@ export interface RenameTenantInput {
 export type TenantErrorCode =
   | 'tenant.not-found'
   | 'tenant.not-suspended'
+  | 'tenant.has-orders'
   | 'tenant.slug-invalid'
   | 'tenant.slug-reserved'
   | 'tenant.slug-retired'
@@ -189,15 +190,45 @@ export const suspendTenant = (db: Executor, id: string) => setSuspended(db, id, 
 export const restoreTenant = (db: Executor, id: string) => setSuspended(db, id, false)
 
 /**
+ * The foreign keys by which an order keeps what it names: its edition, what it bought, what its
+ * ticket holder answered and accepted. None of them cascades, so nothing an order names is deleted
+ * from under it, and neither is the tenant that owns it.
+ */
+const ORDER_KEEPS = new Set([
+  'orders_edition_fk',
+  'order_lines_ticket_type_fk',
+  'order_lines_add_on_fk',
+  'order_lines_item_fk',
+  'order_lines_variant_fk',
+  'order_custom_field_answers_field_fk',
+  'order_consents_consent_fk',
+  'order_consents_version_fk',
+])
+
+/** Whether a deletion was refused because an order keeps what it would delete. */
+export const refusedByOrder = (error: unknown) => {
+  const constraint = violatedConstraint(error)
+  return constraint !== undefined && ORDER_KEEPS.has(constraint)
+}
+
+/**
  * Deletes a suspended tenant with everything it owns; the accounts stay. One statement both
- * judges the suspension and deletes, so a tenant restored meanwhile is refused. The trigger
- * tenants_retire_slug holds its slug back for good.
+ * judges the suspension and deletes, so a tenant restored meanwhile is refused. A tenant that
+ * holds an order is refused by the database itself: orders are kept for years after their
+ * edition, and no deletion cascades to them. The trigger tenants_retire_slug holds its slug back
+ * for good.
  */
 export async function deleteTenant(db: Executor, id: string) {
   const [deleted] = await db
     .delete(tenants)
     .where(and(eq(tenants.id, id), isNotNull(tenants.suspendedAt)))
     .returning({ id: tenants.id, slug: tenants.slug })
+    .catch((error: unknown) => {
+      if (refusedByOrder(error)) {
+        throw new TenantError('tenant.has-orders', `The tenant ${id} holds orders`)
+      }
+      throw error
+    })
   if (deleted) return deleted
 
   const [left] = await db.select({ id: tenants.id }).from(tenants).where(eq(tenants.id, id))

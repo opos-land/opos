@@ -25,6 +25,8 @@ vi.mock('../api/account', () => ({
         email: 'a@x.test',
         firstName: state.firstName,
         lastName: state.lastName,
+        nickname: null,
+        nameOrder: 'nickname-middle' as const,
         locale: null,
         mfaEnabled: false,
         signInMethods: ['password'],

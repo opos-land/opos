@@ -63,11 +63,13 @@ note is ambiguous or contradicts itself, ask before writing. The note itself nev
 repository, and personal names only in [CONTRIBUTORS.md](CONTRIBUTORS.md): roles instead.
 
 **Business rules come from the domain owner.** Each module's rules are set by its domain owner
-([PRODUCT.md 7](docs/PRODUCT.md#7-modules)). A module still waiting for its owner — today reviews,
-tickets with payments and the scanner, and attendee registrations — is not built, and its tables,
-routes, screens and flows are not invented: the documents hold only the rules any shape of it keeps
+([PRODUCT.md 7](docs/PRODUCT.md#7-modules)). A module still waiting for its owner — today reviews
+and attendee registrations — is not built, and its tables, routes, screens and flows are not
+invented: the documents hold only the rules any shape of it keeps
 ([architecture](docs/ARCHITECTURE.md#modules-waiting-for-their-domain-owner)). Asked to build one,
-say so and ask for the owner's rules first; they land in the module's spec before the code.
+say so and ask for the owner's rules first; they land in the module's spec before the code. The
+tickets module has its owner's rules and is built from its specs, one at a time: what no spec
+covers is asked of its owner, not invented.
 
 ## Document style
 
@@ -105,9 +107,9 @@ header up to 72 characters; an optional body says why.
 | `ci`       | GitHub Actions workflows                   |
 | `revert`   | reverting a commit                         |
 
-Scopes: `api`, `panel`, `portal`, `admin`, `cms`, `db`, `contract`, `i18n`, `e2e`, `infra` (Traefik,
-compose, `infra/`, `supabase/`), `repo`. A new scope goes into `commitlint.config.mjs` and this
-list.
+Scopes: `api`, `panel`, `portal`, `admin`, `cms`, `db`, `contract`, `i18n`, `e2e`, `infra` (the
+deployment, compose, `infra/`, `supabase/`), `repo`. A new scope goes into `commitlint.config.mjs`
+and this list.
 
 - A Drizzle migration goes in the same commit as the schema change that produced it.
 - `.po` catalogs with the `pl` translations go in the same commit as the code introducing the
@@ -127,7 +129,8 @@ dependencies and wires up the hooks. `mise tasks` lists the root commands with w
 one also runs as `pnpm <name>`, the form the documents use. Dependencies younger than 7 days are
 rejected by `minimumReleaseAge` — that is policy, not a failure
 ([versions](docs/ARCHITECTURE.md#tooling-and-versions)). The API tests need
-the database: `pnpm infra:init` once in a new checkout, then `pnpm infra:up`. `pnpm test:e2e` also
+the database, the bucket and imgproxy: `pnpm stack:init` once in a new checkout, then
+`pnpm stack:up`. `pnpm test:e2e` also
 needs `pnpm db:migrate && pnpm db:seed` and Chromium (`pnpm --filter @opos/e2e exec playwright
 install chromium`), and does not run beside the API tests. Before every PR: typecheck, lint and
 tests green.
@@ -136,8 +139,8 @@ Every user-facing string sits in a Lingui macro and is translated into `pl` in t
 reusing the glossary renderings ([localization](docs/ARCHITECTURE.md#localization)).
 
 **CI gates** ([CI](docs/ARCHITECTURE.md#ci)): a PR into `main` needs the jobs `check`, `e2e` and
-`secrets` green; `secrets` scans the whole history, so a secret in any commit fails it. An action is
-pinned by a full commit hash, and `${{ github.* }}` never appears in a `run` step: it goes through
+`secrets` green; `secrets` scans the whole history of what it checks, so a secret in any commit a
+branch carries fails it, while another branch's commits never fail it. An action is pinned by a full commit hash, and `${{ github.* }}` never appears in a `run` step: it goes through
 `env`.
 
 **The seed follows the schema.** A change that adds a table, a column without a default, a
@@ -185,7 +188,8 @@ and in the script together.
 **Gates.** [.claude/hooks/migration-reminder.mjs](.claude/hooks/migration-reminder.mjs) hands the
 rules of a migration as context after it is edited. The permissions in
 [.claude/settings.json](.claude/settings.json) deny reading the real `.env` files and the Supabase
-signing keys (the `.env.example` templates stay readable) and ask the user before an edit of the
+signing keys (the `.env.example` templates stay readable) and running `deploy:secret:get`, which
+prints a secret, and ask the user before an edit of the
 settings, `.claude/agents`, `.claude/hooks`, `scripts/tests-first.mjs`, `scripts/check-migrations.mjs`,
 `scripts/bff-boundary.mjs`, `lefthook.yml`, `.github/workflows` or `.github/rulesets`.
 [.claude/agent-docs.test.mjs](.claude/agent-docs.test.mjs) checks that the paths this file and the
@@ -218,6 +222,26 @@ and that it cannot be undone: `IrreversibleAction` of `shared/ui`, or its `alert
 the same way when the action needs more than one press. A change the same screen reverses asks
 nothing ([0023](docs/adr/0023-ask-in-a-modal-before-an-action-that-cannot-be-undone.md)).
 
+**An entity is always added and changed on pages of its own**: a new one at `new` under the
+address of its list, an existing one at its id there. That holds for a programme item, a ticket
+type, an add-on, a discount code, a custom field, a document, a consent, a scanner and anything
+else a list holds. The list shows the links to those pages, never a form and never a row that turns
+into one; a page links back to the list, and after adding or deleting leads to the entity's own page
+or to the list. What the list reverses by itself stays in the row: moving it, hiding it, ending a
+discount code. A part saved with its entity (a price tier, a variant, a speaker) stays in that
+entity's form. `src/app/pages.test.ts` of the panel refuses a `create…Options` mutation in a file
+that is not a page routed at `new`, and an entity's form anywhere but on such a page and on the
+entity's own; that of the admin application refuses the first
+([0066](docs/adr/0066-add-and-change-an-entity-on-a-page-of-its-own.md)).
+
+**A list of entities is a table, and its row opens the entity's page from anywhere in it**: a row
+an entity, a column each thing the list tells, never cards under each other. Where the entity has a
+page of its own the row is `LinkRow` of `shared/ui` and the entity's name in it a `RowLink` to the
+same page, never a plain link in one cell. The link stays for the keyboard and the screen reader,
+and a button or another link inside the row keeps its own press. `src/app/tables.test.ts` of the
+panel and of the admin application refuses a plain link in a table cell
+([0067](docs/adr/0067-list-entities-in-a-table-whose-row-opens-the-entitys-page.md)).
+
 **A tracker runs only through the consent banner.** Anything the portal does not strictly need for
 what the visitor asked is a tracker: analytics, an advertising pixel, a screen recorder, a
 third-party embed, a script, stylesheet or font from another origin, and the cookies or browser
@@ -234,8 +258,13 @@ script or an iframe created outside the consent feature and anything loaded from
 ([0026](docs/adr/0026-run-a-tracker-only-with-consent-and-none-in-the-panel.md)).
 
 **Dev and production are shared.** A working checkout never points at them: no `supabase link`, no
-remote database URL, project reference or access token in a `.env` or `mise.local.toml`; they change
-only through the deploy workflow ([environments](docs/ARCHITECTURE.md#environments)).
+remote database URL, project reference or access token in a `.env` or `mise.local.toml`. Their
+infrastructure changes only through the `deploy:*` commands, which an operator runs under their own
+identity, and a release only through CI. An agent never runs a deploy command that applies, destroys,
+imports or sets a secret
+([environments](docs/ARCHITECTURE.md#environments)). The infrastructure code and its runbook are in
+[infra](infra/README.md); after a change there, `mise run infra:check`, and `mise run
+infra:images` when it touches the images.
 
 **No AI-generated graphics.** Never generate images, illustrations, logos or icons, and never add
 them to the repository. Where no design exists yet, use shadcn/ui's defaults unchanged and real copy

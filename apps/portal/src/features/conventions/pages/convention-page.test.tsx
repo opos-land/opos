@@ -11,35 +11,37 @@ const api = vi.hoisted(() => ({
   convention: vi.fn(),
   active: vi.fn(),
   editions: vi.fn(),
-  items: vi.fn(),
 }))
 
 vi.mock('../api/conventions', () => ({
   conventionOptions: () => ({ queryKey: ['convention'], queryFn: api.convention }),
   activeEditionOptions: () => ({ queryKey: ['active'], queryFn: api.active }),
   editionsOptions: () => ({ queryKey: ['editions'], queryFn: api.editions }),
-  programItemsOptions: () => ({ queryKey: ['items'], queryFn: api.items }),
+}))
+
+// The account's own orders are the shop's: this page only gives them their place.
+vi.mock('../../shop', () => ({
+  MyOrders: ({ tenantSlug, timeZone }: { tenantSlug: string; timeZone: string }) => (
+    <section aria-label="Your orders">
+      {tenantSlug} in {timeZone}
+    </section>
+  ),
 }))
 
 const notFound = () => new ORPCError('request.not-found', { status: 404 })
 
-const edition = (slug: string, isActive: boolean) => ({
-  id: slug,
-  slug,
-  name: `Edition ${slug}`,
-  startsAt: '2027-06-01T08:00:00.000Z',
-  endsAt: '2027-06-03T18:00:00.000Z',
-  isActive,
-})
+const logo = { fileId: '0e0d8f7e-8a3c-4b5e-9f60-1b2c3d4e5f60', width: 400, height: 200 }
 
-const item = (id: string, startsAt: string, likeCount = 0) => ({
-  id,
-  title: `Item ${id}`,
-  description: null,
-  startsAt,
-  endsAt: new Date(new Date(startsAt).getTime() + 3_600_000).toISOString(),
-  speakers: [{ firstName: 'Kasia', lastName: 'Mazur' }],
-  likeCount,
+const edition = (year: number, isActive = false) => ({
+  id: String(year),
+  slug: String(year),
+  name: `Edition ${year}`,
+  startsAt: `${year}-06-01T08:00:00.000Z`,
+  endsAt: `${year}-06-03T18:00:00.000Z`,
+  isActive,
+  venueName: 'Congress Hall',
+  venueAddress: null,
+  venueCity: 'Poznań',
 })
 
 const view = () =>
@@ -62,54 +64,91 @@ beforeAll(() => {
 })
 
 beforeEach(() => {
+  vi.useFakeTimers({ now: new Date('2027-01-01T00:00:00.000Z'), toFake: ['Date'] })
   api.convention.mockReset().mockResolvedValue({
     name: 'Convention A',
     defaultLocale: 'pl',
     timezone: 'Europe/Warsaw',
+    logo,
   })
-  api.active.mockReset().mockResolvedValue(edition('2027', true))
-  api.editions.mockReset().mockResolvedValue([edition('2027', true), edition('2025', false)])
-  api.items.mockReset().mockResolvedValue([item('late', '2027-06-01T22:30:00.000Z', 2)])
+  api.active.mockReset().mockResolvedValue(edition(2027, true))
+  api.editions
+    .mockReset()
+    .mockResolvedValue([edition(2028), edition(2027, true), edition(2026), edition(2025)])
 })
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.useRealTimers()
+})
 
 describe('ConventionPage', () => {
-  it("shows the active edition's programme by the day of the convention's zone", async () => {
+  it('names the convention and shows its logo', async () => {
     view()
 
     expect(await screen.findByRole('heading', { name: 'Convention A', level: 1 })).toBeDefined()
     expect(document.title).toBe('Convention A · OPOS')
-    expect(await screen.findByRole('heading', { name: 'Wednesday, June 2, 2027' })).toBeDefined()
-    const link = screen.getByRole('link', { name: 'Item late' })
-    expect(link.getAttribute('href')).toBe('/conventions/convention-a/2027/program/late')
-    expect(screen.getByText('Speaker: Kasia Mazur')).toBeDefined()
-    expect(screen.getByText('2 likes')).toBeDefined()
+    expect(document.querySelector('img')!.getAttribute('src')).toMatch(
+      /\/public\/tenants\/convention-a\/logo-files\/0e0d8f7e-8a3c-4b5e-9f60-1b2c3d4e5f60\/large$/,
+    )
   })
 
-  it('links the other editions, and not the active one', async () => {
+  // docs/specs/0009-buyer-self-service.md, U1: a signed-in account sees its orders in the
+  // convention on the convention's page, in the convention's time zone.
+  it('gives the account’s orders in the convention their place, before its editions', async () => {
+    view()
+
+    const orders = await screen.findByRole('region', { name: 'Your orders' })
+    expect(orders.textContent).toBe('convention-a in Europe/Warsaw')
+    const active = await screen.findByRole('region', { name: 'Edition 2027' })
+    expect(orders.compareDocumentPosition(active) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('shows its active edition as the page of that edition does, and leads to it', async () => {
+    view()
+
+    const active = await screen.findByRole('region', { name: 'Edition 2027' })
+    expect(within(active).getByRole('link', { name: 'Edition 2027' }).getAttribute('href')).toBe(
+      '/conventions/convention-a/2027',
+    )
+    expect(within(active).getByText('Jun 1 – 3, 2027')).toBeDefined()
+    expect(within(active).getByText('Congress Hall')).toBeDefined()
+    expect(within(active).getByText('Poznań')).toBeDefined()
+    expect(
+      within(active).getByRole('link', { name: 'See the programme' }).getAttribute('href'),
+    ).toBe('/conventions/convention-a/2027/program')
+  })
+
+  it('links its other editions, the coming ones first, and not the active one', async () => {
     view()
 
     const others = await screen.findByRole('region', { name: 'Other editions' })
-    const link = within(others).getByRole('link', { name: 'Edition 2025' })
-    expect(link.getAttribute('href')).toBe('/conventions/convention-a/2025')
-    expect(within(others).queryByRole('link', { name: 'Edition 2027' })).toBeNull()
+    const links = await within(others).findAllByRole('link')
+    expect(links.map((link) => link.textContent)).toEqual([
+      'Edition 2028',
+      'Edition 2026',
+      'Edition 2025',
+    ])
+    expect(links[0]!.getAttribute('href')).toBe('/conventions/convention-a/2028')
   })
 
-  it('says when no edition is active, without an error', async () => {
+  it('says when no edition is active, without an error, and still lists the others', async () => {
     api.active.mockRejectedValue(notFound())
+    api.editions.mockResolvedValue([edition(2025)])
     view()
 
     expect(await screen.findByText('No edition of this convention is active.')).toBeDefined()
     expect(screen.queryByRole('alert')).toBeNull()
-    expect(api.items).not.toHaveBeenCalled()
+    const others = await screen.findByRole('region', { name: 'Other editions' })
+    expect(await within(others).findByRole('link', { name: 'Edition 2025' })).toBeDefined()
   })
 
-  it('says when the active edition has no programme yet', async () => {
-    api.items.mockResolvedValue([])
+  it('shows no list of other editions when the active one is the only one', async () => {
+    api.editions.mockResolvedValue([edition(2027, true)])
     view()
 
-    expect(await screen.findByText('There is no programme yet.')).toBeDefined()
+    await screen.findByRole('region', { name: 'Edition 2027' })
+    expect(screen.queryByRole('region', { name: 'Other editions' })).toBeNull()
   })
 
   it('shows the not-found screen for an unknown convention', async () => {

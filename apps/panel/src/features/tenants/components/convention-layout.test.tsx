@@ -71,8 +71,28 @@ describe('ConventionLayout', () => {
       ['General', '/convention-a/settings'],
       ['Editions', '/convention-a/settings/editions'],
       ['Team', '/convention-a/settings/team'],
+      ['Branding', '/convention-a/settings/branding'],
+      ['Shop', '/convention-a/settings/shop'],
     ])
     expect(screen.getByText('the general settings')).toBeDefined()
+  })
+
+  it('opens the shop alone to an org who holds the shop alone', () => {
+    view(membership({ shopConfigAccess: 'read' }))
+
+    expect(links()).toEqual([['Shop', '/convention-a/settings/shop']])
+  })
+
+  it('opens the branding alone to an org who holds the branding alone', () => {
+    view(membership({ brandingAccess: 'read' }))
+
+    expect(links()).toEqual([['Branding', '/convention-a/settings/branding']])
+  })
+
+  it('opens every section to an org who reads the settings and the branding', () => {
+    view(membership({ settingsAccess: 'read', brandingAccess: 'write' }))
+
+    expect(links().map(([name]) => name)).toEqual(['General', 'Editions', 'Team', 'Branding'])
   })
 
   it('shows no menu to an org without settings, and leaves the page to say so', () => {
@@ -106,6 +126,6 @@ describe('ConventionLayout', () => {
 
     expect(screen.getByRole('heading', { name: 'No permissions' })).toBeDefined()
     expect(screen.queryByText('the general settings')).toBeNull()
-    expect(links()).toHaveLength(3)
+    expect(links()).toHaveLength(5)
   })
 })

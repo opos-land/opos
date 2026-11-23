@@ -291,6 +291,354 @@ describe('verifyDatabase', () => {
       expect(problems.join('\n')).toMatch(/opos_app DELETE on tenants/)
     })
 
+    it.each(['uploaded_files', 'account_files'])(
+      'reports opos_app updating %s, whose files never change',
+      async (table) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant update (name) on public.${table} to opos_app`),
+        )
+        expect(problems.join('\n')).toMatch(new RegExp(`opos_app UPDATE \\(name\\) on ${table}`))
+      },
+    )
+
+    it.each(['uploaded_files', 'account_files'])(
+      'reports opos_app_global reading a file name of %s, which the sweep never reads',
+      async (table) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant select (name) on public.${table} to opos_app_global`),
+        )
+        expect(problems.join('\n')).toMatch(
+          new RegExp(`opos_app_global SELECT \\(name\\) on ${table}`),
+        )
+      },
+    )
+
+    it('reports opos_app updating tenant_logos, whose row is replaced and never changed', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe('grant update (file_id) on public.tenant_logos to opos_app'),
+      )
+      expect(problems.join('\n')).toMatch(/opos_app UPDATE \(file_id\) on tenant_logos/)
+    })
+
+    it.each([
+      ['editions', 'venue_name'],
+      ['editions', 'venue_address'],
+      ['tenant_logos', 'created_at'],
+      ['uploaded_files', 'sha256'],
+    ])(
+      'reports opos_app_global reading %s.%s, which the list of editions never shows',
+      async (table, column) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant select (${column}) on public.${table} to opos_app_global`),
+        )
+        expect(problems.join('\n')).toMatch(
+          new RegExp(`opos_app_global SELECT \\(${column}\\) on ${table}`),
+        )
+      },
+    )
+
+    // The setup of the shop (docs/specs/0002-shop-setup.md): each grant it must not hold.
+    it.each([
+      [
+        'the currency of a seller, which is PLN alone',
+        'update (currency) on public.shop_sellers',
+        /opos_app UPDATE \(currency\) on shop_sellers/,
+      ],
+      [
+        'the credentials of a provider account, replaced by a new row',
+        'update (credentials) on public.payment_provider_accounts',
+        /opos_app UPDATE \(credentials\) on payment_provider_accounts/,
+      ],
+      [
+        'the kind of a document',
+        'update (kind) on public.edition_documents',
+        /opos_app UPDATE \(kind\) on edition_documents/,
+      ],
+      [
+        'the file of a published version',
+        'update (file_id) on public.edition_document_versions',
+        /opos_app UPDATE \(file_id\) on edition_document_versions/,
+      ],
+    ])('reports opos_app updating %s', async (_, grant, report) => {
+      const problems = await problemsAfter((sql) => sql.unsafe(`grant ${grant} to opos_app`))
+      expect(problems.join('\n')).toMatch(report)
+    })
+
+    it.each(['shop_sellers', 'edition_shops', 'edition_document_versions'])(
+      'reports opos_app deleting from %s, whose rows go only with what owns them',
+      async (table) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant delete on public.${table} to opos_app`),
+        )
+        expect(problems.join('\n')).toMatch(new RegExp(`opos_app DELETE on ${table}`))
+      },
+    )
+
+    it.each([
+      ['payment_provider_accounts', 'credentials'],
+      ['payment_provider_accounts', 'provider'],
+      ['shop_sellers', 'contact_email'],
+      ['edition_consents', 'text'],
+    ])(
+      'reports opos_app_global reading %s.%s, which no cross-tenant query needs',
+      async (table, column) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant select (${column}) on public.${table} to opos_app_global`),
+        )
+        expect(problems.join('\n')).toMatch(
+          new RegExp(`opos_app_global SELECT \\(${column}\\) on ${table}`),
+        )
+      },
+    )
+
+    // The catalog (docs/specs/0003-catalog.md): each grant it must not hold.
+    it.each([
+      ['the edition of a ticket type', 'edition_id', 'ticket_types'],
+      [
+        'the amount of a price tier, replaced with its list',
+        'amount_minor',
+        'ticket_type_price_tiers',
+      ],
+      ['the add-on a ticket type offers', 'add_on_id', 'ticket_type_add_ons'],
+      ['the item of an axis', 'merchandise_item_id', 'merchandise_option_axes'],
+      ['the axis of a value', 'axis_id', 'merchandise_option_values'],
+      ['the item of a variant', 'merchandise_item_id', 'merchandise_variants'],
+      ['the value of a variant', 'option_value_id', 'merchandise_variant_values'],
+      ['the file of a picture', 'file_id', 'merchandise_item_pictures'],
+      ['the file of a size chart', 'file_id', 'merchandise_size_charts'],
+      ['the edition of a custom field', 'edition_id', 'edition_custom_fields'],
+    ])('reports opos_app updating %s', async (_, column, table) => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`grant update (${column}) on public.${table} to opos_app`),
+      )
+      expect(problems.join('\n')).toMatch(new RegExp(`opos_app UPDATE \\(${column}\\) on ${table}`))
+    })
+
+    // A variant's values go with the variant or with the value, by the cascade of their keys:
+    // the application role deletes none by itself, so a variant never loses one of its axes.
+    it('reports opos_app deleting from merchandise_variant_values', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe('grant delete on public.merchandise_variant_values to opos_app'),
+      )
+      expect(problems.join('\n')).toMatch(/opos_app DELETE on merchandise_variant_values/)
+    })
+
+    it.each([
+      ['ticket_types', 'name'],
+      ['merchandise_items', 'amount_minor'],
+      ['merchandise_item_pictures', 'merchandise_item_id'],
+      ['edition_custom_fields', 'label'],
+      ['edition_shops', 'sales_closed_message'],
+      ['edition_shops', 'opening_hours'],
+    ])(
+      'reports opos_app_global reading %s.%s, which no cross-tenant query needs',
+      async (table, column) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant select (${column}) on public.${table} to opos_app_global`),
+        )
+        expect(problems.join('\n')).toMatch(
+          new RegExp(`opos_app_global SELECT \\(${column}\\) on ${table}`),
+        )
+      },
+    )
+
+    // Orders (docs/specs/0004-checkout-and-orders.md): each grant the application role must
+    // not hold.
+    it.each([
+      ['the number of an order', 'number', 'orders'],
+      ['the total of an order', 'total_minor', 'orders'],
+      // What a manual order was recorded with, the item a line names and the code a QR code
+      // holds: order management changes none of them.
+      ['the reason of a manual order', 'manual_reason', 'orders'],
+      ['the note of a manual order', 'note', 'orders'],
+      ['the item of a line', 'merchandise_item_id', 'order_lines'],
+      ['the code of a QR code', 'code', 'order_qr_codes'],
+      ['when an order link expires', 'expires_at', 'order_links'],
+      ['the order an order extends', 'extends_order_id', 'orders'],
+      // A scanner's name, its end and the org behind it are set once, when it is enabled.
+      ['the name of a scanner', 'name', 'scanner_devices'],
+      ['when a scanner ends', 'expires_at', 'scanner_devices'],
+      ['the org behind a scanner', 'enabled_by_membership_id', 'scanner_devices'],
+      ['the edition of an order', 'edition_id', 'orders'],
+      ['the price of a line', 'amount_minor', 'order_lines'],
+      ['what a line sells', 'ticket_type_id', 'order_lines'],
+      ['the amount an attempt asked for', 'amount_minor', 'payment_attempts'],
+      ['the order of an attempt', 'order_id', 'payment_attempts'],
+      ['the account an order is attached to', 'account_id', 'order_accounts'],
+      ['the QR code an order carries', 'qr_code_id', 'order_qr_code_orders'],
+      ['the version an order accepted', 'document_version_id', 'order_consents'],
+      ['the recipient of an email', 'recipient', 'order_emails'],
+    ])('reports opos_app updating %s', async (_, column, table) => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`grant update (${column}) on public.${table} to opos_app`),
+      )
+      expect(problems.join('\n')).toMatch(new RegExp(`opos_app UPDATE \\(${column}\\) on ${table}`))
+    })
+
+    it.each(['orders', 'order_lines', 'payment_attempts', 'order_consents', 'order_emails'])(
+      'reports opos_app deleting from %s, whose rows stay for as long as their order does',
+      async (table) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant delete on public.${table} to opos_app`),
+        )
+        expect(problems.join('\n')).toMatch(new RegExp(`opos_app DELETE on ${table}`))
+      },
+    )
+
+    // The reads across tenants this module adds are of identifiers alone: nothing of a buyer.
+    it.each([
+      ['orders', 'email'],
+      ['orders', 'holder_name'],
+      ['orders', 'number'],
+      ['orders', 'result_token_hash'],
+      ['payment_attempts', 'order_id'],
+      ['payment_attempts', 'information'],
+      ['order_emails', 'recipient'],
+      ['order_emails', 'kind'],
+      // What an email said names its buyer: no read across tenants reaches it.
+      ['order_emails', 'subject'],
+      ['order_emails', 'body'],
+      // An order link is found across tenants by a hash, and nothing of its order is read there.
+      ['order_links', 'order_id'],
+      ['order_links', 'expires_at'],
+      ['order_qr_codes', 'code'],
+      // A scanner is found across tenants by a hash, and nothing of it is read there.
+      ['scanner_devices', 'name'],
+      ['scanner_devices', 'edition_id'],
+      ['scanner_devices', 'expires_at'],
+    ])(
+      'reports opos_app_global reading %s.%s, which no job of the API needs',
+      async (table, column) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant select (${column}) on public.${table} to opos_app_global`),
+        )
+        expect(problems.join('\n')).toMatch(
+          new RegExp(`opos_app_global SELECT \\(${column}\\) on ${table}`),
+        )
+      },
+    )
+
+    // The public profile (docs/specs/0016-public-profile.md): an account cannot give itself a
+    // public identifier, end its own takedown or start again with a new profile; the API reads
+    // nothing a report says; a read across accounts answers neither an email address nor what a
+    // takedown says; and the admin changes nothing a profile says.
+    it.each([
+      'public_id',
+      'taken_down_at',
+      'taken_down_reason',
+      'taken_down_note',
+      'taken_down_after_report',
+    ])('reports opos_app inserting account_profiles.%s', async (column) => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`grant insert (${column}) on public.account_profiles to opos_app`),
+      )
+      expect(problems.join('\n')).toMatch(
+        new RegExp(`opos_app INSERT \\(${column}\\) on account_profiles`),
+      )
+    })
+
+    it.each([
+      'account_id',
+      'public_id',
+      'taken_down_at',
+      'taken_down_reason',
+      'taken_down_note',
+      'taken_down_after_report',
+    ])('reports opos_app updating account_profiles.%s', async (column) => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`grant update (${column}) on public.account_profiles to opos_app`),
+      )
+      expect(problems.join('\n')).toMatch(
+        new RegExp(`opos_app UPDATE \\(${column}\\) on account_profiles`),
+      )
+    })
+
+    it('reports opos_app deleting a profile, which would end its takedown', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe('grant delete on public.account_profiles to opos_app'),
+      )
+      expect(problems.join('\n')).toMatch(/opos_app DELETE on account_profiles/)
+    })
+
+    it('reports opos_app changing the pointer at an avatar, which is replaced and never changed', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe('grant update (file_id) on public.account_avatars to opos_app'),
+      )
+      expect(problems.join('\n')).toMatch(/opos_app UPDATE \(file_id\) on account_avatars/)
+    })
+
+    it.each(['id', 'reason', 'note', 'email', 'locale', 'created_at'])(
+      'reports opos_app reading profile_reports.%s, which the API never reads',
+      async (column) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`grant select (${column}) on public.profile_reports to opos_app`),
+        )
+        expect(problems.join('\n')).toMatch(
+          new RegExp(`opos_app SELECT \\(${column}\\) on profile_reports`),
+        )
+      },
+    )
+
+    it('reports a table-level read of the reports granted to opos_app', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe('grant select on public.profile_reports to opos_app'),
+      )
+      expect(problems.join('\n')).toMatch(/opos_app SELECT on profile_reports/)
+    })
+
+    it('reports opos_app closing a report', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe('grant update (closed_at) on public.profile_reports to opos_app'),
+      )
+      expect(problems.join('\n')).toMatch(/opos_app UPDATE \(closed_at\) on profile_reports/)
+    })
+
+    it.each([
+      ['accounts', 'locale'],
+      ['account_profiles', 'taken_down_note'],
+      ['account_profiles', 'review_requested_at'],
+      ['profile_reports', 'account_id'],
+    ])('reports opos_app_global reading %s.%s', async (table, column) => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`grant select (${column}) on public.${table} to opos_app_global`),
+      )
+      expect(problems.join('\n')).toMatch(
+        new RegExp(`opos_app_global SELECT \\(${column}\\) on ${table}`),
+      )
+    })
+
+    it.each([
+      ['accounts', 'email'],
+      ['accounts', 'name_order'],
+      ['account_profiles', 'description'],
+      ['account_profiles', 'public_id'],
+      ['profile_reports', 'note'],
+    ])('reports opos_admin updating %s.%s', async (table, column) => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`grant update (${column}) on public.${table} to opos_admin`),
+      )
+      expect(problems.join('\n')).toMatch(
+        new RegExp(`opos_admin UPDATE \\(${column}\\) on ${table}`),
+      )
+    })
+
+    it.each(['account_profiles', 'account_avatars', 'profile_reports'])(
+      'reports RLS on %s, a global table',
+      async (table) => {
+        const problems = await problemsAfter((sql) =>
+          sql.unsafe(`alter table public.${table} enable row level security`),
+        )
+        expect(problems.join('\n')).toMatch(new RegExp(`Global tables with RLS on: ${table}`))
+      },
+    )
+
+    it('reports RLS on account_files, a global table', async () => {
+      const problems = await problemsAfter((sql) =>
+        sql.unsafe(`alter table public.account_files enable row level security`),
+      )
+      expect(problems.join('\n')).toMatch(/Global tables with RLS on: account_files/)
+    })
+
     it('reports a table-level update granted to opos_app', async () => {
       const problems = await problemsAfter((sql) =>
         sql.unsafe(`grant update on public.editions to opos_app`),
@@ -316,7 +664,7 @@ describe('verifyDatabase', () => {
     })
 
     it.each([
-      ['editions', 'ends_at'],
+      ['editions', 'is_active'],
       ['tenants', 'created_at'],
       ['accepted_invitations', 'jti'],
     ])(

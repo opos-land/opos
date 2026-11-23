@@ -4,12 +4,157 @@ import { activateLocale } from './catalog'
 import { errorMessage, unknownError } from './errors'
 
 describe('errorMessage', () => {
+  it.each([
+    [
+      'file.type-refused',
+      'Tego pliku nie można tu przyjąć: ten format nie jest dozwolony albo plik jest uszkodzony. Wybierz inny plik.',
+    ],
+    ['file.too-large', 'Ten plik jest za duży. Wybierz mniejszy.'],
+    [
+      'file.limit-reached',
+      'Nie ma już miejsca na kolejne pliki. Usuń te, których nie potrzebujesz.',
+    ],
+    ['storage.unavailable', 'Pliki są chwilowo niedostępne. Spróbuj ponownie za chwilę.'],
+    ['images.unavailable', 'Obrazy są chwilowo niedostępne. Spróbuj ponownie za chwilę.'],
+  ])('says why %s refused a file, in Polish', async (code, rendered) => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage(code)).not.toBe(unknownError)
+    expect(i18n._(errorMessage(code))).toBe(rendered)
+  })
+
   it('maps a known code', async () => {
     const i18n = setupI18n()
     await activateLocale(i18n, 'pl')
 
     expect(i18n._(errorMessage('tenant.slug-taken'))).toBe(
       'Ten adres jest już zajęty przez inny konwent.',
+    )
+  })
+
+  // The setup of the shop (docs/specs/0002-shop-setup.md): what an org reads when the shop or its
+  // payment provider refuses.
+  it.each([
+    ['shop.open', 'Sklep jednej z edycji tego konwentu jest otwarty. Najpierw go zamknij.'],
+    ['shop.not-ready', 'Sklepu nie można jeszcze otworzyć: brakuje czegoś, czego potrzebuje.'],
+    [
+      'provider.credentials-refused',
+      'Dostawca płatności odrzucił te dane dostępowe. Sprawdź je i spróbuj ponownie.',
+    ],
+    ['provider.unavailable', 'Dostawca płatności nie odpowiada. Spróbuj ponownie za chwilę.'],
+    ['document.in-use', 'Do tego dokumentu odsyła zgoda. Najpierw zmień lub usuń tę zgodę.'],
+    ['shop.closed', 'Ten sklep w tej chwili nie prowadzi sprzedaży.'],
+    [
+      'catalog.in-use',
+      'Ta zmiana usunęłaby coś, co jest już w zamówieniu. Zamiast usuwać, ukryj tę pozycję: zniknie z oferty, a w zamówieniach pozostanie.',
+    ],
+    [
+      'consent.in-use',
+      'To zostało już zaakceptowane w zamówieniu, więc nie można tego usunąć. Zamiast usuwać, ukryj to: zniknie ze sklepu, a w zamówieniach pozostanie.',
+    ],
+    [
+      'shop.payments-under-way',
+      'Zamówienie w tym konwencie oczekuje na płatność. Dane dostępowe zmienisz, gdy zostanie opłacone albo wygaśnie.',
+    ],
+    ['edition.has-orders', 'Ta edycja ma zamówienia, więc nie można jej usunąć.'],
+    [
+      'tenant.has-orders',
+      'Ten konwent ma zamówienia, które przechowujemy co najmniej pięć lat. Nie można go usunąć.',
+    ],
+    [
+      'order.total-changed',
+      'Kwota twojego zamówienia się zmieniła. Sprawdź nową kwotę i ją potwierdź.',
+    ],
+    ['order.consent-missing', 'Zaakceptuj każdą wymaganą zgodę, żeby złożyć zamówienie.'],
+    [
+      'order.email-refused',
+      'Dostawca płatności nie przyjmuje tego adresu e-mail. Użyj krótszego adresu.',
+    ],
+    [
+      'order.too-many-unpaid',
+      'Ten adres e-mail ma już zamówienia oczekujące na płatność. Opłać jedno z nich albo poczekaj, aż wygaśnie.',
+    ],
+    ['bot-check.failed', 'Nie udało się potwierdzić, że nie jesteś robotem. Spróbuj ponownie.'],
+    ['order.hold-ended', 'Czas na opłacenie tego zamówienia minął. Złóż nowe zamówienie.'],
+    ['order.already-paid', 'To zamówienie nie czeka już na płatność. Sprawdź jego status.'],
+    ['order.not-cancelable', 'Anulować można tylko opłacone zamówienie.'],
+    ['order.not-paid', 'To można zrobić tylko z opłaconym zamówieniem.'],
+    ['scan.already-handed-out', 'To zostało już wydane.'],
+    ['discount-code.taken', 'Inny kod rabatowy tej edycji ma już tę treść. Wybierz inną.'],
+    ['discount-code.refused', 'Tego kodu nie można użyć w tym zamówieniu.'],
+    [
+      'order.not-extendable',
+      'Do tego zamówienia nie można nic dokupić: dokupuje się tylko do własnego, opłaconego zamówienia.',
+    ],
+    [
+      'discount-code.in-use',
+      'Ten kod rabatowy został już użyty w zamówieniu, więc nie można go usunąć. Zamiast usuwać, zakończ go: kupujący nie użyją go więcej, a w zamówieniach pozostanie.',
+    ],
+    ['scan.not-valid', 'Ten kod QR jest nieważny.'],
+    ['scanner.name-taken', 'Inny skaner tej edycji ma już tę nazwę. Wybierz inną.'],
+    [
+      'scanner.outlives-org',
+      'Skaner nie może działać dłużej niż twój dostęp do konwentu. Ustaw wcześniejszy koniec albo poproś organizatora, którego dostęp trwa dłużej.',
+    ],
+    [
+      'scanner.ended',
+      'Dostęp tego skanera został cofnięty albo wygasł, więc skaner nie dostanie nowego kodu parowania. Włącz nowy skaner.',
+    ],
+    [
+      'scanner.code-refused',
+      'Ten kod parowania nie działa: został już użyty albo wygasł. Poproś organizatora o nowy.',
+    ],
+    [
+      'scanner.revoked',
+      'Ten skaner już nie działa: jego dostęp został cofnięty albo wygasł. Sparuj telefon ponownie.',
+    ],
+    [
+      'production.before-deadline',
+      'Liczby do produkcji będą gotowe po upływie terminu przedsprzedaży.',
+    ],
+    ['order.not-in-review', 'To zamówienie nie jest już do wyjaśnienia. Sprawdź jego status.'],
+    [
+      'order.not-correctable',
+      'Tego zamówienia nie można tak poprawić: poprawia się tylko opłacone zamówienie, a zamówienie ręczne nie ma adresu e-mail.',
+    ],
+    [
+      'order.unavailable',
+      'Coś z twojego zamówienia nie jest już dostępne. Sprawdź zamówienie i spróbuj ponownie.',
+    ],
+    [
+      'ticket-type.tiers-overlap',
+      'Dwa progi cenowe obejmują ten sam czas. Rodzaj akredytacji ma w danej chwili jedną cenę: zmień daty tak, aby progi się nie nakładały.',
+    ],
+  ] as const)('says %s in Polish', async (code, text) => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage(code)).not.toBe(unknownError)
+    expect(i18n._(errorMessage(code))).toBe(text)
+  })
+
+  it.each([
+    ['document.too-many', 'Ta edycja osiągnęła limit dokumentów: 30.'],
+    ['document.too-many-versions', 'Ten dokument osiągnął limit wersji: 30.'],
+    ['consent.too-many', 'Ta edycja osiągnęła limit zgód: 30.'],
+    ['scanner.limit-reached', 'Ta edycja osiągnęła limit włączonych skanerów: 30.'],
+    ['catalog.limit-reached', 'Ta lista osiągnęła limit pozycji: 30.'],
+  ] as const)('says %s in Polish, with the limit', async (code, text) => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage(code)).not.toBe(unknownError)
+    expect(i18n._({ ...errorMessage(code), values: { limit: 30 } })).toBe(text)
+  })
+
+  it('says in Polish how much orders hold of a limit set below it', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage('catalog.below-held')).not.toBe(unknownError)
+    expect(i18n._({ ...errorMessage('catalog.below-held'), values: { held: 12 } })).toBe(
+      'Zamówienia zajmują już więcej, niż wynosi ten limit: 12. Ustaw limit nie niższy od tej liczby.',
     )
   })
 
@@ -145,6 +290,28 @@ describe('errorMessage', () => {
     expect(i18n._(errorMessage('session.mfa-required'))).toBe(
       'To konto używa uwierzytelniania dwuskładnikowego. Wpisz kod z aplikacji uwierzytelniającej, aby kontynuować.',
     )
+  })
+
+  // docs/specs/0016-public-profile.md: publishing a profile taken down, and asking for a review of
+  // one that is not.
+  it.each([
+    [
+      'profile.taken-down',
+      'An administrator took this profile down. It cannot be published until it is restored.',
+      'Administrator zdjął ten profil. Nie da się go opublikować, dopóki nie zostanie przywrócony.',
+    ],
+    [
+      'profile.not-taken-down',
+      'This profile is not taken down, so there is nothing to review.',
+      'Ten profil nie jest zdjęty, więc nie ma czego sprawdzać.',
+    ],
+  ])('says why %s refused a change of a profile', async (code, en, pl) => {
+    const i18n = setupI18n()
+
+    await activateLocale(i18n, 'en')
+    expect(i18n._(errorMessage(code))).toBe(en)
+    await activateLocale(i18n, 'pl')
+    expect(i18n._(errorMessage(code))).toBe(pl)
   })
 
   it('falls back to the generic message for an unknown code', () => {

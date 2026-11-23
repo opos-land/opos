@@ -26,7 +26,7 @@ test('a head creates, activates and publishes an edition', async ({ page, accoun
   await expect(page).toHaveURL(panelUrl(`/${tenant.slug}/settings/editions/new`))
   const create = page.getByRole('region', { name: 'Edition data' })
   await create.getByLabel('Name').fill('Next year')
-  await create.getByLabel('Address').fill('next-year')
+  await create.getByLabel('Address', { exact: true }).fill('next-year')
   await create.getByLabel('Starts').fill('2027-06-04T10:00')
   await create.getByLabel('Ends').fill('2027-06-06T18:00')
   await create.getByRole('button', { name: 'Create the edition' }).click()
@@ -41,6 +41,26 @@ test('a head creates, activates and publishes an edition', async ({ page, accoun
   await expect(menu.getByRole('link')).toHaveText([
     'Dashboard',
     'Programme',
+    'Access',
+    'Edition settings',
+  ])
+  // Everything of the shop is folded into one folder, which opens to its sections.
+  await expect(menu.getByRole('button')).toHaveText(['Shop'])
+  await menu.getByRole('button', { name: 'Shop' }).click()
+  await expect(menu.getByRole('link')).toHaveText([
+    'Dashboard',
+    'Programme',
+    'Orders',
+    'Emails',
+    'Sales',
+    'Scanners',
+    'Ticket types',
+    'Add-ons',
+    'Merchandise',
+    'Discount codes',
+    'Ticket holders’ data',
+    'Documents and consents',
+    'Settings',
     'Access',
     'Edition settings',
   ])
@@ -85,7 +105,9 @@ test('a head adds a programme item with a speaker', async ({ page, accounts, ten
     .click()
   await expect(page.getByText('There are no programme items yet.')).toBeVisible()
 
-  const create = page.getByRole('region', { name: 'New programme item' })
+  // An item is added on a page of its own, which opens the item once it is there.
+  await page.getByRole('link', { name: 'New programme item' }).click()
+  const create = page.getByRole('region', { name: 'Programme item data' })
   await create.getByLabel('Title').fill('Opening ceremony')
   await create.getByLabel('Starts').fill('2027-06-04T10:00')
   await create.getByLabel('Ends').fill('2027-06-04T11:00')

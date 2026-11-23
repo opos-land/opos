@@ -62,6 +62,12 @@ export function AdminNavigation() {
       label: t`Two-factor reset`,
       current: pathname === '/two-factor-reset',
     },
+    {
+      to: '/profile-reports',
+      label: t`Profile reports`,
+      current: pathname.startsWith('/profile-reports'),
+    },
+    { to: '/profiles', label: t`Profiles`, current: pathname.startsWith('/profiles') },
     { to: '/log', label: t`Log`, current: pathname === '/log' },
   ]
 

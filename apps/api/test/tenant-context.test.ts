@@ -317,14 +317,14 @@ describe('the write queue of a tenant', () => {
         .then((res) => res),
     )
     await sleep(300)
-    const started = Date.now()
+    const started = performance.now()
     await as(b.head, b.slug).get('/tenants/current').expect(200)
-    expect(Date.now() - started).toBeLessThan(500)
+    expect(performance.now() - started).toBeLessThan(500)
 
     // A write the check refuses is answered at once, not behind the queue.
-    const refusedAt = Date.now()
+    const refusedAt = performance.now()
     await as(programReader, a.slug).post('/probe/slow-write', {}).expect(403)
-    expect(Date.now() - refusedAt).toBeLessThan(200)
+    expect(performance.now() - refusedAt).toBeLessThan(200)
 
     const statuses = (await Promise.all(writes)).map((res) => res.status)
     expect(statuses.filter((status) => status === 200).length).toBeGreaterThanOrEqual(4)

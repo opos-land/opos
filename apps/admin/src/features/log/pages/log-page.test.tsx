@@ -136,6 +136,10 @@ describe('LogPage', () => {
             'account.reset-2fa',
             'admin.grant',
             'admin.revoke',
+            'profile-report.close',
+            'profile.take-down',
+            'profile.restore',
+            'account.clear-name',
           ] as const
         ).map((action, index) => entry({ id: `e-${index}`, action })),
       )
@@ -153,6 +157,10 @@ describe('LogPage', () => {
         'Zresetowano uwierzytelnianie dwuskładnikowe',
         'Nadano rolę administratora',
         'Odebrano rolę administratora',
+        'Zamknięto zgłoszenie profilu',
+        'Zdjęto profil',
+        'Przywrócono profil',
+        'Wyczyszczono nazwę konta',
       ])
     } finally {
       i18n.loadAndActivate({ locale: 'en', messages: {} })

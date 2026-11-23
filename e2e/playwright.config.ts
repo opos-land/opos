@@ -3,7 +3,7 @@ import { defineConfig, devices } from '@playwright/test'
 import { API_DIR, apiEnv, portOf, stack } from './fixtures/stack'
 
 // E2E through the UI of the panel, the portal and the admin application against the full stack.
-// The infrastructure comes from `pnpm infra:init`, migrations and the seed run before; the four
+// The infrastructure comes from `pnpm stack:init`, migrations and the seed run before; the four
 // applications start here. The API starts fresh on every run, so its in-memory rate-limit
 // counters start from zero; outside CI a running frontend is reused.
 
@@ -51,7 +51,7 @@ export default defineConfig({
       stderr: 'pipe',
     },
     {
-      command: 'pnpm run dev',
+      command: 'pnpm run local',
       cwd: app('panel'),
       url: stack.panel,
       env: devServerEnv,
@@ -59,7 +59,7 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: 'pnpm run dev',
+      command: 'pnpm run local',
       cwd: app('portal'),
       url: stack.portal,
       env: devServerEnv,
@@ -67,7 +67,7 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: 'pnpm run dev',
+      command: 'pnpm run local',
       cwd: app('admin'),
       url: stack.admin,
       env: devServerEnv,

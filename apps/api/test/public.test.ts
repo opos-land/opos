@@ -1,16 +1,20 @@
 import { randomUUID } from 'node:crypto'
 import { type NestExpressApplication } from '@nestjs/platform-express'
+import { sql } from 'drizzle-orm'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from './app'
 import { createAccount, deleteCreatedAccounts } from './auth'
+import { asPostgres } from './files'
 import {
   addEdition,
   addLike,
+  addLogo,
   addProgramItem,
   addSpeaker,
   closeTenantDb,
   deleteCreatedTenants,
+  setVenue,
   tenantWithHead,
 } from './tenants'
 
@@ -47,14 +51,24 @@ async function published(tenantId: string, values: Parameters<typeof addEdition>
 }
 
 describe('the convention', () => {
-  it('answers its name, language and time zone to anyone, and nothing else', async () => {
+  it('answers its name, language, time zone and logo to anyone, and nothing else', async () => {
     const res = await get(`/${a.slug}`).expect(200)
 
     expect(res.body).toEqual({
       name: `Tenant ${a.slug}`,
       defaultLocale: expect.any(String) as string,
       timezone: expect.any(String) as string,
+      logo: null,
     })
+  })
+
+  it('answers its logo as the file and the proportions of the picture', async () => {
+    const t = await fresh()
+    const logo = await addLogo(t.id, 300, 100)
+
+    const res = await get(`/${t.slug}`).expect(200)
+
+    expect(res.body).toMatchObject({ logo })
   })
 
   it('answers 404 for an unknown address', async () => {
@@ -100,7 +114,22 @@ describe('editions', () => {
       startsAt: expect.any(String) as string,
       endsAt: expect.any(String) as string,
       isActive: true,
+      venueName: null,
+      venueAddress: null,
+      venueCity: null,
     })
+  })
+
+  it('shows the venue of an edition, on its own and among the others', async () => {
+    const t = await fresh()
+    const { id, slug } = await published(t.id)
+    await setVenue(id, { name: 'Congress Hall', address: '1 Main St', city: 'Poznań' })
+    const venue = { venueName: 'Congress Hall', venueAddress: '1 Main St', venueCity: 'Poznań' }
+
+    expect((await get(`/${t.slug}/editions/${slug}`).expect(200)).body).toMatchObject(venue)
+    expect((await get(`/${t.slug}/editions`).expect(200)).body).toEqual([
+      expect.objectContaining(venue),
+    ])
   })
 
   it('answers an unpublished edition exactly as an unknown one', async () => {
@@ -184,7 +213,15 @@ describe('the programme', () => {
         description: null,
         startsAt: '2027-06-01T09:00:00.000Z',
         endsAt: '2027-06-01T10:00:00.000Z',
-        speakers: [{ firstName: 'Kasia', lastName: 'Mazur' }],
+        speakers: [
+          {
+            firstName: 'Kasia',
+            nickname: null,
+            lastName: 'Mazur',
+            nameOrder: 'nickname-middle',
+            profileId: null,
+          },
+        ],
         likeCount: 2,
       },
       {
@@ -218,7 +255,9 @@ describe('the programme', () => {
     }
   })
 
-  it('leaves out a speaker with no name, who has nothing public to show', async () => {
+  // docs/specs/0016-public-profile.md, N5: a speaker is shown by its public name, and one with no
+  // part of a name is listed all the same, for a page to name "Anon".
+  it('lists a speaker with no part of a name, whom a page names Anon', async () => {
     const t = await fresh()
     const { id: editionId, slug } = await published(t.id)
     const item = await addProgramItem(t.id, editionId)
@@ -226,7 +265,71 @@ describe('the programme', () => {
 
     const res = await get(`${itemsPath(t.slug, slug)}/${item}`).expect(200)
 
-    expect(res.body).toMatchObject({ speakers: [] })
+    expect(res.body).toMatchObject({
+      speakers: [
+        {
+          firstName: null,
+          nickname: null,
+          lastName: null,
+          nameOrder: 'nickname-middle',
+          profileId: null,
+        },
+      ],
+    })
+  })
+
+  it('gives the nickname of a speaker and where the speaker put it', async () => {
+    const t = await fresh()
+    const { id: editionId, slug } = await published(t.id)
+    const item = await addProgramItem(t.id, editionId)
+    const speaker = await createAccount({ first_name: 'Kasia', last_name: 'Mazur' })
+    await asPostgres(
+      sql`update accounts set nickname = 'Mazurek', name_order = 'nickname-last' where id = ${speaker.id}`,
+    )
+    await addSpeaker(t.id, item, speaker.id)
+
+    const res = await get(`${itemsPath(t.slug, slug)}/${item}`).expect(200)
+
+    expect(res.body).toMatchObject({
+      speakers: [
+        { firstName: 'Kasia', nickname: 'Mazurek', lastName: 'Mazur', nameOrder: 'nickname-last' },
+      ],
+    })
+  })
+
+  // P11: the programme leads to a speaker's profile while it is published, and only then.
+  it('names the profile of a speaker only while it is published, by its own identifier', async () => {
+    const t = await fresh()
+    const { id: editionId, slug } = await published(t.id)
+    const item = await addProgramItem(t.id, editionId)
+    const speaker = await createAccount({ first_name: 'Kasia' })
+    await addSpeaker(t.id, item, speaker.id)
+    const profileOf = async () =>
+      (
+        (await get(`${itemsPath(t.slug, slug)}/${item}`).expect(200)).body as {
+          speakers: { profileId: string | null }[]
+        }
+      ).speakers[0]!.profileId
+    const [row] = await asPostgres(
+      sql`insert into account_profiles (account_id) values (${speaker.id}) returning public_id`,
+    )
+    const publicId = (row as { public_id: string }).public_id
+
+    expect(await profileOf()).toBeNull()
+
+    await asPostgres(
+      sql`update account_profiles set published_at = now() where account_id = ${speaker.id}`,
+    )
+    expect(await profileOf()).toBe(publicId)
+    expect(publicId).not.toBe(speaker.id)
+
+    await asPostgres(sql`
+      update account_profiles
+      set published_at = null, taken_down_at = now(), taken_down_reason = 'spam',
+        taken_down_after_report = false
+      where account_id = ${speaker.id}
+    `)
+    expect(await profileOf()).toBeNull()
   })
 
   it('shows one item with the same counters', async () => {

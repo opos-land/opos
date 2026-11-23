@@ -47,6 +47,38 @@ describe('accounts mirror auth.users', () => {
     expect(await account(user.id)).toMatchObject({ first_name: 'Cher', last_name: null })
   })
 
+  // docs/specs/0016-public-profile.md, N7: a name that comes with a new user, from the sign-up
+  // form or from Google, is not the API's to refuse, so the mirror takes the characters out.
+  it('keeps control and direction characters out of the names of a new user', async () => {
+    const user = await createUser({
+      first_name: 'An\u202Ena\u0007',
+      last_name: '\u2067No\u200Fwak\u2069',
+    })
+
+    expect(await account(user.id)).toMatchObject({ first_name: 'Anna', last_name: 'Nowak' })
+  })
+
+  it('keeps them out of a Google full name too', async () => {
+    const user = await createUser({ full_name: 'Jan\u061C Kowal\u202Aski\u009F' })
+
+    expect(await account(user.id)).toMatchObject({ first_name: 'Jan', last_name: 'Kowalski' })
+  })
+
+  it('takes a name made of such characters alone as no name', async () => {
+    const user = await createUser({ first_name: '\u202E\u200F', last_name: ' \u0001 ' })
+
+    expect(await account(user.id)).toMatchObject({ first_name: null, last_name: null })
+  })
+
+  it('leaves the letters of every script and the marks a name needs', async () => {
+    const user = await createUser({ first_name: 'Zo\u00EB', last_name: "O'Łoś-\u0639\u0644\u064A" })
+
+    expect(await account(user.id)).toMatchObject({
+      first_name: 'Zo\u00EB',
+      last_name: "O'Łoś-\u0639\u0644\u064A",
+    })
+  })
+
   it('follows an email change', async () => {
     const user = await createUser()
     const email = `Changed-${user.id.slice(0, 8)}@Example.test`
@@ -337,10 +369,39 @@ describe('accounts constraints', () => {
       migrator`update accounts set theme = 'blue' where id = ${user.id}`,
     ).rejects.toThrow(/invalid input value for enum theme/)
   })
+
+  // docs/specs/0016-public-profile.md, N1 and N2.
+  it('starts an account with no nickname and the nickname between the names', async () => {
+    const user = await createUser()
+
+    expect(await migrator`select nickname, name_order from accounts where id = ${user.id}`).toEqual(
+      [{ nickname: null, name_order: 'nickname-middle' }],
+    )
+  })
+
+  it('refuses an order of the name other than the two', async () => {
+    const user = await createUser()
+
+    await migrator`update accounts set name_order = 'nickname-last' where id = ${user.id}`
+    await expect(
+      migrator`update accounts set name_order = 'nickname-first' where id = ${user.id}`,
+    ).rejects.toThrow(/invalid input value for enum name_order/)
+  })
+
+  it('refuses an empty nickname and one over 50 characters', async () => {
+    const user = await createUser()
+
+    await migrator`update accounts set nickname = ${'x'.repeat(50)} where id = ${user.id}`
+    for (const nickname of ['', 'x'.repeat(51)]) {
+      await expect(
+        migrator`update accounts set nickname = ${nickname} where id = ${user.id}`,
+      ).rejects.toThrow(/accounts_nickname_length/)
+    }
+  })
 })
 
 describe('accounts on the runtime roles', () => {
-  it('lets opos_app read every column and change only the names, the locale and the theme', async () => {
+  it('lets opos_app read every column and change only the names, their order, the locale and the theme', async () => {
     const user = await createUser()
 
     await app`update accounts set first_name = 'Ola', last_name = 'Lis', locale = 'en', theme = 'dark' where id = ${user.id}`
@@ -349,6 +410,10 @@ describe('accounts on the runtime roles', () => {
       last_name: 'Lis',
       locale: 'en',
     })
+    await app`update accounts set nickname = 'Lisek', name_order = 'nickname-last' where id = ${user.id}`
+    expect(await app`select nickname, name_order from accounts where id = ${user.id}`).toEqual([
+      { nickname: 'Lisek', name_order: 'nickname-last' },
+    ])
     expect(await app`select theme from accounts where id = ${user.id}`).toEqual([{ theme: 'dark' }])
     await app`update accounts set theme = null where id = ${user.id}`
     expect(await app`select theme from accounts where id = ${user.id}`).toEqual([{ theme: null }])
@@ -365,11 +430,14 @@ describe('accounts on the runtime roles', () => {
     }
   })
 
-  it('gives opos_app_global no access to accounts', async () => {
+  // What it reads, the public name alone, is in profiles.test.ts.
+  it('gives opos_app_global no email address and no write on accounts', async () => {
     const user = await createUser()
 
     for (const query of [
-      global`select 1 from accounts where id = ${user.id}`,
+      global`select * from accounts where id = ${user.id}`,
+      global`select email from accounts where id = ${user.id}`,
+      global`select locale, theme, email_confirmed_at, mfa_enabled_at from accounts where id = ${user.id}`,
       global`update accounts set first_name = 'X' where id = ${user.id}`,
       global`delete from accounts where id = ${user.id}`,
       global`insert into accounts (id, email) values (gen_random_uuid(), 'x@example.test')`,

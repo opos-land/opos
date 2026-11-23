@@ -253,6 +253,10 @@ Scenario: F3.2 Capacity-limited add-on
   Given an add-on with limited capacity
   Then it shows places left when below the organizer's threshold
   And it cannot be ticked when none are left
+
+Scenario: F3.3 No add-ons
+  Given the ticket type has no add-ons
+  Then this step is skipped and hidden from the step indicator
 ```
 
 ### F4: Merch (step 3)
@@ -285,6 +289,10 @@ Scenario: F4.7 Quantity
   Given the item allows more than one per order
   Then the buyer can set a quantity up to the per-order limit and remaining stock
   And for items with variants, each chosen variant is its own line
+
+Scenario: F4.9 No merchandise
+  Given the ticket type offers no merchandise
+  Then this step is skipped and hidden from the step indicator
 ```
 
 ### F5: Summary & consents (step 4)
@@ -299,7 +307,7 @@ Scenario: F5.2 Consents
   Then all consents configured for the edition are listed, each linking to its document
   And the payment provider's own consent, when its module requires one, is shown as the module says
   And required consents are marked
-  And a "Select all required" checkbox ticks every required consent
+  And a "Select all required" checkbox ticks every required consent of the edition, and the provider's own only when its module allows it
   And optional consents are never ticked by "Select all required"
 
 Scenario: F5.3 Missing consent
@@ -453,12 +461,12 @@ a–p, its points 2–5 and 7–10, and its list of what to check in the sandbox
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | start a payment attempt for an order: the amount and currency, the order number as its reference, a description with no personal data, where the buyer returns | each attempt is its own transaction; its time limit and method mask (points 3, 4)                                                            |
 | confirm a payment to the API: which attempt, the amount paid and when it was made; a repeat changes nothing                                                    | the notification, then the verification (facts b, c, f, g)                                                                                   |
-| tell the state of an attempt when asked: before an order expires, and before a new attempt starts                                                              | fact h                                                                                                                                       |
+| tell the state of an attempt when asked: before an order expires, and before a new attempt starts; none starts when an earlier one was paid                    | fact h                                                                                                                                       |
 | report a failure and its reason, where the provider does                                                                                                       | cards and BLIK only, by an additional notification (point 2)                                                                                 |
 | refuse a payment its order no longer needs, where the provider can                                                                                             | leaving it unverified (point 3)                                                                                                              |
 | say where the money of a payment is, with the convention or still with the buyer, for the shop's pages and emails                                              | when a payment that needs review is verified (point 4)                                                                                       |
 | list the methods the shop names                                                                                                                                | BLIK, Polish bank transfers (pay-by-link), cards (point 9)                                                                                   |
-| say what it requires of the shop's pages: a consent, its logo, limits on fields                                                                                | the consent's wording and place (point 7); an email of up to 50 characters (point 8)                                                         |
+| say what it requires of the shop's pages: a consent, its logo, limits on fields                                                                                | the consent's wording and place, and whether "Select all required" may tick it (point 7); an email of up to 50 characters (point 8)          |
 | keep information with each attempt, shown on the order (B4.2) and in the payments export (B7.2)                                                                | the transaction number, by which an organizer finds the payment in Przelewy24's panel; the payout batch number and the commission (point 10) |
 | connect the convention's own account, by an organizer with the shop permission, and say when it is ready to sell (B1.4)                                        | the credentials; the email finishing an abandoned payment turned off (point 4)                                                               |
 
@@ -510,15 +518,19 @@ Scenario: P1.9 Payment after the hold
 
 Scenario: P1.10 A payment the order no longer needs
   Given a "Paid", "Needs review", "Canceled" or "Declined" order
-  When its provider confirms another payment for it, one the provider's module could not refuse
-  Then the order is unchanged
-  And the payment is shown on the order, the organizers are alerted by email and the buyer is emailed where the money is
+  When its provider confirms another payment for it
+  Then the provider's module refuses it where the provider can, and the order is unchanged
+  And refused or not, the payment is shown on the order and the buyer is emailed where the money is
+  And the organizers are alerted by email when it could not be refused
 ```
 
 ### P2: Needs review
 
 The organizers alerted below are the head organizers and the organizers with write access to the
 edition's tickets: those who can settle the order.
+
+Stock and capacity below include the use of the order's discount code (B3.1): an organizer raises
+the code's usage limit like stock, or declines.
 
 ```gherkin
 Scenario: P2.1 Amount mismatch
@@ -715,19 +727,19 @@ Every email has a fixed text with the convention's simple branding, and is logge
 "Organizers" below are those who can settle the order, as P2 says. Where the money is, in an
 email to a buyer, is the sentence the provider's module gives.
 
-| Email                | Sent when                                                      | Contains                                                                                                                                                                                                    |
-| -------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Order confirmation   | Order becomes "Paid"                                           | Lines, total, QR code, pick-up notice, order link, the seller's details, links to the documents accepted; for a teen, the guardian consent rule and form link; for an email with an account, a sign-in link |
-| Order expired        | Unpaid order expires                                           | Link to start again                                                                                                                                                                                         |
-| Order changed        | Organizer edits the ticket holder, the email or a variant      | What changed; on a new email, the new QR code and order link to the new address and a notice to the old one                                                                                                 |
-| Payment under review | Order goes to "Needs review"                                   | That the payment arrived, where the money is, that an organizer will get in touch                                                                                                                           |
-| Order declined       | Organizer declines an order that needed review                 | That the payment was declined, where the money is; the convention's contact                                                                                                                                 |
-| Order canceled       | Organizer cancels a paid order                                 | That the QR code is no longer valid; the convention's contact                                                                                                                                               |
-| Payment not needed   | An order gets a payment it no longer needs                     | Where the money is; the convention's contact                                                                                                                                                                |
-| Order link           | Buyer asks for a fresh link                                    | Read-only order link                                                                                                                                                                                        |
-| Needs review         | Order goes to "Needs review" (to the organizers)               | Order number, what did not match                                                                                                                                                                            |
-| Payment not needed   | An order gets a payment it no longer needs (to the organizers) | Order number, the payment                                                                                                                                                                                   |
-| Pre-edition reminder | N days before the edition, set by organizer                    | QR code, opening hours, pick-up info, guardian rules and consent form link                                                                                                                                  |
+| Email                | Sent when                                                                   | Contains                                                                                                                                                                                                    |
+| -------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Order confirmation   | Order becomes "Paid"                                                        | Lines, total, QR code, pick-up notice, order link, the seller's details, links to the documents accepted; for a teen, the guardian consent rule and form link; for an email with an account, a sign-in link |
+| Order expired        | Unpaid order expires                                                        | Link to start again                                                                                                                                                                                         |
+| Order changed        | Organizer edits the ticket holder, the email or a variant                   | What changed; on a new email, the new QR code and order link to the new address and a notice to the old one                                                                                                 |
+| Payment under review | Order goes to "Needs review"                                                | That the payment arrived, where the money is, that an organizer will get in touch                                                                                                                           |
+| Order declined       | Organizer declines an order that needed review                              | That the payment was declined, where the money is; the convention's contact                                                                                                                                 |
+| Order canceled       | Organizer cancels a paid order                                              | That the QR code is no longer valid; the convention's contact                                                                                                                                               |
+| Payment not needed   | An order gets a payment it no longer needs                                  | Where the money is; the convention's contact                                                                                                                                                                |
+| Order link           | Buyer asks for a fresh link                                                 | Read-only order link                                                                                                                                                                                        |
+| Needs review         | Order goes to "Needs review" (to the organizers)                            | Order number, what did not match                                                                                                                                                                            |
+| Payment not needed   | A payment an order no longer needs could not be refused (to the organizers) | Order number, the payment                                                                                                                                                                                   |
+| Pre-edition reminder | N days before the edition, set by organizer                                 | QR code, opening hours, pick-up info, guardian rules and consent form link                                                                                                                                  |
 
 ### Non-functional requirements
 

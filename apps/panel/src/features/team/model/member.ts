@@ -22,6 +22,7 @@ export function memberName(member: Pick<Member, 'account'>) {
 export interface MemberFormValues {
   role: 'head' | 'org'
   settingsAccess: Member['settingsAccess']
+  brandingAccess: Member['brandingAccess']
   shopConfigAccess: Member['shopConfigAccess']
   /** The wall-clock time of the tenant's zone, or '' for no expiry. */
   expiresAt: string
@@ -30,6 +31,7 @@ export interface MemberFormValues {
 export type MemberChange = Partial<{
   role: 'head' | 'org'
   settingsAccess: Member['settingsAccess']
+  brandingAccess: Member['brandingAccess']
   shopConfigAccess: Member['shopConfigAccess']
   expiresAt: string | null
 }>
@@ -48,6 +50,7 @@ export function memberChange(
   const change: MemberChange = {}
   if (after.role !== before.role) change.role = after.role
   if (after.settingsAccess !== before.settingsAccess) change.settingsAccess = after.settingsAccess
+  if (after.brandingAccess !== before.brandingAccess) change.brandingAccess = after.brandingAccess
   if (after.shopConfigAccess !== before.shopConfigAccess) {
     change.shopConfigAccess = after.shopConfigAccess
   }

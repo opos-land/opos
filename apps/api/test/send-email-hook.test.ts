@@ -342,7 +342,7 @@ describe('POST /hooks/send-email', () => {
     })
     try {
       const { payload, headers } = signed(hookBody('signup'))
-      const started = Date.now()
+      const started = performance.now()
 
       await request(slow.getHttpServer())
         .post('/hooks/send-email')
@@ -350,7 +350,7 @@ describe('POST /hooks/send-email', () => {
         .send(payload)
         .expect(500)
 
-      expect(Date.now() - started).toBeLessThan(5_000)
+      expect(performance.now() - started).toBeLessThan(5_000)
       expect(commands.join('')).not.toMatch(/^DATA/m)
     } finally {
       await slow.close()

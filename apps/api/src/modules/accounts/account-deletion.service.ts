@@ -3,6 +3,7 @@ import { TenantContextService } from '../../common/als/tenant-context.service'
 import { GlobalDbService } from '../../common/database/global-db.service'
 import { ApiError } from '../../common/errors/api-error'
 import { AuthAdminClient } from '../auth/auth-admin.client'
+import { FilesService } from '../files/files.service'
 
 /** How recent the sign-in recorded in the access token must be. */
 export const RECENT_SIGN_IN_SECONDS = 5 * 60
@@ -20,6 +21,7 @@ export class AccountDeletionService {
     private readonly context: TenantContextService,
     private readonly global: GlobalDbService,
     private readonly admin: AuthAdminClient,
+    private readonly files: FilesService,
   ) {}
 
   async deleteCurrent(): Promise<void> {
@@ -32,14 +34,17 @@ export class AccountDeletionService {
     }
     if (await this.global.ownLastHead()) throw lastHead()
 
+    const { id } = this.context.account()
     try {
       // An account deleted by a concurrent request is gone either way.
-      await this.admin.deleteUser(this.context.account().id)
+      await this.admin.deleteUser(id)
     } catch (error) {
       // A change committed since the check can leave the account a last head; the deferred
       // trigger then refuses the cascade and Supabase Auth answers with a failure of its own.
       if (await this.global.ownLastHead()) throw lastHead()
       throw error
     }
+    // Its files' rows went with it; their objects go now, or with the sweep.
+    await this.files.forgetAccount(id)
   }
 }

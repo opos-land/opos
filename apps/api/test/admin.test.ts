@@ -28,6 +28,7 @@ import {
   closeAdminDb,
   countLoggedActions,
   grant,
+  logAction,
   loggedActions,
   removeFactors,
   sessionToken,
@@ -35,6 +36,7 @@ import {
 import { deleteMail, waitForMail } from './mailpit'
 import {
   addEdition,
+  addOrder,
   addRecoveryCodeHash,
   addVerifiedFactor,
   closeTenantDb,
@@ -46,8 +48,8 @@ import {
   tenantWithHead,
 } from './tenants'
 
-// The admin routes (docs/specs/platform-administration.md): each against every actor, then what
-// each changes, what it refuses and the entry it leaves in the log.
+// The admin routes (docs/specs/0001-platform-administration.md): each against every actor, then
+// what each changes, what it refuses and the entry it leaves in the log.
 
 type Method = 'get' | 'post' | 'put' | 'patch' | 'delete'
 
@@ -544,6 +546,22 @@ describe('DELETE /admin/tenants/{tenantId}', () => {
     expect(await loggedActions({ tenantId: tenant.id })).toEqual([])
   })
 
+  // An order is kept for years after its edition: a convention that has one is not deleted.
+  it('refuses to delete a suspended tenant that holds an order', async () => {
+    const tenant = await tenantWithHead()
+    const edition = await addEdition(tenant.id, { slug: '2027', isPublished: true })
+    await addOrder(tenant.id, edition)
+    await suspend(tenant.id)
+
+    const res = await remove(tenant.id)
+
+    expect(res.status).toBe(409)
+    expect(res.body).toMatchObject({ code: 'tenant.has-orders' })
+    expect((await asAdmin(api().get(`/admin/tenants/${tenant.id}`))).status).toBe(200)
+    expect(await loggedActions({ tenantId: tenant.id })).toEqual([])
+    await restore(tenant.id)
+  })
+
   it('deletes a suspended tenant for good, and its head still signs in', async () => {
     const tenant = await tenantWithHead()
     await addEdition(tenant.id, { slug: '2027', isPublished: true })
@@ -745,6 +763,30 @@ describe('GET /admin/actions', () => {
       admin: null,
       tenant: null,
       account: { id: granted.id, firstName: 'Greta', email: granted.email },
+    })
+  })
+
+  // docs/specs/0016-public-profile.md, T12.
+  it.each([
+    'profile-report.close',
+    'profile.take-down',
+    'profile.restore',
+    'account.clear-name',
+  ] as const)('lists %s with the account it was done to', async (action) => {
+    const subject = await createAccount({ first_name: 'Sara' })
+    await logAction({ action, adminAccountId: admin.id, accountId: subject.id })
+
+    const res = await asAdmin(api().get('/admin/actions').query({ limit: 20 }))
+
+    expect(res.status).toBe(200)
+    const entry = (res.body as AdminAction[]).find(
+      (candidate) => candidate.account?.id === subject.id,
+    )
+    expect(entry).toMatchObject({
+      action,
+      admin: { id: admin.id },
+      tenant: null,
+      account: { firstName: 'Sara', email: subject.email },
     })
   })
 

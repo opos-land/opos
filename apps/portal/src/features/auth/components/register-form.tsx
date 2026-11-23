@@ -3,7 +3,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link } from 'react-router'
-import { PRIVACY_PATH } from '../../../shared/config/routes'
+import { PRIVACY_PATH, TERMS_PATH } from '../../../shared/config/routes'
 import { Button, ErrorMessage, FormField, Input, linkClass } from '../../../shared/ui'
 import { signUp } from '../api/auth'
 import { registrationSchema } from '../model/registration'
@@ -59,7 +59,11 @@ export function RegisterForm({
       </FormField>
       <p className="text-muted-foreground text-sm">
         <Trans>
-          By creating an account you confirm that you have read the{' '}
+          By creating an account you accept the{' '}
+          <Link to={TERMS_PATH} className={linkClass}>
+            terms
+          </Link>{' '}
+          and confirm that you have read the{' '}
           <Link to={PRIVACY_PATH} className={linkClass}>
             privacy policy
           </Link>

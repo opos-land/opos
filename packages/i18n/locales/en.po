@@ -7,6 +7,23 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: en\n"
 
+#. A nickname in quotation marks, beside a first or a last name: Anna “Lisek” Nowak
+#: src/names.ts
+msgid "“{nickname}”"
+msgstr "“{nickname}”"
+
+#: src/order-emails.ts
+msgid "{editionName} starts soon: your QR code"
+msgstr "{editionName} starts soon: your QR code"
+
+#: src/order-emails.ts
+msgid "{editionName} starts soon. Here is what you need at the entrance for the order {number}."
+msgstr "{editionName} starts soon. Here is what you need at the entrance for the order {number}."
+
+#: src/errors.ts
+msgid "A consent links this document. Change or delete the consent first."
+msgstr "A consent links this document. Change or delete the consent first."
+
 #: src/errors.ts
 msgid "A convention must keep at least one head organizer. Make someone else a head organizer first."
 msgstr "A convention must keep at least one head organizer. Make someone else a head organizer first."
@@ -15,15 +32,79 @@ msgstr "A convention must keep at least one head organizer. Make someone else a 
 msgid "A head organizer already has access to every edition."
 msgstr "A head organizer already has access to every edition."
 
+#: src/order-emails.ts
+msgid "A new link to your order {number} for {conventionName}"
+msgstr "A new link to your order {number} for {conventionName}"
+
+#: src/order-emails.ts
+msgid "A payment arrived for the order {number} of {conventionName} and could not confirm it."
+msgstr "A payment arrived for the order {number} of {conventionName} and could not confirm it."
+
+#: src/order-emails.ts
+msgid "A payment arrived for your order {number} for {conventionName}, which was not waiting for one any more. It changes nothing of the order."
+msgstr "A payment arrived for your order {number} for {conventionName}, which was not waiting for one any more. It changes nothing of the order."
+
+#: src/order-emails.ts
+msgid "A payment arrived that your order {number} does not need"
+msgstr "A payment arrived that your order {number} does not need"
+
+#: src/order-emails.ts
+msgid "A payment of {paid} arrived for the order {number} of {conventionName}, which was not waiting for one, and the payment provider could not refuse it."
+msgstr "A payment of {paid} arrived for the order {number} of {conventionName}, which was not waiting for one, and the payment provider could not refuse it."
+
+#: src/errors.ts
+msgid "A scanner cannot work longer than your access to the convention. Set an earlier end, or ask an organizer whose access lasts longer."
+msgstr "A scanner cannot work longer than your access to the convention. Set an earlier end, or ask an organizer whose access lasts longer."
+
+#: src/errors.ts
+msgid "A shop of this convention is open. Close it first."
+msgstr "A shop of this convention is open. Close it first."
+
+#: src/errors.ts
+msgid "Accept every required consent to place the order."
+msgstr "Accept every required consent to place the order."
+
 #: src/emails.ts
 msgid "Accept the invitation"
 msgstr "Accept the invitation"
+
+#. Glossary term: add-on (an optional extra bought with a ticket)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "add-on"
+msgstr "add-on"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Add-ons"
+msgstr "Add-ons"
 
 #. Glossary term: admin
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "administrator"
 msgstr "administrator"
+
+#: src/exports.ts
+msgctxt "export value"
+msgid "Adult"
+msgstr "Adult"
+
+#. Glossary term: age band (child, teen or adult)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "age band"
+msgstr "age band"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Age band"
+msgstr "Age band"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Amount"
+msgstr "Amount"
 
 #: src/errors.ts
 msgid "An account with this email address already exists."
@@ -33,11 +114,109 @@ msgstr "An account with this email address already exists."
 msgid "An administrator must have two-factor authentication on. Turn it on in the portal, then ask for the role to be granted again."
 msgstr "An administrator must have two-factor authentication on. Turn it on in the portal, then ask for the role to be granted again."
 
+#: src/emails.ts
+msgid "An administrator of OPOS cleared the name of your account: your first name, nickname and last name. Until you enter a name again, others see you as “Anon”."
+msgstr "An administrator of OPOS cleared the name of your account: your first name, nickname and last name. Until you enter a name again, others see you as “Anon”."
+
+#: src/emails.ts
+msgid "An administrator of OPOS restored your profile. It is not public yet: publish it on the profile page of your account when you are ready."
+msgstr "An administrator of OPOS restored your profile. It is not public yet: publish it on the profile page of your account when you are ready."
+
+#: src/emails.ts
+msgid "An administrator of OPOS took your profile down. It is no longer public, your avatar was removed, and the profile cannot be published until an administrator restores it."
+msgstr "An administrator of OPOS took your profile down. It is no longer public, your avatar was removed, and the profile cannot be published until an administrator restores it."
+
+#: src/errors.ts
+msgid "An administrator took this profile down. It cannot be published until it is restored."
+msgstr "An administrator took this profile down. It cannot be published until it is restored."
+
+#: src/errors.ts
+msgid "An order has already accepted this, so it cannot be deleted. Hide it instead: it leaves the shop and stays on its orders."
+msgstr "An order has already accepted this, so it cannot be deleted. Hide it instead: it leaves the shop and stays on its orders."
+
+#: src/errors.ts
+msgid "An order of this convention is waiting for payment. You can replace the credentials once it is paid or expires."
+msgstr "An order of this convention is waiting for payment. You can replace the credentials once it is paid or expires."
+
+#: src/errors.ts
+msgid "An order used this discount code, so it cannot be deleted. End it instead: buyers can no longer use it, and it stays on its orders."
+msgstr "An order used this discount code, so it cannot be deleted. End it instead: buyers can no longer use it, and it stays on its orders."
+
+#: src/order-emails.ts
+msgid "An organizer of {conventionName} canceled your order {number}. Its QR code is no longer valid."
+msgstr "An organizer of {conventionName} canceled your order {number}. Its QR code is no longer valid."
+
+#: src/order-emails.ts
+msgid "An organizer of {conventionName} changed the ticket holder of your order {number}."
+msgstr "An organizer of {conventionName} changed the ticket holder of your order {number}."
+
+#: src/order-emails.ts
+msgid "An organizer of {conventionName} looked at your payment for the order {number} and declined it. The order is not paid and gets no QR code."
+msgstr "An organizer of {conventionName} looked at your payment for the order {number} and declined it. The order is not paid and gets no QR code."
+
+#: src/order-emails.ts
+msgid "An organizer of {conventionName} moved the order {number} to another email address. The QR code and the order link sent to this address no longer work."
+msgstr "An organizer of {conventionName} moved the order {number} to another email address. The QR code and the order link sent to this address no longer work."
+
+#: src/order-emails.ts
+msgid "An organizer of {conventionName} moved the order {number} to this email address."
+msgstr "An organizer of {conventionName} moved the order {number} to this email address."
+
+#: src/order-emails.ts
+msgid "An organizer of {conventionName} swapped a variant of the merchandise in your order {number}. This is the merchandise the order holds now:"
+msgstr "An organizer of {conventionName} swapped a variant of the merchandise in your order {number}. This is the merchandise the order holds now:"
+
+#: src/order-emails.ts
+msgid "An organizer of {conventionName} will get in touch with you. You do not need to pay again."
+msgstr "An organizer of {conventionName} will get in touch with you. You do not need to pay again."
+
+#. The public name of an account that gave no first name, nickname or last name
+#: src/names.ts
+msgid "Anon"
+msgstr "Anon"
+
+#: src/errors.ts
+msgid "Another discount code of this edition already has this text. Choose another."
+msgstr "Another discount code of this edition already has this text. Choose another."
+
+#: src/profiles.ts
+msgid "Another reason"
+msgstr "Another reason"
+
+#: src/errors.ts
+msgid "Another scanner of this edition already has this name. Choose another."
+msgstr "Another scanner of this edition already has this name. Choose another."
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Attempt"
+msgstr "Attempt"
+
 #. Glossary term: attendee
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "attendee"
 msgstr "attendee"
+
+#. Glossary term: avatar (an account's picture)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "avatar"
+msgstr "avatar"
+
+#: src/exports.ts
+msgctxt "export value"
+msgid "Awaiting payment"
+msgstr "Awaiting payment"
+
+#: src/exports.ts
+msgctxt "production numbers"
+msgid "Awaiting payment"
+msgstr "Awaiting payment"
+
+#: src/profiles.ts
+msgid "Board games"
+msgstr "Board games"
 
 #. Glossary term: booth
 #: src/glossary.ts
@@ -45,13 +224,42 @@ msgctxt "glossary"
 msgid "booth"
 msgstr "booth"
 
+#. Glossary term: buyer (who places an order and pays for it)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "buyer"
+msgstr "buyer"
+
+#: src/exports.ts
+msgctxt "export value"
+msgid "Canceled"
+msgstr "Canceled"
+
+#: src/profiles.ts
+msgid "Card games"
+msgstr "Card games"
+
 #: src/errors.ts
 msgid "Check the data you entered."
 msgstr "Check the data you entered."
 
+#: src/exports.ts
+msgctxt "export value"
+msgid "Child"
+msgstr "Child"
+
 #: src/errors.ts
 msgid "Choose a time zone from the list."
 msgstr "Choose a time zone from the list."
+
+#: src/profiles.ts
+msgid "Comics"
+msgstr "Comics"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Commission"
+msgstr "Commission"
 
 #: src/emails.ts
 msgid "Confirm email address"
@@ -93,6 +301,12 @@ msgstr "Confirm your email address to finish creating your OPOS account."
 msgid "Confirm your new email address"
 msgstr "Confirm your new email address"
 
+#. Glossary term: consent (a sentence a buyer accepts with an order)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "consent"
+msgstr "consent"
+
 #. Glossary term: tenant
 #: src/glossary.ts
 msgctxt "glossary"
@@ -105,11 +319,63 @@ msgctxt "glossary"
 msgid "core"
 msgstr "core"
 
+#: src/profiles.ts
+msgid "Cosplay"
+msgstr "Cosplay"
+
+#: src/profiles.ts
+msgid "Crafts"
+msgstr "Crafts"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Currency"
+msgstr "Currency"
+
+#. Glossary term: custom field (a short text an edition asks a ticket holder for)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "custom field"
+msgstr "custom field"
+
+#: src/exports.ts
+msgctxt "export value"
+msgid "Declined"
+msgstr "Declined"
+
+#: src/order-emails.ts
+msgid "Discount"
+msgstr "Discount"
+
+#. Glossary term: discount code (a code a buyer enters to lower the price of an order)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "discount code"
+msgstr "discount code"
+
+#: src/order-emails.ts
+msgid "Documents you accepted"
+msgstr "Documents you accepted"
+
+#: src/order-emails.ts
+msgid "Download the guardian consent form"
+msgstr "Download the guardian consent form"
+
 #. Glossary term: edition
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "edition"
 msgstr "edition"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Email"
+msgstr "Email"
+
+#: src/exports.ts
+msgctxt "export value: a payment attempt"
+msgid "Ended"
+msgstr "Ended"
 
 #: src/errors.ts
 msgid "Enter a valid email address."
@@ -119,11 +385,50 @@ msgstr "Enter a valid email address."
 msgid "Enter the convention name."
 msgstr "Enter the convention name."
 
+#: src/exports.ts
+msgctxt "export value"
+msgid "Expired"
+msgstr "Expired"
+
+#: src/exports.ts
+msgctxt "export value: a payment attempt"
+msgid "Failed"
+msgstr "Failed"
+
+#: src/errors.ts
+msgid "Files are temporarily unavailable. Try again in a moment."
+msgstr "Files are temporarily unavailable. Try again in a moment."
+
+#: src/profiles.ts
+msgid "Film and television"
+msgstr "Film and television"
+
+#. Glossary term: guardian consent (a guardian's written consent for a teen)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "guardian consent"
+msgstr "guardian consent"
+
+#: src/order-emails.ts
+msgid "Guardian consent"
+msgstr "Guardian consent"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Handed out"
+msgstr "Handed out"
+
 #. Glossary term: head
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "head organizer"
 msgstr "head organizer"
+
+#. Glossary term: hold (what an unpaid order keeps of stock and capacity for a time)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "hold"
+msgstr "hold"
 
 #: src/emails.ts
 msgid "If the button does not work, copy this address into your browser:"
@@ -133,6 +438,14 @@ msgstr "If the button does not work, copy this address into your browser:"
 msgid "If you did not ask for it, ignore this message. Your password stays the same."
 msgstr "If you did not ask for it, ignore this message. Your password stays the same."
 
+#: src/order-emails.ts
+msgid "If you did not ask for it, you can ignore this email: the order is as it was."
+msgstr "If you did not ask for it, you can ignore this email: the order is as it was."
+
+#: src/order-emails.ts
+msgid "If you did not ask for it, you can ignore this email: the order is as it was. With questions, write to {contactEmail}."
+msgstr "If you did not ask for it, you can ignore this email: the order is as it was. With questions, write to {contactEmail}."
+
 #: src/emails.ts
 msgid "If you did not ask for this change, do not confirm it and change your password."
 msgstr "If you did not ask for this change, do not confirm it and change your password."
@@ -140,6 +453,10 @@ msgstr "If you did not ask for this change, do not confirm it and change your pa
 #: src/emails.ts
 msgid "If you did not ask for this change, ignore this message."
 msgstr "If you did not ask for this change, ignore this message."
+
+#: src/order-emails.ts
+msgid "If you did not ask for this change, write to {contactEmail}."
+msgstr "If you did not ask for this change, write to {contactEmail}."
 
 #: src/emails.ts
 msgid "If you did not create an account, ignore this message."
@@ -150,6 +467,10 @@ msgid "If you did not do this, change your password right away and turn two-fact
 msgstr "If you did not do this, change your password right away and turn two-factor authentication on again."
 
 #: src/emails.ts
+msgid "If you do not agree with this decision, write to {contact} and say why."
+msgstr "If you do not agree with this decision, write to {contact} and say why."
+
+#: src/emails.ts
 msgid "If you do not expect this invitation, ignore this message."
 msgstr "If you do not expect this invitation, ignore this message."
 
@@ -158,8 +479,48 @@ msgid "If you do not expect this, contact the head organizer of the convention."
 msgstr "If you do not expect this, contact the head organizer of the convention."
 
 #: src/emails.ts
+msgid "If you have a question about this decision, write to {contact}."
+msgstr "If you have a question about this decision, write to {contact}."
+
+#: src/order-emails.ts
+msgid "If you have questions about the order or its payment, write to {contactEmail}."
+msgstr "If you have questions about the order or its payment, write to {contactEmail}."
+
+#: src/order-emails.ts
+msgid "If you have questions, write to {contactEmail}."
+msgstr "If you have questions, write to {contactEmail}."
+
+#: src/errors.ts
+msgid "Images are temporarily unavailable. Try again in a moment."
+msgstr "Images are temporarily unavailable. Try again in a moment."
+
+#: src/emails.ts
 msgid "Invitation to the organizing team of {tenantName}"
 msgstr "Invitation to the organizing team of {tenantName}"
+
+#: src/profiles.ts
+msgid "It was cleared because the terms of OPOS do not allow an account to carry the name or the identity of someone else."
+msgstr "It was cleared because the terms of OPOS do not allow an account to carry the name or the identity of someone else."
+
+#: src/profiles.ts
+msgid "It was cleared because the terms of OPOS do not allow an offensive, hateful or unlawful name."
+msgstr "It was cleared because the terms of OPOS do not allow an offensive, hateful or unlawful name."
+
+#: src/profiles.ts
+msgid "It was cleared because the terms of OPOS do not allow spam or advertising in a name."
+msgstr "It was cleared because the terms of OPOS do not allow spam or advertising in a name."
+
+#: src/profiles.ts
+msgid "It was taken down because the terms of OPOS do not allow a profile to show a picture, a name or an identity of someone else."
+msgstr "It was taken down because the terms of OPOS do not allow a profile to show a picture, a name or an identity of someone else."
+
+#: src/profiles.ts
+msgid "It was taken down because the terms of OPOS do not allow offensive, hateful or unlawful content in a profile."
+msgstr "It was taken down because the terms of OPOS do not allow offensive, hateful or unlawful content in a profile."
+
+#: src/profiles.ts
+msgid "It was taken down because the terms of OPOS do not allow spam or advertising in a profile."
+msgstr "It was taken down because the terms of OPOS do not allow spam or advertising in a profile."
 
 #. Glossary term: locale
 #: src/glossary.ts
@@ -167,17 +528,78 @@ msgctxt "glossary"
 msgid "language"
 msgstr "language"
 
+#: src/profiles.ts
+msgid "LARP"
+msgstr "LARP"
+
 #. Glossary term: like (noun)
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "like"
 msgstr "like"
 
+#: src/profiles.ts
+msgid "Literature"
+msgstr "Literature"
+
+#: src/profiles.ts
+msgid "Manga and anime"
+msgstr "Manga and anime"
+
+#. Glossary term: manual order (a sale made outside the shop, recorded by an org)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "manual order"
+msgstr "manual order"
+
+#: src/order-emails.ts
+msgid "Merchandise is picked up at the convention. Nothing is sent by post."
+msgstr "Merchandise is picked up at the convention. Nothing is sent by post."
+
+#. Glossary term: merchandise item (a product picked up at the edition)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "merchandise item"
+msgstr "merchandise item"
+
+#: src/exports.ts
+msgid "Merchandise item"
+msgstr "Merchandise item"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Merchandise item"
+msgstr "Merchandise item"
+
+#: src/profiles.ts
+msgid "Miniature wargames"
+msgstr "Miniature wargames"
+
 #. Glossary term: module
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "module"
 msgstr "module"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Money"
+msgstr "Money"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Name"
+msgstr "Name"
+
+#: src/exports.ts
+msgctxt "export value"
+msgid "Needs review"
+msgstr "Needs review"
+
+#: src/exports.ts
+msgctxt "production numbers"
+msgid "Needs review"
+msgstr "Needs review"
 
 #: src/errors.ts
 msgid "No account uses this email address."
@@ -188,8 +610,24 @@ msgid "No confirmed account uses the email address {email}. Ask the speaker to c
 msgstr "No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address."
 
 #: src/errors.ts
+msgid "Nothing can be added to this order: you buy more only for your own paid order."
+msgstr "Nothing can be added to this order: you buy more only for your own paid order."
+
+#: src/order-emails.ts
+msgid "Nothing else of the order changed, and your QR code stays the same."
+msgstr "Nothing else of the order changed, and your QR code stays the same."
+
+#: src/profiles.ts
+msgid "Offensive or unlawful content"
+msgstr "Offensive or unlawful content"
+
+#: src/errors.ts
 msgid "Only a head organizer can edit or remove another head organizer."
 msgstr "Only a head organizer can edit or remove another head organizer."
+
+#: src/errors.ts
+msgid "Only a paid order can be canceled."
+msgstr "Only a paid order can be canceled."
 
 #: src/errors.ts
 msgid "Only a suspended convention can be deleted. Suspend it first."
@@ -203,11 +641,30 @@ msgstr "Open the link in the browser where you asked for it, or ask for a new li
 msgid "Open the panel"
 msgstr "Open the panel"
 
+#: src/order-emails.ts
+msgid "Opening hours"
+msgstr "Opening hours"
+
 #. Glossary term: order
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "order"
 msgstr "order"
+
+#. Glossary term: order link (an emailed link that opens one order without a sign-in)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "order link"
+msgstr "order link"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Order number"
+msgstr "Order number"
+
+#: src/errors.ts
+msgid "Orders already hold more than this limit: {held}. Set the limit to at least that number."
+msgstr "Orders already hold more than this limit: {held}. Set the limit to at least that number."
 
 #. Glossary term: org
 #: src/glossary.ts
@@ -215,11 +672,129 @@ msgctxt "glossary"
 msgid "organizer"
 msgstr "organizer"
 
+#: src/exports.ts
+msgctxt "export column"
+msgid "Other details"
+msgstr "Other details"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Paid"
+msgstr "Paid"
+
+#: src/exports.ts
+msgctxt "export value"
+msgid "Paid"
+msgstr "Paid"
+
+#: src/exports.ts
+msgctxt "export value: a payment attempt"
+msgid "Paid"
+msgstr "Paid"
+
+#: src/exports.ts
+msgctxt "production numbers"
+msgid "Paid"
+msgstr "Paid"
+
+#: src/exports.ts
+msgctxt "export value"
+msgid "Paid - manual"
+msgstr "Paid - manual"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Paid amount"
+msgstr "Paid amount"
+
+#. Glossary term: payment (money a payment provider reports for an order)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "payment"
+msgstr "payment"
+
+#. Glossary term: payment attempt (one try at paying an order at its provider)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "payment attempt"
+msgstr "payment attempt"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Payout batch"
+msgstr "Payout batch"
+
+#. Glossary term: perk (something a ticket type includes, never sold separately)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "perk"
+msgstr "perk"
+
+#: src/order-emails.ts
+msgid "Picking up merchandise"
+msgstr "Picking up merchandise"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Placed"
+msgstr "Placed"
+
+#. Glossary term: pre-order deadline (until it merchandise sells without a stock limit)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "pre-order deadline"
+msgstr "pre-order deadline"
+
+#. Glossary term: price tier (a price of a ticket type within a date window)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "price tier"
+msgstr "price tier"
+
+#. Glossary term: profile (what an account shows of itself to everyone)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "profile"
+msgstr "profile"
+
+#. Glossary term: profile report (a notice that a profile should not be there)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "profile report"
+msgstr "profile report"
+
 #. Glossary term: programme item
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "programme item"
 msgstr "programme item"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Provider"
+msgstr "Provider"
+
+#. Glossary term: public name (first name, nickname and last name in the chosen order)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "public name"
+msgstr "public name"
+
+#. Glossary term: QR code (what a paid order is found by at the edition)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "QR code"
+msgstr "QR code"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Quantity"
+msgstr "Quantity"
+
+#: src/exports.ts
+msgctxt "export value: a payment attempt"
+msgid "Refused"
+msgstr "Refused"
 
 #: src/emails.ts
 msgid "Reset your password"
@@ -237,9 +812,35 @@ msgctxt "glossary"
 msgid "scanner"
 msgstr "scanner"
 
+#: src/order-emails.ts
+msgid "See your order"
+msgstr "See your order"
+
+#: src/order-emails.ts
+msgid "Seller"
+msgstr "Seller"
+
 #: src/emails.ts
 msgid "Set a new password"
 msgstr "Set a new password"
+
+#. Glossary term: shop (where an edition sells)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "shop"
+msgstr "shop"
+
+#: src/order-emails.ts
+msgid "Show this code at the entrance and when you pick up your merchandise."
+msgstr "Show this code at the entrance and when you pick up your merchandise."
+
+#: src/order-emails.ts
+msgid "Show this QR code at the convention: it is how your order is found there."
+msgstr "Show this QR code at the convention: it is how your order is found there."
+
+#: src/order-emails.ts
+msgid "Sign in"
+msgstr "Sign in"
 
 #: src/errors.ts
 msgid "Sign-up is closed at the moment."
@@ -249,9 +850,31 @@ msgstr "Sign-up is closed at the moment."
 msgid "Signing in with Google failed. Try again."
 msgstr "Signing in with Google failed. Try again."
 
+#. Glossary term: size chart
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "size chart"
+msgstr "size chart"
+
+#: src/order-emails.ts
+msgid "Someone asked for a new link to the order {number} for {conventionName}. It opens the order without a sign-in, so keep it to yourself."
+msgstr "Someone asked for a new link to the order {number} for {conventionName}. It opens the order without a sign-in, so keep it to yourself."
+
+#: src/profiles.ts
+msgid "Someone else’s picture or identity"
+msgstr "Someone else’s picture or identity"
+
+#: src/errors.ts
+msgid "Something in your order is no longer available. Check your order and try again."
+msgstr "Something in your order is no longer available. Check your order and try again."
+
 #: src/errors.ts
 msgid "Something went wrong. Try again."
 msgstr "Something went wrong. Try again."
+
+#: src/profiles.ts
+msgid "Spam or advertising"
+msgstr "Spam or advertising"
 
 #. Glossary term: speaker
 #: src/glossary.ts
@@ -259,11 +882,50 @@ msgctxt "glossary"
 msgid "speaker"
 msgstr "speaker"
 
+#: src/order-emails.ts
+msgid "Start a new order"
+msgstr "Start a new order"
+
+#: src/exports.ts
+msgctxt "export value: a payment attempt"
+msgid "Started"
+msgstr "Started"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Status"
+msgstr "Status"
+
+#. Glossary term: supporter price (a higher price a buyer may choose)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "supporter price"
+msgstr "supporter price"
+
 #. Glossary term: suspended (a convention the admin took off the platform)
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "suspended"
 msgstr "suspended"
+
+#: src/profiles.ts
+msgid "Tabletop role-playing games"
+msgstr "Tabletop role-playing games"
+
+#: src/exports.ts
+msgctxt "export value"
+msgid "Teen"
+msgstr "Teen"
+
+#. Glossary term: platform's terms (the rules of using OPOS an account accepts)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "terms"
+msgstr "terms"
+
+#: src/order-emails.ts
+msgid "Thank you. Your order {number} for {conventionName} is paid."
+msgstr "Thank you. Your order {number} for {conventionName} is paid."
 
 #: src/errors.ts
 msgid "The account with this email address has not been confirmed yet."
@@ -273,9 +935,37 @@ msgstr "The account with this email address has not been confirmed yet."
 msgid "The address may contain only lowercase letters, digits and hyphens, 3 to 40 characters."
 msgstr "The address may contain only lowercase letters, digits and hyphens, 3 to 40 characters."
 
+#: src/emails.ts
+msgid "The administrator wrote:"
+msgstr "The administrator wrote:"
+
+#: src/emails.ts
+msgid "The administrators looked at the profile you reported on OPOS and found nothing in it against the terms. It stays as it is."
+msgstr "The administrators looked at the profile you reported on OPOS and found nothing in it against the terms. It stays as it is."
+
+#: src/emails.ts
+msgid "The administrators looked at the profile you reported on OPOS and took it down. It is no longer public."
+msgstr "The administrators looked at the profile you reported on OPOS and took it down. It is no longer public."
+
+#: src/order-emails.ts
+msgid "The amount paid, {paid}, differs from the total of the order, {total}."
+msgstr "The amount paid, {paid}, differs from the total of the order, {total}."
+
 #: src/errors.ts
 msgid "The code is wrong, has expired or was already used. Check it and try again."
 msgstr "The code is wrong, has expired or was already used. Check it and try again."
+
+#: src/profiles.ts
+msgid "The decision followed a report someone sent about your profile."
+msgstr "The decision followed a report someone sent about your profile."
+
+#: src/profiles.ts
+msgid "The decision was made by a person, an administrator, and not by a program."
+msgstr "The decision was made by a person, an administrator, and not by a program."
+
+#: src/profiles.ts
+msgid "The decision was made on the administrators’ own initiative, with no report."
+msgstr "The decision was made on the administrators’ own initiative, with no report."
 
 #: src/errors.ts
 msgid "The link has expired. Ask for a new one."
@@ -289,21 +979,117 @@ msgstr "The link is valid for 1 hour and works once."
 msgid "The link is valid for 7 days and works once."
 msgstr "The link is valid for 7 days and works once."
 
+#: src/order-emails.ts
+msgid "The merchandise of your order {number} was changed"
+msgstr "The merchandise of your order {number} was changed"
+
+#: src/order-emails.ts
+msgid "The money is with the convention. Return it to the buyer at the payment provider."
+msgstr "The money is with the convention. Return it to the buyer at the payment provider."
+
+#: src/order-emails.ts
+msgid "The money is with the convention. The order waits for an organizer to settle it."
+msgstr "The money is with the convention. The order waits for an organizer to settle it."
+
+#: src/emails.ts
+msgid "The name of your account was cleared"
+msgstr "The name of your account was cleared"
+
 #: src/errors.ts
 msgid "The new password must differ from the current one."
 msgstr "The new password must differ from the current one."
 
+#: src/order-emails.ts
+msgid "The order {number} of {conventionName} got a payment it does not need"
+msgstr "The order {number} of {conventionName} got a payment it does not need"
+
+#: src/order-emails.ts
+msgid "The order {number} of {conventionName} needs review"
+msgstr "The order {number} of {conventionName} needs review"
+
+#: src/order-emails.ts
+msgid "The order had expired, and what it held is no longer available."
+msgstr "The order had expired, and what it held is no longer available."
+
 #: src/errors.ts
 msgid "The password is too weak. Use at least 8 characters."
 msgstr "The password is too weak. Use at least 8 characters."
+
+#: src/order-emails.ts
+msgid "The payment for your order {number} was declined"
+msgstr "The payment for your order {number} was declined"
+
+#: src/errors.ts
+msgid "The payment provider cannot take this email address. Use a shorter one."
+msgstr "The payment provider cannot take this email address. Use a shorter one."
+
+#: src/errors.ts
+msgid "The payment provider did not answer. Try again in a moment."
+msgstr "The payment provider did not answer. Try again in a moment."
+
+#: src/errors.ts
+msgid "The payment provider refused these credentials. Check them and try again."
+msgstr "The payment provider refused these credentials. Check them and try again."
+
+#: src/order-emails.ts
+msgid "The payment provider's number of the transaction: {reference}"
+msgstr "The payment provider's number of the transaction: {reference}"
+
+#: src/errors.ts
+msgid "The production numbers are ready once the pre-order deadline has passed."
+msgstr "The production numbers are ready once the pre-order deadline has passed."
+
+#: src/emails.ts
+msgid "The profile you reported stays"
+msgstr "The profile you reported stays"
+
+#: src/emails.ts
+msgid "The profile you reported was taken down"
+msgstr "The profile you reported was taken down"
+
+#: src/order-emails.ts
+msgid "The QR code of the order {number}"
+msgstr "The QR code of the order {number}"
 
 #: src/errors.ts
 msgid "The service is temporarily unavailable. Try again in a moment."
 msgstr "The service is temporarily unavailable. Try again in a moment."
 
 #: src/errors.ts
+msgid "The shop cannot be opened yet: something it needs is missing."
+msgstr "The shop cannot be opened yet: something it needs is missing."
+
+#: src/order-emails.ts
+msgid "The ticket holder is a child: they enter only with a guardian, who must be present."
+msgstr "The ticket holder is a child: they enter only with a guardian, who must be present."
+
+#: src/order-emails.ts
+msgid "The ticket holder is a teen: bring the written consent of a guardian, on paper."
+msgstr "The ticket holder is a teen: bring the written consent of a guardian, on paper."
+
+#: src/order-emails.ts
+msgid "The ticket holder is a teen: the guardian's consent has to be brought on paper to the convention."
+msgstr "The ticket holder is a teen: the guardian's consent has to be brought on paper to the convention."
+
+#: src/order-emails.ts
+msgid "The ticket holder of your order {number} was changed"
+msgstr "The ticket holder of your order {number} was changed"
+
+#: src/errors.ts
+msgid "The time to pay for this order has ended. Start a new order."
+msgstr "The time to pay for this order has ended. Start a new order."
+
+#: src/errors.ts
+msgid "The total of your order has changed. Check the new total and confirm it."
+msgstr "The total of your order has changed. Check the new total and confirm it."
+
+#: src/errors.ts
 msgid "The two-factor authentication of this account has changed since the administrator role was granted. Ask for the role to be granted again."
 msgstr "The two-factor authentication of this account has changed since the administrator role was granted. Ask for the role to be granted again."
+
+#: src/errors.ts
+msgid "There is no room for more files. Remove the ones you no longer need."
+msgstr "There is no room for more files. Remove the ones you no longer need."
 
 #: src/errors.ts
 msgid "This account belongs to an administrator. The administrator role has to be taken away first."
@@ -330,8 +1116,24 @@ msgid "This address is reserved for the platform. Choose another one."
 msgstr "This address is reserved for the platform. Choose another one."
 
 #: src/errors.ts
+msgid "This can be done only with a paid order."
+msgstr "This can be done only with a paid order."
+
+#: src/errors.ts
+msgid "This change would delete something an order holds. Hide it instead: it leaves the offer and stays on its orders."
+msgstr "This change would delete something an order holds. Hide it instead: it leaves the offer and stays on its orders."
+
+#: src/errors.ts
+msgid "This code cannot be used for this order."
+msgstr "This code cannot be used for this order."
+
+#: src/errors.ts
 msgid "This convention already has an edition with this address."
 msgstr "This convention already has an edition with this address."
+
+#: src/errors.ts
+msgid "This convention has orders, which are kept for at least five years. It cannot be deleted."
+msgstr "This convention has orders, which are kept for at least five years. It cannot be deleted."
 
 #: src/errors.ts
 msgid "This convention is being changed right now. Try again in a moment."
@@ -342,12 +1144,48 @@ msgid "This convention is suspended. Contact the OPOS administrators to learn mo
 msgstr "This convention is suspended. Contact the OPOS administrators to learn more."
 
 #: src/errors.ts
+msgid "This document has reached the limit of versions: {limit}."
+msgstr "This document has reached the limit of versions: {limit}."
+
+#: src/errors.ts
 msgid "This edition has ended, so its programme items take no new likes."
 msgstr "This edition has ended, so its programme items take no new likes."
 
 #: src/errors.ts
+msgid "This edition has orders, so it cannot be deleted."
+msgstr "This edition has orders, so it cannot be deleted."
+
+#: src/errors.ts
+msgid "This edition has reached its limit of enabled scanners: {limit}."
+msgstr "This edition has reached its limit of enabled scanners: {limit}."
+
+#: src/errors.ts
+msgid "This edition has reached the limit of consents: {limit}."
+msgstr "This edition has reached the limit of consents: {limit}."
+
+#: src/errors.ts
+msgid "This edition has reached the limit of documents: {limit}."
+msgstr "This edition has reached the limit of documents: {limit}."
+
+#: src/errors.ts
 msgid "This edition has reached the limit of programme items: {limit}."
 msgstr "This edition has reached the limit of programme items: {limit}."
+
+#: src/errors.ts
+msgid "This email address already has orders waiting for payment. Pay one of them or wait until it expires."
+msgstr "This email address already has orders waiting for payment. Pay one of them or wait until it expires."
+
+#: src/order-emails.ts
+msgid "This email address has an OPOS account. Sign in to see the order among your orders."
+msgstr "This email address has an OPOS account. Sign in to see the order among your orders."
+
+#: src/errors.ts
+msgid "This file cannot be accepted here: its type is not allowed, or the file is damaged. Choose another file."
+msgstr "This file cannot be accepted here: its type is not allowed, or the file is damaged. Choose another file."
+
+#: src/errors.ts
+msgid "This file is too large. Choose a smaller one."
+msgstr "This file is too large. Choose a smaller one."
 
 #: src/errors.ts
 msgid "This invitation has already been accepted."
@@ -369,17 +1207,65 @@ msgstr "This invitation link is not valid. Check that you opened the whole link 
 msgid "This invitation was sent to another email address. Sign in with the account that uses that address."
 msgstr "This invitation was sent to another email address. Sign in with the account that uses that address."
 
+#: src/order-emails.ts
+msgid "This is the new QR code of the order. The one sent before no longer works."
+msgstr "This is the new QR code of the order. The one sent before no longer works."
+
 #: src/errors.ts
 msgid "This language is not supported."
 msgstr "This language is not supported."
+
+#: src/errors.ts
+msgid "This list has reached its limit of entries: {limit}."
+msgstr "This list has reached its limit of entries: {limit}."
+
+#: src/errors.ts
+msgid "This order cannot be corrected this way: only a paid order is corrected, and a manual order has no email address."
+msgstr "This order cannot be corrected this way: only a paid order is corrected, and a manual order has no email address."
+
+#: src/errors.ts
+msgid "This order does not need review any more. Check its status."
+msgstr "This order does not need review any more. Check its status."
+
+#: src/errors.ts
+msgid "This order does not wait for a payment any more. Check its status."
+msgstr "This order does not wait for a payment any more. Check its status."
+
+#: src/errors.ts
+msgid "This pairing code does not work: it was already used or it expired. Ask an organizer for a new one."
+msgstr "This pairing code does not work: it was already used or it expired. Ask an organizer for a new one."
 
 #: src/errors.ts
 msgid "This person is already in the team. Change their membership on the team screen."
 msgstr "This person is already in the team. Change their membership on the team screen."
 
 #: src/errors.ts
+msgid "This profile is not taken down, so there is nothing to review."
+msgstr "This profile is not taken down, so there is nothing to review."
+
+#: src/errors.ts
+msgid "This QR code is not valid."
+msgstr "This QR code is not valid."
+
+#: src/errors.ts
 msgid "This request cannot be made from this address. Reload the page and try again."
 msgstr "This request cannot be made from this address. Reload the page and try again."
+
+#: src/errors.ts
+msgid "This scanner no longer works: its access was revoked or expired. Pair the phone again."
+msgstr "This scanner no longer works: its access was revoked or expired. Pair the phone again."
+
+#: src/errors.ts
+msgid "This scanner was revoked or its access has ended, so it gets no new pairing code. Enable a new scanner."
+msgstr "This scanner was revoked or its access has ended, so it gets no new pairing code. Enable a new scanner."
+
+#: src/errors.ts
+msgid "This shop is not selling right now."
+msgstr "This shop is not selling right now."
+
+#: src/errors.ts
+msgid "This was already handed out."
+msgstr "This was already handed out."
 
 #. Glossary term: ticket
 #: src/glossary.ts
@@ -387,11 +1273,35 @@ msgctxt "glossary"
 msgid "ticket"
 msgstr "ticket"
 
+#. Glossary term: ticket holder (the person a ticket is issued to)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "ticket holder"
+msgstr "ticket holder"
+
+#: src/order-emails.ts
+msgid "Ticket holder"
+msgstr "Ticket holder"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Ticket holder"
+msgstr "Ticket holder"
+
 #. Glossary term: ticket type
 #: src/glossary.ts
 msgctxt "glossary"
 msgid "ticket type"
 msgstr "ticket type"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Ticket type"
+msgstr "Ticket type"
+
+#: src/order-emails.ts
+msgid "To settle the return of the money, write to {contactEmail}."
+msgstr "To settle the return of the money, write to {contactEmail}."
 
 #: src/errors.ts
 msgid "Too many attempts. Try again in a few minutes."
@@ -404,6 +1314,19 @@ msgstr "Too many attempts. Try again later."
 #: src/errors.ts
 msgid "Too many emails sent. Try again in a few minutes."
 msgstr "Too many emails sent. Try again in a few minutes."
+
+#: src/order-emails.ts
+msgid "Total"
+msgstr "Total"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Transaction number"
+msgstr "Transaction number"
+
+#: src/errors.ts
+msgid "Two price tiers cover the same time. A ticket type has one price at a time: change the dates so that the tiers do not overlap."
+msgstr "Two price tiers cover the same time. A ticket type has one price at a time: change the dates so that the tiers do not overlap."
 
 #. Glossary term: two-factor authentication
 #: src/glossary.ts
@@ -433,6 +1356,35 @@ msgctxt "glossary"
 msgid "user"
 msgstr "user"
 
+#. Glossary term: variant (a buyable option of a merchandise item, with its own stock)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "variant"
+msgstr "variant"
+
+#: src/exports.ts
+msgid "Variant"
+msgstr "Variant"
+
+#: src/exports.ts
+msgctxt "export column"
+msgid "Variant"
+msgstr "Variant"
+
+#. Glossary term: venue (where an edition takes place)
+#: src/glossary.ts
+msgctxt "glossary"
+msgid "venue"
+msgstr "venue"
+
+#: src/profiles.ts
+msgid "Video games"
+msgstr "Video games"
+
+#: src/errors.ts
+msgid "We could not confirm that you are not a robot. Try again."
+msgstr "We could not confirm that you are not a robot. Try again."
+
 #: src/errors.ts
 msgid "We could not find this convention."
 msgstr "We could not find this convention."
@@ -449,6 +1401,28 @@ msgstr "We received a request to change the email address of your OPOS account f
 msgid "We received a request to reset the password of your OPOS account. Set a new password with the link below."
 msgstr "We received a request to reset the password of your OPOS account. Set a new password with the link below."
 
+#: src/emails.ts
+msgid "We received your report of a profile"
+msgstr "We received your report of a profile"
+
+#: src/emails.ts
+msgid "We will write to this address once more, to say what was decided. If you sent no report, ignore this message."
+msgstr "We will write to this address once more, to say what was decided. If you sent no report, ignore this message."
+
+#: src/order-emails.ts
+msgid "With questions, write to {contactEmail}."
+msgstr "With questions, write to {contactEmail}."
+
+#: src/exports.ts
+msgctxt "export value"
+msgid "With the buyer"
+msgstr "With the buyer"
+
+#: src/exports.ts
+msgctxt "export value"
+msgid "With the convention"
+msgstr "With the convention"
+
 #: src/errors.ts
 msgid "Wrong email or password."
 msgstr "Wrong email or password."
@@ -460,6 +1434,20 @@ msgstr "You are already in this convention's team."
 #: src/emails.ts
 msgid "You are now a member of the organizing team of {tenantName} in OPOS. Open the panel to see what you can work on."
 msgstr "You are now a member of the organizing team of {tenantName} in OPOS. Open the panel to see what you can work on."
+
+#: src/order-emails.ts
+msgid "You can also write to {contactEmail}."
+msgstr "You can also write to {contactEmail}."
+
+#. placeholder {0}: takedown.contact
+#: src/emails.ts
+msgid "You can change your profile and then ask for a review on the profile page of your account. If you do not agree with the decision, write to {0}."
+msgstr "You can change your profile and then ask for a review on the profile page of your account. If you do not agree with the decision, write to {0}."
+
+#. placeholder {0}: cleared.contact
+#: src/emails.ts
+msgid "You can enter your name again in your account settings. If you do not agree with the decision, write to {0}."
+msgstr "You can enter your name again in your account settings. If you do not agree with the decision, write to {0}."
 
 #: src/errors.ts
 msgid "You cannot change your own role or permissions, or remove yourself from the team."
@@ -492,6 +1480,62 @@ msgstr "You have been invited to the organizing team of {tenantName} in OPOS. Ac
 #: src/emails.ts
 msgid "You have joined the organizing team of {tenantName}"
 msgstr "You have joined the organizing team of {tenantName}"
+
+#: src/emails.ts
+msgid "Your avatar was removed when the profile was taken down. You can upload one again."
+msgstr "Your avatar was removed when the profile was taken down. You can upload one again."
+
+#: src/order-emails.ts
+msgid "Your order"
+msgstr "Your order"
+
+#: src/order-emails.ts
+msgid "Your order {number} for {conventionName} has expired"
+msgstr "Your order {number} for {conventionName} has expired"
+
+#: src/order-emails.ts
+msgid "Your order {number} for {conventionName} is now under this email address"
+msgstr "Your order {number} for {conventionName} is now under this email address"
+
+#: src/order-emails.ts
+msgid "Your order {number} for {conventionName} is paid"
+msgstr "Your order {number} for {conventionName} is paid"
+
+#: src/order-emails.ts
+msgid "Your order {number} for {conventionName} was canceled"
+msgstr "Your order {number} for {conventionName} was canceled"
+
+#: src/order-emails.ts
+msgid "Your order {number} for {conventionName} was moved to another email address"
+msgstr "Your order {number} for {conventionName} was moved to another email address"
+
+#: src/order-emails.ts
+msgid "Your order {number} for {conventionName} was not paid in time and has expired. Nothing was charged."
+msgstr "Your order {number} for {conventionName} was not paid in time and has expired. Nothing was charged."
+
+#: src/order-emails.ts
+msgid "Your payment for the order {number} for {conventionName} arrived, but it could not confirm the order, so an organizer has to look at it."
+msgstr "Your payment for the order {number} for {conventionName} arrived, but it could not confirm the order, so an organizer has to look at it."
+
+#: src/order-emails.ts
+msgid "Your payment for the order {number} is under review"
+msgstr "Your payment for the order {number} is under review"
+
+#: src/emails.ts
+msgid "Your profile can be published again"
+msgstr "Your profile can be published again"
+
+#: src/emails.ts
+msgid "Your profile was taken down"
+msgstr "Your profile was taken down"
+
+#: src/order-emails.ts
+msgid "Your QR code"
+msgstr "Your QR code"
+
+#: src/emails.ts
+msgid "Your report of a profile on OPOS has reached the administrators. They will look at the profile and decide whether it stays."
+msgstr "Your report of a profile on OPOS has reached the administrators. They will look at the profile and decide whether it stays."
 
 #: src/errors.ts
 msgid "Your session has ended. Sign in again."

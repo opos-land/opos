@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { accounts, createTenant, type Database, tenants } from '@opos/db'
+import { providerAccountOf, seal, sealingKey } from '@opos/db/sealed'
 import { inArray, sql } from 'drizzle-orm'
+import { apiEnv } from './stack'
 
 // The tenant a scenario works on: its own slug, created with createTenant as an admin creates one,
 // and the team written directly as postgres, as the seed writes it.
@@ -24,10 +26,13 @@ export interface EditionInput {
   startsInDays?: number
   isActive?: boolean
   isPublished?: boolean
+  /** Where the edition takes place, as an org sets it in the edition's settings. */
+  venue?: { name?: string; address?: string; city?: string }
 }
 
 export interface OrgInput {
   settings?: Level
+  branding?: Level
   shopConfig?: Level
   /** An expiry a day in the past. */
   expired?: boolean
@@ -36,6 +41,25 @@ export interface OrgInput {
 export interface EditionAccess {
   program?: Level
   tickets?: Level
+}
+
+/** What a convention sets of its shop before any edition sells. */
+export interface ShopInput {
+  /**
+   * The credentials of its account with the fake provider, sealed as the API seals them; left
+   * out, the convention has connected no account.
+   */
+  credentials?: Record<string, string>
+  /** Left out, the seller's details are complete. */
+  seller?: false
+}
+
+/** The seller's details a scenario's convention holds once they are set. */
+export const SELLER = {
+  name: 'Seller Ltd',
+  address: '1 Main St, 00-001 Warszawa',
+  registrationNumber: 'KRS 0000000000',
+  contactEmail: 'shop@seller.test',
 }
 
 export class TenantFactory {
@@ -56,9 +80,11 @@ export class TenantFactory {
     const startsAt = new Date(Date.now() + (input.startsInDays ?? 90) * DAY)
     const endsAt = new Date(startsAt.getTime() + 2 * DAY)
     const [row] = await this.db.execute<{ id: string }>(sql`
-      insert into editions (tenant_id, slug, name, starts_at, ends_at, is_active, is_published)
+      insert into editions (tenant_id, slug, name, starts_at, ends_at, is_active, is_published,
+        venue_name, venue_address, venue_city)
       values (${tenantId}, ${slug}, ${input.name ?? `Edition ${slug}`}, ${startsAt.toISOString()},
-        ${endsAt.toISOString()}, ${input.isActive ?? false}, ${input.isPublished ?? false})
+        ${endsAt.toISOString()}, ${input.isActive ?? false}, ${input.isPublished ?? false},
+        ${input.venue?.name ?? null}, ${input.venue?.address ?? null}, ${input.venue?.city ?? null})
       returning id
     `)
     return { id: row!.id, slug, name: input.name ?? `Edition ${slug}` }
@@ -75,14 +101,22 @@ export class TenantFactory {
     return row!.id
   }
 
+  /** Names an account a speaker of a programme item, as the panel does by its email address. */
+  async addSpeaker(tenantId: string, programItemId: string, accountId: string) {
+    await this.db.execute(sql`
+      insert into program_item_speakers (tenant_id, program_item_id, account_id)
+      values (${tenantId}, ${programItemId}, ${accountId})
+    `)
+  }
+
   /** An org membership; returns its id. */
   async addOrg(tenantId: string, accountId: string, input: OrgInput = {}) {
     const expiresAt = input.expired ? sql`now() - interval '1 day'` : null
     const [row] = await this.db.execute<{ id: string }>(sql`
       insert into tenant_memberships (account_id, tenant_id, role, settings_access,
-        shop_config_access, expires_at)
+        branding_access, shop_config_access, expires_at)
       values (${accountId}, ${tenantId}, 'org', ${input.settings ?? 'none'},
-        ${input.shopConfig ?? 'none'}, ${expiresAt})
+        ${input.branding ?? 'none'}, ${input.shopConfig ?? 'none'}, ${expiresAt})
       returning id
     `)
     return row!.id
@@ -100,6 +134,304 @@ export class TenantFactory {
       values (${tenantId}, ${membershipId}, ${editionId}, ${access.program ?? 'none'},
         ${access.tickets ?? 'none'})
     `)
+  }
+
+  /**
+   * The convention's side of the shop's setup, as its rows: complete seller's details, and an
+   * account of the fake provider that is ready to sell, with its credentials sealed by the key of
+   * the API under test.
+   */
+  async setUpShop(tenantId: string, input: ShopInput = {}) {
+    if (input.seller !== false) {
+      await this.db.execute(sql`
+        insert into shop_sellers (tenant_id, seller_name, seller_address,
+          seller_registration_number, contact_email)
+        values (${tenantId}, ${SELLER.name}, ${SELLER.address}, ${SELLER.registrationNumber},
+          ${SELLER.contactEmail})
+      `)
+    }
+    if (input.credentials) {
+      const key = apiEnv.PAYMENT_CREDENTIALS_KEY
+      if (!key) throw new Error('PAYMENT_CREDENTIALS_KEY is missing; run pnpm stack:init')
+      const sealed = seal(
+        sealingKey(key),
+        JSON.stringify(input.credentials),
+        providerAccountOf(tenantId, 'fake'),
+      )
+      await this.db.execute(sql`
+        insert into payment_provider_accounts (tenant_id, provider, credentials, ready_at)
+        values (${tenantId}, 'fake', ${sealed}, now())
+      `)
+    }
+  }
+
+  /**
+   * A legal document of an edition with one published version, as its rows alone: nothing lies in
+   * the bucket, so a scenario that downloads a version publishes it through the panel instead.
+   */
+  async addDocument(
+    tenantId: string,
+    editionId: string,
+    kind: 'shop-terms' | 'privacy-policy' | 'edition-rules' | 'other',
+    title: string = kind,
+  ) {
+    const [document] = await this.db.execute<{ id: string }>(sql`
+      insert into edition_documents (tenant_id, edition_id, kind, title)
+      values (${tenantId}, ${editionId}, ${kind}, ${title})
+      returning id
+    `)
+    const [file] = await this.db.execute<{ id: string }>(sql`
+      insert into uploaded_files (tenant_id, edition_id, kind, content_type, size, sha256, name)
+      values (${tenantId}, ${editionId}, 'edition-document', 'application/pdf', 10,
+        repeat('d', 64), 'document.pdf')
+      returning id
+    `)
+    await this.db.execute(sql`
+      insert into edition_document_versions (tenant_id, edition_id, document_id, number, file_id)
+      values (${tenantId}, ${editionId}, ${document!.id}, 1, ${file!.id})
+    `)
+    return document!.id
+  }
+
+  /**
+   * A small catalog of an edition, as its rows alone: a ticket type with a price in force now, an
+   * add-on it offers, a merchandise item sold as one variant, and a custom field.
+   */
+  async addCatalog(tenantId: string, editionId: string) {
+    const at = sql`${tenantId}, ${editionId}`
+    const [ticketType] = await this.db.execute<{ id: string }>(sql`
+      insert into ticket_types (tenant_id, edition_id, name, sale_starts_at, sale_ends_at,
+        allows_child, allows_teen, allows_adult, position)
+      values (${at}, 'Standard', now() - interval '30 days', now() + interval '30 days', false,
+        true, true, 1)
+      returning id
+    `)
+    await this.db.execute(sql`
+      insert into ticket_type_price_tiers (tenant_id, edition_id, ticket_type_id, amount_minor,
+        starts_at, ends_at)
+      values (${at}, ${ticketType!.id}, 12000, now() - interval '30 days',
+        now() + interval '30 days')
+    `)
+    const [addOn] = await this.db.execute<{ id: string }>(sql`
+      insert into add_ons (tenant_id, edition_id, name, amount_minor, kind, capacity, position)
+      values (${at}, 'Workshop', 4000, 'limited', 30, 1)
+      returning id
+    `)
+    await this.db.execute(sql`
+      insert into ticket_type_add_ons (tenant_id, edition_id, ticket_type_id, add_on_id)
+      values (${at}, ${ticketType!.id}, ${addOn!.id})
+    `)
+    const [item] = await this.db.execute<{ id: string }>(sql`
+      insert into merchandise_items (tenant_id, edition_id, name, amount_minor, per_order_limit,
+        position)
+      values (${at}, 'Enamel pin', 1500, 10, 1)
+      returning id
+    `)
+    await this.db.execute(sql`
+      insert into merchandise_variants (tenant_id, edition_id, merchandise_item_id, stock)
+      values (${at}, ${item!.id}, 200)
+    `)
+    await this.db.execute(sql`
+      insert into edition_custom_fields (tenant_id, edition_id, label, is_required, position)
+      values (${at}, 'City you travel from', true, 1)
+    `)
+    return { ticketTypeId: ticketType!.id, addOnId: addOn!.id, itemId: item!.id }
+  }
+
+  /**
+   * An edition's shop that sells, as its rows alone: the convention's side set up with an account
+   * of the fake provider, the two documents opening asks for, a required consent linking the
+   * terms, the small catalog with its item offered with the ticket type, a T-shirt in two sizes,
+   * and the shop open. `ticketMinor` is the price of the ticket type.
+   */
+  async sellingShop(
+    tenantId: string,
+    editionId: string,
+    { ticketMinor = 12000, account = 'demo' }: { ticketMinor?: number; account?: string } = {},
+  ) {
+    const at = sql`${tenantId}, ${editionId}`
+    await this.setUpShop(tenantId, { credentials: { account } })
+    const terms = await this.addDocument(tenantId, editionId, 'shop-terms', 'Shop terms')
+    await this.addDocument(tenantId, editionId, 'privacy-policy', 'Privacy policy')
+    await this.db.execute(sql`
+      insert into edition_consents (tenant_id, edition_id, document_id, text, is_required, position)
+      values (${at}, ${terms}, 'I accept the shop terms.', true, 1)
+    `)
+    const catalog = await this.addCatalog(tenantId, editionId)
+    await this.db.execute(sql`
+      update ticket_type_price_tiers set amount_minor = ${ticketMinor}
+      where ticket_type_id = ${catalog.ticketTypeId}
+    `)
+    const [shirt] = await this.db.execute<{ id: string }>(sql`
+      insert into merchandise_items (tenant_id, edition_id, name, amount_minor, per_order_limit,
+        position)
+      values (${at}, 'T-shirt', 8000, 5, 2)
+      returning id
+    `)
+    const [axis] = await this.db.execute<{ id: string }>(sql`
+      insert into merchandise_option_axes (tenant_id, edition_id, merchandise_item_id, name,
+        position)
+      values (${at}, ${shirt!.id}, 'Size', 1)
+      returning id
+    `)
+    const variants: Record<string, string> = {}
+    for (const [index, label] of ['M', 'L'].entries()) {
+      const [value] = await this.db.execute<{ id: string }>(sql`
+        insert into merchandise_option_values (tenant_id, edition_id, merchandise_item_id,
+          axis_id, label, position)
+        values (${at}, ${shirt!.id}, ${axis!.id}, ${label}, ${index + 1})
+        returning id
+      `)
+      const [variant] = await this.db.execute<{ id: string }>(sql`
+        insert into merchandise_variants (tenant_id, edition_id, merchandise_item_id, stock)
+        values (${at}, ${shirt!.id}, 5)
+        returning id
+      `)
+      await this.db.execute(sql`
+        insert into merchandise_variant_values (tenant_id, edition_id, merchandise_item_id,
+          variant_id, axis_id, option_value_id)
+        values (${at}, ${shirt!.id}, ${variant!.id}, ${axis!.id}, ${value!.id})
+      `)
+      variants[label] = variant!.id
+    }
+    for (const itemId of [catalog.itemId, shirt!.id]) {
+      await this.db.execute(sql`
+        insert into ticket_type_merchandise_items (tenant_id, edition_id, ticket_type_id,
+          merchandise_item_id)
+        values (${at}, ${catalog.ticketTypeId}, ${itemId})
+      `)
+    }
+    await this.db.execute(sql`
+      insert into edition_shops (tenant_id, edition_id, opened_at, merch_only_enabled)
+      values (${at}, now(), true)
+      on conflict (edition_id) do update set opened_at = now(), merch_only_enabled = true
+    `)
+    return { ...catalog, shirtId: shirt!.id, shirtVariants: variants }
+  }
+
+  /** Closes the shop of an edition, with the message its page then shows. */
+  async closeShop(editionId: string, message: string) {
+    await this.db.execute(sql`
+      update edition_shops set opened_at = null, sales_closed_message = ${message}
+      where edition_id = ${editionId}
+    `)
+  }
+
+  /** Sets what is left of a variant, as its stock. */
+  async setStock(variantId: string, stock: number) {
+    await this.db.execute(sql`
+      update merchandise_variants set stock = ${stock} where id = ${variantId}
+    `)
+  }
+
+  /**
+   * A percent discount code of the edition for the given ticket types, valid now, as an org sets
+   * one in the panel. `ended` stops it at once.
+   */
+  async addDiscountCode(
+    tenantId: string,
+    editionId: string,
+    {
+      code,
+      percent,
+      ticketTypeIds,
+      ended = false,
+    }: { code: string; percent: number; ticketTypeIds: string[]; ended?: boolean },
+  ) {
+    const at = sql`${tenantId}, ${editionId}`
+    const [row] = await this.db.execute<{ id: string }>(sql`
+      insert into discount_codes (tenant_id, edition_id, code, kind, percent, valid_from,
+        valid_until, ended_at)
+      values (${at}, ${code.toLowerCase()}, 'percent', ${percent}, now() - interval '1 day',
+        now() + interval '1 year', ${ended ? sql`now()` : sql`null`})
+      returning id
+    `)
+    for (const ticketTypeId of ticketTypeIds) {
+      await this.db.execute(sql`
+        insert into discount_code_ticket_types (tenant_id, edition_id, discount_code_id,
+          ticket_type_id)
+        values (${at}, ${row!.id}, ${ticketTypeId})
+      `)
+    }
+    return row!.id
+  }
+
+  /** Sets how many tickets of a ticket type there are. */
+  async setCapacity(ticketTypeId: string, capacity: number) {
+    await this.db.execute(sql`
+      update ticket_types set capacity = ${capacity} where id = ${ticketTypeId}
+    `)
+  }
+
+  /**
+   * Ends the hold of an order that awaits payment, as the expiry job does once its time is up:
+   * it holds nothing from then on.
+   */
+  async expireOrder(orderId: string) {
+    await this.db.execute(sql`
+      update orders set status = 'expired', holds = false, hold_ends_at = now() - interval '1 minute'
+      where id = ${orderId}
+    `)
+  }
+
+  /** Cancels a paid order, as an org does on its page: it holds nothing from then on. */
+  async cancelOrder(orderId: string) {
+    await this.db.execute(sql`
+      update orders set status = 'canceled', holds = false, canceled_at = now(),
+        cancel_reason = 'Canceled for the scenario'
+      where id = ${orderId}
+    `)
+  }
+
+  /** Lets every order link of an order expire, as a link does 30 days after its edition ends. */
+  async expireOrderLinks(orderId: string) {
+    await this.db.execute(sql`
+      update order_links set expires_at = now() - interval '1 day' where order_id = ${orderId}
+    `)
+  }
+
+  /** Says where and when an edition hands merchandise over, as an org sets it in the panel. */
+  async setPickupInformation(editionId: string, text: string) {
+    await this.db.execute(sql`
+      update edition_shops set pickup_information = ${text} where edition_id = ${editionId}
+    `)
+  }
+
+  /** How many QR codes the orders of a tenant carry between them. */
+  async qrCodesCarried(tenantId: string) {
+    const [row] = await this.db.execute<{ codes: number; orders: number }>(sql`
+      select count(distinct qr_code_id)::int as codes, count(*)::int as orders
+      from order_qr_code_orders where tenant_id = ${tenantId}
+    `)
+    return row!
+  }
+
+  /** The order links of an order as stored: whether each still opens. */
+  async orderLinks(orderId: string) {
+    return [
+      ...(await this.db.execute<{ ended: boolean }>(sql`
+        select ended_at is not null as ended from order_links
+        where order_id = ${orderId} order by created_at
+      `)),
+    ]
+  }
+
+  /** The orders of a tenant as stored: their status, and the account each is attached to. */
+  async orders(tenantId: string) {
+    return [
+      ...(await this.db.execute<{
+        status: string
+        email: string
+        holderName: string
+        accountId: string | null
+        totalMinor: number
+      }>(sql`
+        select o.status, o.email, o.holder_name as "holderName", a.account_id as "accountId",
+          o.total_minor as "totalMinor"
+        from orders o left join order_accounts a on a.order_id = o.id
+        where o.tenant_id = ${tenantId} order by o.placed_at
+      `)),
+    ]
   }
 
   /** The account's membership in the tenant as stored, or undefined. */
@@ -127,7 +459,10 @@ export class TenantFactory {
   /** Tenants go before their accounts: a tenant's last head cannot leave while it exists. */
   async cleanup() {
     if (this.created.length === 0) return
-    await this.db.delete(tenants).where(inArray(tenants.id, this.created.splice(0)))
+    const ids = this.created.splice(0)
+    // An order keeps its edition, and so its tenant: a scenario's orders go first.
+    await this.db.execute(sql`delete from orders where tenant_id in ${ids}`)
+    await this.db.delete(tenants).where(inArray(tenants.id, ids))
   }
 }
 

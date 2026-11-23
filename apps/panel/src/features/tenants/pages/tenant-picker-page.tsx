@@ -46,7 +46,7 @@ export function TenantPickerPage() {
                   )}
                   {!m.tenant.suspended && tenantAccess(m).seesConventionSettings && (
                     <Link
-                      to={`/${m.tenant.slug}/settings`}
+                      to={`/${m.tenant.slug}/settings${tenantAccess(m).settingsEntry ?? ''}`}
                       className={buttonVariants({ variant: 'outline', size: 'sm' })}
                     >
                       <Trans>Convention settings</Trans>

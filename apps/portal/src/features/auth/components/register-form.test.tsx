@@ -37,6 +37,26 @@ async function register(onRegistered = vi.fn()) {
 }
 
 describe('RegisterForm', () => {
+  // docs/specs/0016-public-profile.md, M4: no box is ticked.
+  it('says that creating an account accepts the terms, and links them beside the privacy policy', () => {
+    render(
+      <I18nProvider i18n={i18n}>
+        <MemoryRouter>
+          <RegisterForm returnTo="/schedule" onRegistered={vi.fn()} />
+        </MemoryRouter>
+      </I18nProvider>,
+    )
+
+    expect(screen.getByText(/By creating an account you accept the/).textContent).toBe(
+      'By creating an account you accept the terms and confirm that you have read the privacy policy.',
+    )
+    expect(screen.getByRole('link', { name: 'terms' }).getAttribute('href')).toBe('/terms')
+    expect(screen.getByRole('link', { name: 'privacy policy' }).getAttribute('href')).toBe(
+      '/privacy',
+    )
+    expect(screen.queryByRole('checkbox')).toBeNull()
+  })
+
   it('asks for the names and the address, and for no password', async () => {
     vi.mocked(signUp).mockResolvedValue(null)
 

@@ -1,0 +1,156 @@
+import { type Offer } from '@opos/contract'
+
+// An offer for the tests of the shop's pages: two ticket types, two add-ons and two items.
+
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
+
+export const ids = {
+  standard: id(1),
+  supporter: id(2),
+  workshop: id(3),
+  room: id(4),
+  pin: id(5),
+  shirt: id(6),
+  pinVariant: id(7),
+  shirtM: id(8),
+  shirtL: id(9),
+  sizeM: id(10),
+  sizeL: id(11),
+  city: id(12),
+  fandom: id(13),
+  terms: id(14),
+  news: id(15),
+  termsVersion: id(16),
+  size: id(17),
+}
+
+export const offer = (changes: Partial<Offer> = {}): Offer => ({
+  open: true,
+  onSale: true,
+  salesClosedMessage: 'See you next year.',
+  currency: 'PLN',
+  ageBands: { teenFromAge: 13, adultFromAge: 18 },
+  guardianConsentFormUrl: 'https://convention.test/consent.pdf',
+  merchPreorderDeadline: null,
+  merchOnly: true,
+  faqUrl: 'https://convention.test/faq',
+  seller: {
+    name: 'Seller Ltd',
+    address: '1 Main St',
+    registrationNumber: 'KRS 0000000000',
+    contactEmail: 'shop@seller.test',
+  },
+  provider: {
+    name: 'fake',
+    methods: ['blik', 'transfer', 'card'],
+    consent: {
+      text: { en: 'I accept the terms of the provider.', pl: 'Akceptuję regulamin dostawcy.' },
+      links: [{ label: { en: 'Provider terms' }, url: 'https://provider.test/terms' }],
+      selectAllAllowed: false,
+    },
+    maxEmailLength: 50,
+  },
+  documents: [{ kind: 'shop-terms', title: 'Shop terms', versionId: ids.termsVersion }],
+  consents: [
+    {
+      id: ids.terms,
+      text: 'I accept the shop terms.',
+      isRequired: true,
+      documentVersionId: ids.termsVersion,
+    },
+    { id: ids.news, text: 'I want news by email.', isRequired: false, documentVersionId: null },
+  ],
+  customFields: [
+    { id: ids.city, label: 'City you travel from', isRequired: true },
+    { id: ids.fandom, label: 'Favourite fandom', isRequired: false },
+  ],
+  ticketTypes: [
+    {
+      id: ids.standard,
+      name: 'Standard',
+      shortDescription: 'All three days.',
+      longDescription: 'Entry to every programme item.',
+      state: 'on-sale',
+      priceMinor: 12000,
+      supporterPrices: [20000],
+      perks: ['A badge with your name'],
+      ageBands: ['child', 'teen', 'adult'],
+      discountsExcluded: false,
+      addOnIds: [ids.workshop, ids.room],
+      merchandiseItemIds: [ids.pin, ids.shirt],
+    },
+    {
+      id: ids.supporter,
+      name: 'Supporter',
+      shortDescription: 'With the supporter perks.',
+      longDescription: 'Everything, and your name among the supporters.',
+      state: 'sold-out',
+      priceMinor: 40000,
+      supporterPrices: [],
+      perks: [],
+      ageBands: ['adult'],
+      discountsExcluded: true,
+      addOnIds: [ids.room],
+      merchandiseItemIds: [],
+    },
+  ],
+  addOns: [
+    {
+      id: ids.workshop,
+      name: 'Painting workshop',
+      description: 'Two hours with a painter.',
+      amountMinor: 4000,
+      kind: 'limited',
+      soldOut: false,
+      placesLeft: 3,
+      picture: null,
+    },
+    {
+      id: ids.room,
+      name: 'Sleeping room',
+      description: 'A place on the floor.',
+      amountMinor: 0,
+      kind: 'headcount',
+      soldOut: false,
+      placesLeft: null,
+      picture: null,
+    },
+  ],
+  items: [
+    {
+      id: ids.pin,
+      name: 'Enamel pin',
+      description: 'Hard enamel, 3 cm.',
+      amountMinor: 1500,
+      perOrderLimit: 3,
+      picturesIllustrative: false,
+      pictures: [],
+      axes: [],
+      variants: [{ id: ids.pinVariant, valueIds: [], maxQuantity: 3 }],
+    },
+    {
+      id: ids.shirt,
+      name: 'T-shirt',
+      description: 'Cotton, with the print of this edition.',
+      amountMinor: 8000,
+      perOrderLimit: 5,
+      picturesIllustrative: true,
+      pictures: [],
+      axes: [
+        {
+          id: ids.size,
+          name: 'Size',
+          values: [
+            { id: ids.sizeM, label: 'M', sizeChart: null },
+            { id: ids.sizeL, label: 'L', sizeChart: null },
+          ],
+        },
+      ],
+      variants: [
+        { id: ids.shirtM, valueIds: [ids.sizeM], maxQuantity: 5 },
+        { id: ids.shirtL, valueIds: [ids.sizeL], maxQuantity: 0 },
+      ],
+    },
+  ],
+  ...changes,
+})

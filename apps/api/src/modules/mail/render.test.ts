@@ -6,11 +6,14 @@ import {
   invitationEmail,
   joinedTeamEmail,
   mfaDisabledEmail,
+  profileRestoredEmail,
+  profileTakenDownEmail,
   recoveryEmail,
   signupEmail,
 } from '@opos/i18n/emails'
 import { describe, expect, it } from 'vitest'
-import { renderLinkEmail, renderNoticeEmail } from './render'
+import { type OrderEmailContent, orderExpiredEmail } from '@opos/i18n/order-emails'
+import { renderLinkEmail, renderNoticeEmail, renderOrderEmail } from './render'
 
 const link =
   'http://127.0.0.1:54321/auth/v1/verify?token=abc&type=signup&redirect_to=http%3A%2F%2Fx'
@@ -93,6 +96,143 @@ describe('renderNoticeEmail', () => {
     expect(email.subject).toBe('Uwierzytelnianie dwuskładnikowe zostało wyłączone')
     expect(email.text).toContain('Jeśli to nie ty, natychmiast zmień hasło')
     expect(email.text).toContain('na twoim koncie OPOS')
+    expect(email.html).toContain('lang="pl"')
+  })
+
+  // docs/specs/0016-public-profile.md, T5: the further paragraphs of a notice in their order, and
+  // the admin's sentence as it was written, which is the one text of a notice a person wrote.
+  it('adds the further paragraphs in their order, then a quoted sentence as it was written', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'en')
+    const email = renderNoticeEmail(
+      i18n,
+      profileTakenDownEmail({
+        reason: 'spam',
+        afterReport: true,
+        note: 'See <b>rule</b> 3 & "more"',
+        contact: 'contact@example.test',
+      }),
+    )
+
+    const parts = [
+      'An administrator of OPOS took your profile down.',
+      'do not allow spam or advertising in a profile',
+      'The decision followed a report',
+      'by a person, an administrator, and not by a program',
+      'The administrator wrote:',
+      'See <b>rule</b> 3 & "more"',
+      'ask for a review',
+    ]
+    const places = parts.map((part) => email.text.indexOf(part))
+    expect(places.every((place) => place >= 0)).toBe(true)
+    expect(places).toEqual([...places].sort((a, b) => a - b))
+    expect(email.text.endsWith('\n\nOPOS')).toBe(true)
+    expect(email.text).toContain('The administrator wrote:\n> See <b>rule</b> 3 & "more"')
+    expect(email.html).toContain('See &lt;b&gt;rule&lt;/b&gt; 3 &amp; &quot;more&quot;')
+    expect(email.html).not.toContain('<b>rule</b>')
+    expect(email.html).toContain('<blockquote')
+    expect(email.html).not.toContain('href=')
+  })
+
+  it('keeps the lines of a quoted sentence apart, each as a quoted line', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'en')
+    const email = renderNoticeEmail(
+      i18n,
+      profileTakenDownEmail({
+        reason: 'spam',
+        afterReport: false,
+        note: 'First.\nSecond.',
+        contact: 'contact@example.test',
+      }),
+    )
+
+    expect(email.text).toContain('> First.\n> Second.')
+    expect(email.html).toContain('First.<br>Second.')
+  })
+
+  it('renders a notice with no further paragraph and no quote as before', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'en')
+    const email = renderNoticeEmail(i18n, profileRestoredEmail)
+
+    expect(email.text.split('\n\n')).toHaveLength(3)
+    expect(email.html).not.toContain('<blockquote')
+  })
+})
+
+describe('renderOrderEmail', () => {
+  const content: OrderEmailContent = {
+    subject: { id: 'subject', message: 'Order <A&B>' },
+    parts: [
+      { kind: 'paragraph', text: { id: 'p', message: 'Thank you & welcome.' } },
+      { kind: 'heading', text: { id: 'h', message: 'Your order' } },
+      {
+        kind: 'rows',
+        rows: [
+          { label: '2 × <Pin>', value: '10,00 zł' },
+          { label: { id: 't', message: 'Total' }, value: '10,00 zł', strong: true },
+        ],
+      },
+      { kind: 'image', cid: 'qr@opos', alt: { id: 'alt', message: 'The QR code' }, caption: 'ABC' },
+      {
+        kind: 'link',
+        label: { id: 'l', message: 'See your order' },
+        url: 'https://x.test/?a=1&b=2',
+      },
+      { kind: 'link', label: 'Terms "2026"', url: 'https://x.test/terms' },
+      { kind: 'quote', lines: ['Seller <Ltd>', '1 Main St'] },
+    ],
+  }
+  const render = async (locale: 'en' | 'pl', email = content) => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, locale)
+    return renderOrderEmail(i18n, email)
+  }
+
+  it('renders the parts in order as text, with every link written out', async () => {
+    const email = await render('en')
+
+    expect(email.subject).toBe('Order <A&B>')
+    expect(email.text).toBe(
+      [
+        'Thank you & welcome.',
+        'YOUR ORDER',
+        '2 × <Pin>: 10,00 zł\nTotal: 10,00 zł',
+        'The QR code: ABC',
+        'See your order: https://x.test/?a=1&b=2',
+        'Terms "2026": https://x.test/terms',
+        'Seller <Ltd>\n1 Main St',
+        'OPOS',
+      ].join('\n\n'),
+    )
+  })
+
+  it('renders the same parts as HTML, each value escaped, the picture by its content id', async () => {
+    const { html } = await render('en')
+
+    expect(html).toContain('lang="en"')
+    expect(html).toContain('<title>Order &lt;A&amp;B&gt;</title>')
+    expect(html).toContain('Thank you &amp; welcome.')
+    expect(html).toContain('2 × &lt;Pin&gt;')
+    expect(html).toContain('<img src="cid:qr@opos" alt="The QR code"')
+    expect(html).toContain('href="https://x.test/?a=1&amp;b=2"')
+    expect(html).toContain('Terms &quot;2026&quot;')
+    expect(html).toContain('Seller &lt;Ltd&gt;<br>1 Main St')
+    expect(html).not.toContain('<Pin>')
+  })
+
+  it('renders an email of an order in the recipient\u2019s language', async () => {
+    const expired = orderExpiredEmail({
+      conventionName: 'Pyrkon',
+      number: 'ABCDEFGHJK',
+      shopLink: 'https://portal.test/shop',
+    })
+
+    const email = await render('pl', expired)
+
+    expect(email.subject).toBe('Twoje zamówienie ABCDEFGHJK w sklepie konwentu Pyrkon wygasło')
+    expect(email.text).toContain('Złóż nowe zamówienie: https://portal.test/shop')
     expect(email.html).toContain('lang="pl"')
   })
 })

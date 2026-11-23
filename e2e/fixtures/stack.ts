@@ -29,7 +29,7 @@ export const apiEnv: Record<string, string> = {
 
 function required(name: string) {
   const value = apiEnv[name]
-  if (!value) throw new Error(`${name} is missing from apps/api/.env; run pnpm infra:init`)
+  if (!value) throw new Error(`${name} is missing from apps/api/.env; run pnpm stack:init`)
   return value
 }
 

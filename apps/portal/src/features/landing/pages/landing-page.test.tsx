@@ -2,15 +2,22 @@ import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { cleanup, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSession } from '../../../shared/lib/session'
 import { LandingPage } from './landing-page'
+
+// The list reads the API: here it is only where the home page puts it.
+vi.mock('../../conventions', () => ({
+  EditionDirectory: () => <div data-testid="edition-directory" />,
+}))
 
 const account = {
   id: 'a',
   email: 'a@x.test',
   firstName: null,
   lastName: null,
+  nickname: null,
+  nameOrder: 'nickname-middle' as const,
   locale: null,
   theme: null,
   mfaEnabled: false,
@@ -52,6 +59,21 @@ describe('LandingPage', () => {
     expect(screen.getByRole('heading', { name: 'Fantasy conventions, in one place' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Sign in' })).toBeTruthy()
     expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('lists the editions of every convention below its introduction, to anyone', () => {
+    view()
+
+    const heading = screen.getByRole('heading', { name: 'Fantasy conventions, in one place' })
+    const directory = screen.getByTestId('edition-directory')
+    expect(
+      heading.compareDocumentPosition(directory) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+
+    cleanup()
+    useSession.setState({ status: 'ready', account })
+    view()
+    expect(screen.getByTestId('edition-directory')).toBeTruthy()
   })
 
   it('leads a signed-in account to its account', () => {

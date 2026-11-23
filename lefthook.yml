@@ -29,12 +29,18 @@ pre-commit:
     - name: markdown-tables
       glob: '*.md'
       run: node scripts/markdown-tables.mjs {staged_files}
+    # The staged changes hold no secret, as the secrets job of CI checks after a push
+    - name: gitleaks
+      run: gitleaks git --pre-commit --staged --redact --no-banner
 
-# The API tests need the local stack: pnpm infra:init once in a new checkout, then pnpm infra:up
+# The API tests need the local stack: pnpm stack:init once in a new checkout, then pnpm stack:up
 pre-push:
   jobs:
+    # Four tasks of four test workers by default, 16 in all: vitest otherwise starts one per core
+    # but one in every package at once, more than a machine holds beside the stack. The
+    # environment's VITEST_MAX_WORKERS and TURBO_CONCURRENCY override them.
     - name: typecheck and test
-      run: pnpm turbo run typecheck test --filter=...[origin/develop]
+      run: VITEST_MAX_WORKERS="${VITEST_MAX_WORKERS:-4}" pnpm turbo run typecheck test --filter=...[origin/develop] --concurrency="${TURBO_CONCURRENCY:-4}"
     # A merged migration stays as it is, and a new one is newer than all of them
     - name: migration journal
       run: node scripts/check-migrations.mjs --merge-base origin/develop

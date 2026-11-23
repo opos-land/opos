@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { type Edition } from '@opos/contract'
-import { editions, tenants } from '@opos/db'
+import { editions, refusedByOrder, tenants } from '@opos/db'
 import { and, desc, eq, ne } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { ApiError, notFound } from '../../common/errors/api-error'
@@ -14,6 +14,16 @@ const columns = {
   endsAt: editions.endsAt,
   isActive: editions.isActive,
   isPublished: editions.isPublished,
+  venueName: editions.venueName,
+  venueAddress: editions.venueAddress,
+  venueCity: editions.venueCity,
+}
+
+/** The venue as a request gives it: a part left out stays as it is, null clears it. */
+interface Venue {
+  venueName?: string | null
+  venueAddress?: string | null
+  venueCity?: string | null
 }
 
 type Row = Omit<Edition, 'startsAt' | 'endsAt'> & { startsAt: Date; endsAt: Date }
@@ -79,7 +89,7 @@ export class EditionsRepository {
   }
 
   /** A taken slug violates editions_tenant_slug_unique, which the filter answers with 409. */
-  async create(values: { slug: string; name: string; startsAt: string; endsAt: string }) {
+  async create(values: { slug: string; name: string; startsAt: string; endsAt: string } & Venue) {
     const [row] = await this.context
       .tx()
       .insert(editions)
@@ -88,6 +98,9 @@ export class EditionsRepository {
         name: values.name,
         startsAt: new Date(values.startsAt),
         endsAt: new Date(values.endsAt),
+        venueName: values.venueName,
+        venueAddress: values.venueAddress,
+        venueCity: values.venueCity,
         tenantId: this.context.tenant().id,
       })
       .returning(columns)
@@ -103,7 +116,7 @@ export class EditionsRepository {
       startsAt?: string
       endsAt?: string
       isPublished?: boolean
-    },
+    } & Venue,
   ) {
     if (Object.keys(changes).length === 0) return this.get(id)
     const [row] = await this.context
@@ -121,6 +134,7 @@ export class EditionsRepository {
    * Deletes the edition unless it is active, in one statement: an activation committed meanwhile
    * makes the row fail the condition, so the tenant never loses its active edition. A delete
    * committed meanwhile leaves no row either, and the edition is then gone rather than active.
+   * An edition that has an order is not deleted: orders are kept for years after it.
    */
   async removeInactive(id: string) {
     const rows = await this.context
@@ -128,6 +142,14 @@ export class EditionsRepository {
       .delete(editions)
       .where(and(eq(editions.id, id), eq(editions.isActive, false)))
       .returning({ id: editions.id })
+      .catch((error: unknown) => {
+        // An order keeps its edition and everything it names of it: the database refuses the
+        // deletion, however late the order was placed.
+        if (refusedByOrder(error)) {
+          throw new ApiError(409, 'edition.has-orders', 'The edition has orders')
+        }
+        throw error
+      })
     if (rows.length > 0) return
     if (!(await this.find(id))) throw notFound('edition')
     throw new ApiError(409, 'edition.active', 'The active edition cannot be deleted')

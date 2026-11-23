@@ -7,13 +7,15 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { useEditions } from '../../editions'
 import { InviteForm } from './invite-form'
 
+const invite = vi.hoisted(() => vi.fn())
+
 vi.mock('../../editions', () => ({ useEditions: vi.fn() }))
 vi.mock('../../tenants', () => ({
   useCurrentTenant: () => ({ access: { isHead: true }, api: {} }),
   useTenantTime: () => ({ timeZone: 'Europe/Warsaw', format: String, fromInput: () => null }),
 }))
 vi.mock('../api/members', () => ({
-  inviteMemberOptions: () => ({ mutationFn: vi.fn() }),
+  inviteMemberOptions: () => ({ mutationFn: invite }),
   membersKey: () => ['members'],
 }))
 
@@ -37,6 +39,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   vi.mocked(useEditions).mockReset()
+  invite.mockReset().mockResolvedValue({ outcome: 'invited', email: 'new@x.test', validUntil: '' })
 })
 
 afterEach(cleanup)
@@ -53,5 +56,29 @@ describe('InviteForm', () => {
 
     expect(await screen.findByLabelText('Programme in Spring edition')).toBeDefined()
     expect(screen.getByLabelText<HTMLInputElement>('Email').value).toBe('new@x.test')
+  })
+
+  it('invites an org with the convention-level permissions it sets, the branding among them', async () => {
+    const user = userEvent.setup()
+    setEditions([])
+    render(ui())
+
+    await user.type(screen.getByLabelText('Email'), 'new@x.test')
+    await user.selectOptions(screen.getByLabelText('Branding'), 'write')
+    await user.selectOptions(screen.getByLabelText('Settings'), 'read')
+    await user.click(screen.getByRole('button', { name: /invit/i }))
+
+    await vi.waitFor(() => expect(invite).toHaveBeenCalled())
+    expect(invite.mock.calls[0]?.[0]).toEqual({
+      body: {
+        email: 'new@x.test',
+        role: 'org',
+        settingsAccess: 'read',
+        brandingAccess: 'write',
+        shopConfigAccess: 'none',
+        expiresAt: null,
+        editions: [],
+      },
+    })
   })
 })

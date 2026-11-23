@@ -29,6 +29,13 @@ export interface TenantMembership {
 export type TenantInContext = Tenant
 
 /** What one request knows about itself; the guards and the interceptor fill it. */
+/** A scanner as a request names it: found across tenants by the hash of its device's token. */
+export interface ScannerInContext {
+  id: string
+  tenantId: string
+  tokenHash: string
+}
+
 export interface RequestStore {
   /** The client address, an IPv6 one by its /64, as the rate limit counts it. */
   clientAddress?: string
@@ -43,8 +50,20 @@ export interface RequestStore {
   aal2?: boolean
   tenant?: TenantInContext
   membership?: TenantMembership | null
+  /**
+   * The scanner a device's token named, its tenant and the hash of that token: a caller with no
+   * account and no membership (modules/scanner). Whether it still stands, and still holds the
+   * token, is judged in its tenant's transaction.
+   */
+  scanner?: ScannerInContext
   tx?: Transaction
+  /** A transaction on opos_app for the session's own global rows, outside every tenant. */
+  accountTx?: Transaction
   afterCommit?: (() => unknown)[]
+  /** The file a route that takes one received before its transaction (modules/files). */
+  received?: unknown
+  /** What a route marked @Prepares did before its transaction (decorators/prepares.decorator). */
+  prepared?: unknown
   /** The response oRPC is ready to send, held until the tenant transaction ends. */
   deferredResponse?: { status: number; send: () => unknown }
 }
@@ -123,6 +142,17 @@ export class TenantContextService {
     return account
   }
 
+  setScanner(scanner: ScannerInContext) {
+    TenantContextService.store().scanner = scanner
+  }
+
+  /** The scanner the request's token named; only behind ScannerGuard. */
+  scanner(): ScannerInContext {
+    const { scanner } = TenantContextService.store()
+    if (!scanner) throw new Error('No scanner in the request store: ScannerGuard did not run')
+    return scanner
+  }
+
   /** The open tenant transaction; repositories never query a pool directly. */
   tx(): Transaction {
     const tx = storage.getStore()?.tx
@@ -141,11 +171,61 @@ export class TenantContextService {
     return TenantContextService.store().membership ?? null
   }
 
-  /** Runs `fn` after the open tenant transaction commits; dropped when it rolls back. */
+  /** What the preparation of a route marked @Prepares answered, before the route's transaction. */
+  prepared<T>(): T {
+    const store = TenantContextService.store()
+    if (!('prepared' in store))
+      throw new Error('Nothing was prepared: the route is not marked @Prepares')
+    return store.prepared as T
+  }
+
+  /** Runs `fn` after the open tenant or account transaction commits; dropped when it rolls back. */
   afterCommit(fn: () => unknown) {
     const store = storage.getStore()
-    if (!store?.tx || !store.afterCommit) throw new Error('No tenant transaction is open')
+    if (!(store?.tx || store?.accountTx) || !store.afterCommit) {
+      throw new Error('No tenant or account transaction is open')
+    }
     store.afterCommit.push(fn)
+  }
+
+  /** The open account transaction. */
+  accountTx(): Transaction {
+    const tx = storage.getStore()?.accountTx
+    if (!tx) throw new Error('No account transaction is open')
+    return tx
+  }
+
+  /**
+   * A transaction on opos_app for the signed-in account's own global rows, such as its files,
+   * outside every tenant; its after-commit queue runs once it commits.
+   */
+  async accountTransaction<T>(fn: () => Promise<T>): Promise<T> {
+    const parent = TenantContextService.store()
+    if (parent.tx || parent.accountTx) throw new Error('A transaction is already open')
+    this.account()
+    const store: RequestStore = { ...parent, afterCommit: [] }
+    const result = await storage.run(store, () =>
+      this.db.transaction(async (tx) => {
+        store.accountTx = tx
+        try {
+          return await fn()
+        } finally {
+          store.accountTx = undefined
+        }
+      }),
+    )
+    await this.runAfterCommit(store)
+    return result
+  }
+
+  private async runAfterCommit(store: RequestStore) {
+    for (const fn of store.afterCommit ?? []) {
+      try {
+        await fn()
+      } catch (error) {
+        this.logger.error(`An after-commit step failed: ${mailFailure(error)}`)
+      }
+    }
   }
 
   /**
@@ -169,7 +249,7 @@ export class TenantContextService {
     ended: () => void = () => {},
   ): Promise<T> {
     const parent = storage.getStore()
-    if (parent?.tx) throw new Error('A tenant transaction is already open')
+    if (parent?.tx || parent?.accountTx) throw new Error('A transaction is already open')
     const store: RequestStore = { ...parent, afterCommit: [] }
 
     let result: T
@@ -195,13 +275,7 @@ export class TenantContextService {
     }
 
     // Outbound I/O runs here, after the commit; a failure is logged, the response stands.
-    for (const fn of store.afterCommit ?? []) {
-      try {
-        await fn()
-      } catch (error) {
-        this.logger.error(`An after-commit step failed: ${mailFailure(error)}`)
-      }
-    }
+    await this.runAfterCommit(store)
     await sendDeferred(store)
     return result
   }

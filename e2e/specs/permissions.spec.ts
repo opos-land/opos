@@ -1,7 +1,6 @@
-import { sql } from 'drizzle-orm'
 import { accessToken, callApi } from '../fixtures/api'
 import { expect, test } from '../fixtures'
-import { openPanelSwitcher, panelUrl, seeded, signInToPanel, switchPanelArea } from '../fixtures/ui'
+import { openPanelSwitcher, panelUrl, signInToPanel, switchPanelArea } from '../fixtures/ui'
 
 // What the panel shows follows the member's permissions, and the API refuses what the UI hides.
 
@@ -77,37 +76,48 @@ test.describe('permissions in the panel', () => {
     await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled()
   })
 
-  test("another tenant's convention is closed in the UI and in the API", async ({ page, db }) => {
-    await signInToPanel(page, seeded.headA, seeded.password)
-    await page.goto(panelUrl('/convention-b'))
-    await expect(page.getByRole('heading', { name: 'No permissions' })).toBeVisible()
-    await page.goto(panelUrl('/convention-b/settings'))
-    await expect(page.getByRole('heading', { name: 'No permissions' })).toBeVisible()
-    await page.goto(panelUrl('/convention-b/editions/2026'))
-    await expect(page.getByRole('heading', { name: 'No permissions' })).toBeVisible()
+  // Each scenario makes its own conventions and accounts: a demo account of the seed reads the
+  // panel in the language the seed gives it, which these scenarios do not depend on.
+  test("another tenant's convention is closed in the UI and in the API", async ({
+    page,
+    accounts,
+    tenants,
+  }) => {
+    const head = await accounts.create()
+    const own = await tenants.create({ headEmail: head.email })
+    const otherHead = await accounts.create()
+    const other = await tenants.create({ headEmail: otherHead.email })
+    const foreign = await tenants.addEdition(other.id)
 
-    const token = await accessToken(seeded.headA, seeded.password)
-    const foreign = await callApi('/tenants/current', { token, tenantSlug: 'convention-b' })
-    expect(foreign.status).toBe(403)
+    await signInToPanel(page, head.email, head.password)
+    for (const path of ['', '/settings', `/editions/${foreign.slug}`]) {
+      await page.goto(panelUrl(`/${other.slug}${path}`))
+      await expect(page.getByRole('heading', { name: 'No permissions' })).toBeVisible()
+    }
 
-    const [editionB] = await db.execute<{ id: string }>(sql`
-      select e.id from editions e join tenants t on t.id = e.tenant_id
-      where t.slug = 'convention-b' limit 1
-    `)
-    expect(editionB).toBeDefined()
-    const crossed = await callApi(`/editions/${editionB!.id}`, {
-      token,
-      tenantSlug: 'convention-a',
-    })
+    const token = await accessToken(head.email, head.password)
+    const refused = await callApi('/tenants/current', { token, tenantSlug: other.slug })
+    expect(refused.status).toBe(403)
+    // An edition of the other convention is not found under the member's own.
+    const crossed = await callApi(`/editions/${foreign.id}`, { token, tenantSlug: own.slug })
     expect(crossed.status).toBe(404)
   })
 
-  test('an org whose membership has expired sees no convention', async ({ page }) => {
-    await signInToPanel(page, seeded.expiredA, seeded.password)
+  test('an org whose membership has expired sees no convention', async ({
+    page,
+    accounts,
+    tenants,
+  }) => {
+    const head = await accounts.create()
+    const tenant = await tenants.create({ headEmail: head.email })
+    const org = await accounts.create()
+    await tenants.addOrg(tenant.id, org.id, { expired: true })
+
+    await signInToPanel(page, org.email, org.password)
     await expect(page.getByRole('heading', { name: 'Your conventions' })).toBeVisible()
     await expect(page.getByText("You are not in any convention's team.")).toBeVisible()
 
-    await page.goto(panelUrl('/convention-a'))
+    await page.goto(panelUrl(`/${tenant.slug}`))
     await expect(page.getByRole('heading', { name: 'No permissions' })).toBeVisible()
   })
 })

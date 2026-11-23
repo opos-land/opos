@@ -1,7 +1,9 @@
 import { type NestExpressApplication } from '@nestjs/platform-express'
+import { contract } from '@opos/contract'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { loadEnv } from '../src/config/env'
+import { uploadRoutes } from '../src/modules/files/upload-body'
 import { createApp } from './app'
 
 // An explicit list of origins, the four request headers, Retry-After exposed,
@@ -33,14 +35,43 @@ describe('CORS', () => {
     expect(res.headers['access-control-allow-credentials']).toBe('true')
   })
 
-  it('allows the four request headers and no other', async () => {
+  // A browser asks before it sends a file: a route that takes one has a parser of its own before
+  // the routes, which must leave the question to CORS.
+  it.each(uploadRoutes(contract))(
+    'answers the preflight of $method $path, a route that takes a file',
+    async ({ method, path }) => {
+      const res = await request(app.getHttpServer())
+        .options(path.replace(/:\w+/g, '7a1e6b56-2c3f-4d55-9a2e-1f0b7c3d9e10'))
+        .set('Origin', env.PANEL_URL)
+        .set('Access-Control-Request-Method', method)
+        .set('Access-Control-Request-Headers', 'content-type,x-tenant-slug')
+        .expect(204)
+
+      expect(res.headers['access-control-allow-origin']).toBe(env.PANEL_URL)
+      expect(res.headers['access-control-allow-credentials']).toBe('true')
+      expect(String(res.headers['access-control-allow-methods'])).toContain(method)
+    },
+  )
+
+  it('finds a route that takes a file to ask about', () => {
+    expect(uploadRoutes(contract).length).toBeGreaterThan(0)
+  })
+
+  // The fifth is the result token of an order, which travels in no path and no query.
+  it('allows the five request headers and no other', async () => {
     const res = await preflight(env.PANEL_URL)
 
     const allowed = String(res.headers['access-control-allow-headers'])
       .split(',')
       .map((header) => header.trim().toLowerCase())
       .sort()
-    expect(allowed).toEqual(['accept-language', 'authorization', 'content-type', 'x-tenant-slug'])
+    expect(allowed).toEqual([
+      'accept-language',
+      'authorization',
+      'content-type',
+      'x-result-token',
+      'x-tenant-slug',
+    ])
   })
 
   it('names no origin for another one, on a preflight and on a request', async () => {
@@ -88,9 +119,10 @@ describe('CORS', () => {
     expect(noOrigin.headers.vary).toMatch(/origin/i)
   })
 
-  it('exposes Retry-After, which a browser hides from a script otherwise', async () => {
+  it('exposes Retry-After and the name of a file, which a browser hides from a script otherwise', async () => {
     const res = await request(app.getHttpServer()).get('/health').set('Origin', env.PANEL_URL)
 
-    expect(res.headers['access-control-expose-headers']).toBe('Retry-After')
+    // And Content-Disposition, by which a file an org exports is saved under its own name.
+    expect(res.headers['access-control-expose-headers']).toBe('Retry-After,Content-Disposition')
   })
 })

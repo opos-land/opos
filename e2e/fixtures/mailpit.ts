@@ -13,6 +13,7 @@ export interface Mail {
 interface Summary {
   ID: string
   Created: string
+  Subject: string
 }
 
 async function json<T>(path: string, init?: RequestInit): Promise<T> {

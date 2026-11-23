@@ -1,0 +1,1 @@
+ALTER TYPE "public"."order_email_kind" ADD VALUE 'pre-edition-reminder';

@@ -37,11 +37,26 @@ paths = [
   '''^packages/db/src/seed\.ts$''',
 ]
 
-# Tree and history scans. Test fixtures, by path alone: a squash merge gives their commits a new
-# hash. The first holds the RFC 6238 test vector, the second a made-up key its check must refuse.
+# History scan. This commit wrote out the names of Dev's secrets beside keys ending in _password,
+# which the hashicorp-tf-password rule takes for passwords; the stack derives the names since.
 [[allowlists]]
-description = "test fixtures: the RFC 6238 vector and the boundary check's fake key"
+description = "the names of Dev's secrets, not their values, in one past commit of the stack"
+condition = "AND"
+commits = [
+  "053eb82f5f423fe4d6ce1b083b470fdff18f36bf",
+]
+paths = [
+  '''^infra/live/dev/terragrunt\.stack\.hcl$''',
+]
+
+# Tree and history scans. Test fixtures, by path alone: a squash merge gives their commits a new
+# hash. The first holds the RFC 6238 test vector, the second a made-up key its check must refuse,
+# the third a made-up API key of a Przelewy24 account, the fourth a made-up token of an order link.
+[[allowlists]]
+description = "test fixtures: the RFC 6238 vector, the boundary check's fake key, a made-up Przelewy24 key and a made-up order link token"
 paths = [
   '''^packages/db/src/totp\.test\.ts$''',
   '''^scripts/bff-boundary\.test\.mjs$''',
+  '''^apps/api/src/modules/payments/przelewy24/account\.test\.ts$''',
+  '''^apps/portal/src/features/shop/pages/order-link-page\.test\.tsx$''',
 ]

@@ -60,6 +60,8 @@ function refusal(error: unknown): unknown {
       return new ApiError(409, error.code, 'The email address is not confirmed')
     case 'tenant.not-suspended':
       return new ApiError(409, error.code, 'Only a suspended tenant can be deleted')
+    case 'tenant.has-orders':
+      return new ApiError(409, error.code, 'A tenant that holds orders is not deleted')
     case 'tenant.slug-taken':
       return new ApiError(409, error.code, 'The slug is taken by another tenant')
     case 'tenant.slug-reserved':
@@ -92,6 +94,14 @@ export class AdminDbService implements OnApplicationShutdown {
 
   async onApplicationShutdown() {
     await this.db.$client.end()
+  }
+
+  /**
+   * The connection of opos_admin, for the other database service of this module alone
+   * (AdminProfilesDb): the module exports neither, so no other module reaches the role.
+   */
+  get connection(): Database {
+    return this.db
   }
 
   /**

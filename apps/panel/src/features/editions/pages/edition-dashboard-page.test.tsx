@@ -20,6 +20,13 @@ vi.mock('../../tenants', () => ({
   useCurrentTenant: () => ({ tenant: { slug: 'convention-a', name: 'Convention A' } }),
   useTenantTime: () => ({ range: () => 'the dates of the edition' }),
 }))
+vi.mock('../../orders', () => ({
+  OrdersInReview: ({ editionId, to }: { editionId: string; to: string }) => (
+    <p>
+      the orders in review of {editionId}, at {to}
+    </p>
+  ),
+}))
 
 const edition: Edition = {
   id: 'edition-1',
@@ -29,6 +36,9 @@ const edition: Edition = {
   endsAt: '2026-06-07T16:00:00.000Z',
   isActive: true,
   isPublished: false,
+  venueName: null,
+  venueAddress: null,
+  venueCity: null,
 }
 
 const view = () =>
@@ -80,5 +90,15 @@ describe('EditionDashboardPage', () => {
     view()
 
     expect(screen.getByRole('heading', { name: 'No permissions' })).toBeDefined()
+  })
+
+  // How many orders wait for an org is shown on the edition
+  // (docs/specs/0006-order-management.md, F3).
+  it('shows the orders of the edition that need review', () => {
+    view()
+
+    expect(
+      screen.getByText('the orders in review of edition-1, at /convention-a/editions/2026/orders'),
+    ).toBeDefined()
   })
 })

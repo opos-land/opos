@@ -1,6 +1,6 @@
 # 0013. Connect to Postgres directly, with TLS verified against the project's CA
 
-- Status: Accepted
+- Status: Superseded by [0039](0039-verify-postgres-tls-against-the-supabase-ca-trusted-by-node.md)
 - Date: 2026-10-27
 - Rationale: reconstructed, to confirm
 

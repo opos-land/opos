@@ -57,6 +57,27 @@ describe('tenantAccess', () => {
     expect(tenantAccess(membership({ settingsAccess: 'read' })).seesConventionSettings).toBe(true)
   })
 
+  it('opens the convention settings on their general section to who reads the settings', () => {
+    expect(tenantAccess(membership({ role: 'head' })).settingsEntry).toBe('')
+    expect(tenantAccess(membership({ settingsAccess: 'read' })).settingsEntry).toBe('')
+    expect(
+      tenantAccess(membership({ settingsAccess: 'read', brandingAccess: 'write' })).settingsEntry,
+    ).toBe('')
+  })
+
+  it('opens the convention settings on the branding to an org who holds the branding alone', () => {
+    const access = tenantAccess(membership({ brandingAccess: 'read' }))
+
+    expect(access.branding).toBe('read')
+    expect(access.settings).toBe('none')
+    expect(access.seesConventionSettings).toBe(true)
+    expect(access.settingsEntry).toBe('/branding')
+  })
+
+  it('gives a head the branding, whatever the row holds', () => {
+    expect(tenantAccess(membership({ role: 'head' })).branding).toBe('write')
+  })
+
   it('keeps the convention settings closed to an org with edition-level permissions only', () => {
     const access = tenantAccess(
       membership({
@@ -73,12 +94,21 @@ describe('tenantAccess', () => {
     )
 
     expect(access.seesConventionSettings).toBe(false)
+    expect(access.settingsEntry).toBeNull()
   })
 
-  it('keeps the convention settings closed while the shop, the only section left, has no screen', () => {
-    expect(tenantAccess(membership({ shopConfigAccess: 'write' })).seesConventionSettings).toBe(
-      false,
-    )
+  it('opens the convention settings on the shop to an org who holds the shop alone', () => {
+    const access = tenantAccess(membership({ shopConfigAccess: 'read' }))
+
+    expect(access.shop).toBe('read')
+    expect(access.seesConventionSettings).toBe(true)
+    expect(access.settingsEntry).toBe('/shop')
+  })
+
+  it('opens them on the branding to an org who holds the branding and the shop', () => {
+    const access = tenantAccess(membership({ brandingAccess: 'read', shopConfigAccess: 'write' }))
+
+    expect(access.settingsEntry).toBe('/branding')
   })
 
   it("reads an org's tenant-level permissions from its membership", () => {

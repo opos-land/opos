@@ -1,0 +1,1 @@
+ALTER TABLE "account_avatars" ADD CONSTRAINT "account_avatars_file_unique" UNIQUE("file_id");

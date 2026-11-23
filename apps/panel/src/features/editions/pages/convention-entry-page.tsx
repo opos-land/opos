@@ -8,7 +8,8 @@ import { defaultEdition } from '../model/default-edition'
 
 /**
  * Entering a convention opens the member's edition. With no edition to open, the
- * convention settings open on their editions, or the member learns there is nothing for them yet.
+ * convention settings open on what the member holds of them, or the member learns there is nothing
+ * for them yet.
  */
 export function ConventionEntryPage() {
   const { tenant, access } = useCurrentTenant()
@@ -20,8 +21,11 @@ export function ConventionEntryPage() {
 
   const edition = defaultEdition(editions.data ?? [])
   if (edition) return <Navigate to={`/${tenant.slug}/editions/${edition.slug}`} replace />
-  if (access.seesConventionSettings) {
-    return <Navigate to={`/${tenant.slug}/settings/editions`} replace />
+  if (access.settingsEntry !== null) {
+    // The editions for who reads the settings, the branding for who holds that alone.
+    return (
+      <Navigate to={`/${tenant.slug}/settings${access.settingsEntry || '/editions'}`} replace />
+    )
   }
 
   return (

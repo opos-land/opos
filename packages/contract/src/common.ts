@@ -23,6 +23,18 @@ export interface ContractMeta {
   tenant?: boolean
   /** A route of the admin application, for an account holding the admin role. */
   admin?: boolean
+  /**
+   * A feature's route that takes a file in its JSON body: it gets the body limit of an upload and
+   * receives the file before its transaction (docs/specs/0012-file-storage.md).
+   */
+  takesFile?: boolean
+  /** A feature's route that answers a kept file, under the headers of the storage. */
+  servesFile?: boolean
+  /**
+   * A route a scanner calls: a device with no session and no membership, named by its token in
+   * `Authorization: Bearer` (docs/specs/0007-scanner.md).
+   */
+  scanner?: boolean
 }
 
 type Operation = Exclude<NonNullable<Route['spec']>, (...args: never[]) => unknown>
@@ -74,6 +86,15 @@ export const tenantRoute = oc.$meta<ContractMeta>({ tenant: true }).$route({
   inputStructure: 'detailed',
   spec: (operation) =>
     withErrors({ ...operation, parameters: [...(operation.parameters ?? []), tenantHeader] }),
+})
+
+/**
+ * A route a scanner calls. Its caller is a device, not an account: it sends no session cookie
+ * and no tenant, and is known by the token it was handed when it was paired.
+ */
+export const scannerRoute = oc.$meta<ContractMeta>({ scanner: true }).$route({
+  inputStructure: 'detailed',
+  spec: (operation) => withErrors({ ...operation, security: [{ scannerDevice: [] }] }),
 })
 
 /**

@@ -304,6 +304,43 @@ describe.each(Object.entries(pools))('as %s', (_, db) => {
       expect(await migrator`select 1 from accounts where id = ${headAccountId}`).toHaveLength(1)
     })
 
+    // An order is kept for years after its edition, so nothing that deletes its tenant deletes
+    // it: the order keeps its edition, and the edition its tenant.
+    it('refuses a suspended tenant that holds an order and deletes nothing', async () => {
+      const { id } = await tenant()
+      const [edition] = await migrator<{ id: string }[]>`
+        insert into editions (tenant_id, slug, name, starts_at, ends_at)
+        values (${id}, 'sold', 'Sold', '2026-06-01', '2026-06-03') returning id
+      `
+      const [type] = await migrator<{ id: string }[]>`
+        insert into ticket_types (tenant_id, edition_id, name, sale_starts_at, sale_ends_at,
+          allows_child, allows_teen, allows_adult, position)
+        values (${id}, ${edition!.id}, 'Standard', '2026-01-01', '2099-01-01', true, true, true, 1)
+        returning id
+      `
+      const [order] = await migrator<{ id: string }[]>`
+        insert into orders (tenant_id, edition_id, number, status, email, holder_name, age_band,
+          total_minor, holds, result_token_hash)
+        values (${id}, ${edition!.id}, 'KEPTKEPTKE', 'paid', 'buyer@example.test', 'Ada', 'adult',
+          0, true, repeat('0', 64))
+        returning id
+      `
+      await migrator`
+        insert into order_lines (tenant_id, edition_id, order_id, kind, ticket_type_id, quantity,
+          unit_amount_minor, amount_minor)
+        values (${id}, ${edition!.id}, ${order!.id}, 'ticket', ${type!.id}, 1, 0, 0)
+      `
+      await suspendTenant(db, id)
+
+      await expect(deleteTenant(db, id)).rejects.toMatchObject({ code: 'tenant.has-orders' })
+      expect(await row(id)).toBeDefined()
+      expect(await migrator`select 1 from orders where tenant_id = ${id}`).toHaveLength(1)
+
+      // Once it holds none, it goes as any other.
+      await migrator`delete from orders where tenant_id = ${id}`
+      expect(await deleteTenant(db, id)).toMatchObject({ id })
+    })
+
     it('refuses a tenant that is not suspended and deletes nothing', async () => {
       const { id } = await tenant()
 

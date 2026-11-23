@@ -1,5 +1,6 @@
 import { type NestApplicationOptions } from '@nestjs/common'
 import { type NestExpressApplication } from '@nestjs/platform-express'
+import { contract } from '@opos/contract'
 import { setupDocs } from './common/docs/setup-docs'
 import {
   applicationFromOrigin,
@@ -9,6 +10,7 @@ import {
 } from './common/http/application'
 import { requireJsonBody } from './common/json-body'
 import { type Env } from './config/env'
+import { uploadBodyParser } from './modules/files/upload-body'
 
 /** Options for creating the application, in main.ts and in the tests alike. */
 export const APP_OPTIONS = {
@@ -25,6 +27,8 @@ export async function configureApp(app: NestExpressApplication, env: Env) {
     next()
   })
   app.use(requireJsonBody)
+  // Before Nest's own parser, which leaves a body already parsed alone.
+  app.use(uploadBodyParser(contract))
   app.use(requireOriginForSession(env))
   app.use(restrictAdminOrigin(env))
   // The credentials header goes out for the applications' origins only: `cors` sets it for any
@@ -34,9 +38,17 @@ export async function configureApp(app: NestExpressApplication, env: Env) {
       applicationFromOrigin((req as { headers: { origin?: unknown } }).headers.origin, env) !== null
     callback(null, {
       origin: allowed ? applicationOrigins(env) : false,
-      allowedHeaders: ['Authorization', 'Content-Type', 'X-Tenant-Slug', 'Accept-Language'],
-      // Not CORS-safelisted: without this an application cannot read it on a 429.
-      exposedHeaders: ['Retry-After'],
+      allowedHeaders: [
+        'Authorization',
+        'Content-Type',
+        'X-Tenant-Slug',
+        'Accept-Language',
+        // The result token of an order, which travels in no path and no query.
+        'X-Result-Token',
+      ],
+      // Not CORS-safelisted: without this an application cannot read Retry-After on a 429, nor
+      // the name a file an org exports is served under.
+      exposedHeaders: ['Retry-After', 'Content-Disposition'],
       // The session travels in the API's cookies, for these origins only.
       credentials: allowed,
     })

@@ -40,11 +40,31 @@ const publicRoutes = [
   'auth.passwordForgot',
   'invitations.preview',
   'public.tenant',
+  'public.editionList',
+  'public.logoFile',
+  'public.documentVersion',
+  'public.merchandiseFile',
+  'public.addOnFile',
+  'public.shop',
+  'public.shopQuote',
+  'public.placeOrder',
+  'public.orderResult',
+  'public.startPaymentAttempt',
+  'payments.notification',
+  'scanner.pair',
+  'payments.additionalNotification',
   'public.editions',
   'public.activeEdition',
   'public.edition',
   'public.programItems',
   'public.programItem',
+  // A published profile and an avatar are for everyone (docs/specs/0016-public-profile.md).
+  'public.profile',
+  'public.avatarFile',
+  'public.reportProfile',
+  // An order link opens with its token alone (docs/specs/0009-buyer-self-service.md).
+  'orderLinks.open',
+  'orderLinks.renew',
 ]
 
 const procedures = (router: AnyContractRouter, prefix = ''): [string, AnyContractProcedure][] =>
@@ -64,10 +84,16 @@ function isPublicRoute(procedure: AnyContractProcedure) {
   return Array.isArray(operation?.security) && operation.security.length === 0
 }
 
+/** A scanner's route: its caller is a device, with no session and no membership. */
+const isScannerRoute = (procedure: AnyContractProcedure) =>
+  (procedure['~orpc'].meta as ContractMeta).scanner === true
+
 const all = procedures(contract)
 const tenantRoutes = all.filter(([, procedure]) => isTenantRoute(procedure))
+const scannerRoutes = all.filter(([, procedure]) => isScannerRoute(procedure))
 const accountRoutes = all.filter(
-  ([, procedure]) => !isTenantRoute(procedure) && !isPublicRoute(procedure),
+  ([, procedure]) =>
+    !isTenantRoute(procedure) && !isPublicRoute(procedure) && !isScannerRoute(procedure),
 )
 
 let app: NestExpressApplication
@@ -175,6 +201,25 @@ describe('account routes', () => {
     const res = await call(procedure, undefined)
     expect(res.status).toBe(401)
     expect(res.body).toMatchObject({ code: 'session.invalid' })
+  })
+})
+
+// docs/specs/0007-scanner.md: a scanner route answers a device's token and nothing else.
+describe('scanner routes', () => {
+  it('are the scan and the hand-out', () => {
+    expect(scannerRoutes.map(([name]) => name).sort()).toEqual(['scanner.handOut', 'scanner.scan'])
+  })
+
+  it.each(scannerRoutes)('%s refuses a request without a token', async (_, procedure) => {
+    const res = await call(procedure, undefined)
+    expect(res.status).toBe(401)
+    expect(res.body).toMatchObject({ code: 'scanner.revoked' })
+  })
+
+  it.each(scannerRoutes)('%s takes no session of an account for a token', async (_, procedure) => {
+    const res = await call(procedure, undefined, a.head)
+    expect(res.status).toBe(401)
+    expect(res.body).toMatchObject({ code: 'scanner.revoked' })
   })
 })
 

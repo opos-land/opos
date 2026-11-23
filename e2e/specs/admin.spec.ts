@@ -15,7 +15,7 @@ import {
   signInToPortal,
 } from '../fixtures/ui'
 
-// The admin application (docs/specs/platform-administration.md): an admin signs in with a
+// The admin application (docs/specs/0001-platform-administration.md): an admin signs in with a
 // password and a code and runs the conventions from it. Every scenario makes its own admin,
 // accounts and conventions, and only reads the seed.
 

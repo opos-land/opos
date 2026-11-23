@@ -23,6 +23,15 @@ const envSchema = z
     // The one switch between environments: `NODE_ENV` is `production` on Dev too.
     OPOS_ENV: z.enum(['local', 'dev', 'production']),
     PORT: z.coerce.number().int().positive().default(3001),
+    // The commit the deployment built, which every response names in X-Opos-Commit: Coolify's
+    // SOURCE_COMMIT through the compose file, `unknown` where nothing names one.
+    OPOS_COMMIT: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z
+        .string()
+        .regex(/^[\w.-]{1,64}$/, 'a commit')
+        .default('unknown'),
+    ),
     DATABASE_URL: z.url(),
     DATABASE_GLOBAL_URL: z.url(),
     // The connection of opos_admin, which the admin routes alone use. Unset, with ADMIN_URL, where

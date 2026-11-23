@@ -224,6 +224,22 @@ describe('the compose file of a deployment', () => {
     assert.match(service(compose, 'api'), /IMGPROXY_URL: http:\/\/imgproxy:8080\n/)
   })
 
+  // Coolify writes the deployed commit as SOURCE_COMMIT into the variables of every deployment;
+  // each service a host routes to names it in its X-Opos-Commit header
+  it('hands the deployed commit to the API and the frontends', () => {
+    for (const name of ['api', 'panel', 'portal', 'admin']) {
+      assert.match(service(compose, name), /^ {6}OPOS_COMMIT: \$\{SOURCE_COMMIT:-\}$/m, name)
+    }
+  })
+
+  it('catches a frontend that is not handed the commit', () => {
+    const dropped = compose.replace(
+      /^( {2}portal:\n(?: {4}.*\n| {6}.*\n)*?) {6}OPOS_COMMIT: .*\n/m,
+      '$1',
+    )
+    assert.doesNotMatch(service(dropped, 'portal'), /OPOS_COMMIT/)
+  })
+
   it('catches a setting of imgproxy the deployment drops', () => {
     const dropped = compose.replace("      IMGPROXY_STRIP_METADATA: 'true'\n", '')
     assert.notDeepEqual(imgproxySettings(dropped), imgproxySettings(local))

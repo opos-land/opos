@@ -52,6 +52,9 @@ services:
     environment:
       NODE_ENV: production
       OPOS_ENV: ${OPOS_ENV:?}
+      # The commit Coolify deployed, which it writes into the variables of every deployment; the
+      # API names it in the X-Opos-Commit header of each response
+      OPOS_COMMIT: ${SOURCE_COMMIT:-}
       PORT: '3001'
       DATABASE_URL: ${DATABASE_URL:?}
       DATABASE_GLOBAL_URL: ${DATABASE_GLOBAL_URL:?}
@@ -108,7 +111,8 @@ services:
       retries: 3
 
   # The frontends, each built for the API's address; behind basic auth when BASIC_AUTH_PASSWORD
-  # is set
+  # is set. Each names the commit Coolify deployed in the X-Opos-Commit header of every answer past
+  # basic auth
   panel:
     build:
       context: .
@@ -123,6 +127,7 @@ services:
     environment:
       BASIC_AUTH_USER: ${BASIC_AUTH_USER:-opos}
       BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD:-}
+      OPOS_COMMIT: ${SOURCE_COMMIT:-}
 
   portal:
     build:
@@ -138,6 +143,7 @@ services:
     environment:
       BASIC_AUTH_USER: ${BASIC_AUTH_USER:-opos}
       BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD:-}
+      OPOS_COMMIT: ${SOURCE_COMMIT:-}
 
   admin:
     build:
@@ -153,6 +159,7 @@ services:
     environment:
       BASIC_AUTH_USER: ${BASIC_AUTH_USER:-opos}
       BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD:-}
+      OPOS_COMMIT: ${SOURCE_COMMIT:-}
 
   # Catches the mail of a deployment whose API sends to it (catch_mail of infra/modules/deployment):
   # nothing leaves the server, and its inbox page asks for the frontends' basic auth. The API sends

@@ -197,6 +197,11 @@ Coolify, built on the server from the head of `develop`
   ([0075](../docs/adr/0075-release-dev-from-ci-through-a-signed-webhook.md)). The job ends once
   Coolify has queued the deployment; how the deployment ends is in Coolify. A rollback is a revert
   on `develop`.
+- **The commit Dev runs.** Every answer of the API names the commit Coolify deployed in its
+  `X-Opos-Commit` header: `curl -sI https://api.dev.opos.land/health | grep -i x-opos-commit`.
+  The frontends name theirs past basic auth (`curl -sI -u opos:<password> https://dev.opos.land`);
+  each is built on its own, so after a failed deployment they may differ. `unknown` means a build
+  that was given no commit.
 - **A release by hand.** When Dev missed the head of `develop`, as after a failed build in Coolify
   or an apply with `--ref` and one without it, run the `release-dev` workflow on `develop`
   (`gh workflow run release-dev.yml --ref develop`, or Actions, "Run workflow"). It releases the

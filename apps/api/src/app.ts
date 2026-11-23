@@ -20,6 +20,13 @@ export const APP_OPTIONS = {
 
 export async function configureApp(app: NestExpressApplication, env: Env) {
   app.set('trust proxy', 1)
+  // Which commit answers, readable from any response, an error included.
+  app.use(
+    (_req: unknown, res: { setHeader(name: string, value: string): unknown }, next: () => void) => {
+      res.setHeader('X-Opos-Commit', env.OPOS_COMMIT)
+      next()
+    },
+  )
   // Every response depends on the Origin whether or not CORS names it, and `cors` varies only for the
   // origins it allows.
   app.use((_req: unknown, res: { vary(field: string): unknown }, next: () => void) => {

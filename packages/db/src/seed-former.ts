@@ -94,14 +94,6 @@ export const FORMER_ORDER_NOTES: Record<string, string> = {
   'Invoice 7/2026.': 'Faktura 7/2026.',
 }
 
-/** The files of the pictures of an item, which the seed finds by their name. */
-export const FORMER_PICTURE_FILE_NAMES: Record<string, string> = {
-  'T-shirt - front.png': 'Koszulka – przód.png',
-  'T-shirt - back.png': 'Koszulka – tył.png',
-  'T-shirt - print.png': 'Koszulka – nadruk.png',
-  'Enamel pin.png': 'Przypinka.png',
-}
-
 export const FORMER_REPORT_NOTES: Record<string, string> = {
   'A demo report that gave an address.': 'Zgłoszenie demonstracyjne, które podało adres.',
 }

@@ -72,7 +72,6 @@ import {
   FORMER_HOLDER_NAMES,
   FORMER_MERCHANDISE_ITEM_NAMES,
   FORMER_ORDER_NOTES,
-  FORMER_PICTURE_FILE_NAMES,
   FORMER_PROGRAM_ITEM_TITLES,
   FORMER_REPORT_NOTES,
   FORMER_SCANNER_NAMES,
@@ -1289,7 +1288,7 @@ async function seedTenant(spec: SeedTenant) {
       }
     }
 
-    if (spec.logo) objects.push(await seedLogo(tx, tenantId, spec.name, spec.logo))
+    if (spec.logo) objects.push(...(await seedLogo(tx, tenantId, spec.name, spec.logo)))
     if (spec.shop) await seedShop(tx, tenantId, spec.shop)
     for (const edition of spec.editions) {
       if (!edition.shop) continue
@@ -1437,7 +1436,6 @@ async function renameFormerDemoData(tx: Tx, tenantId: string, orderNumbers: stri
   await rename(scannerDevices, 'name', FORMER_SCANNER_NAMES)
   await rename(orders, 'holderName', FORMER_HOLDER_NAMES)
   await rename(orders, 'note', FORMER_ORDER_NOTES)
-  await rename(uploadedFiles, 'name', FORMER_PICTURE_FILE_NAMES)
   if (orderNumbers.length === 0) return
   await tx
     .update(orderEmails)
@@ -1809,21 +1807,28 @@ async function seedCatalog(
     addOnIds.set(addOn.name, saved!.id)
     if (addOn.picture) {
       const [held] = await tx
-        .select({ fileId: addOnPictures.fileId, sha256: uploadedFiles.sha256 })
+        .select({
+          fileId: addOnPictures.fileId,
+          sha256: uploadedFiles.sha256,
+          name: uploadedFiles.name,
+        })
         .from(addOnPictures)
         .innerJoin(uploadedFiles, eq(uploadedFiles.id, addOnPictures.fileId))
         .where(eq(addOnPictures.addOnId, saved!.id))
-      const kept = await keepPicture(
-        tx,
-        at,
-        ADD_ON_PICTURE_FILE_KIND,
-        { name: addOn.name, ...addOn.picture },
-        held,
-      )
-      if (!held) {
-        await tx.insert(addOnPictures).values({ ...at, addOnId: saved!.id, fileId: kept.fileId })
+      // A picture an org put in place of the demo one is the org's, and stays.
+      if (!held || held.name === `${addOn.name}.png`) {
+        const kept = await keepPicture(
+          tx,
+          at,
+          ADD_ON_PICTURE_FILE_KIND,
+          { name: addOn.name, ...addOn.picture },
+          held,
+        )
+        if (!held) {
+          await tx.insert(addOnPictures).values({ ...at, addOnId: saved!.id, fileId: kept.fileId })
+        }
+        objects.push(kept.object)
       }
-      objects.push(kept.object)
     }
   }
 
@@ -2567,18 +2572,22 @@ async function seedItemPictures(
   return objects
 }
 
-/** The logo of a demo convention, drawn from its name. */
+/**
+ * The logo of a demo convention, drawn from its name. A logo an org put in place of the demo one
+ * is the org's, and stays.
+ */
 async function seedLogo(
   tx: Tx,
   tenantId: string,
   name: string,
   size: SeedPictureSize,
-): Promise<PendingObject> {
+): Promise<PendingObject[]> {
   const [held] = await tx
-    .select({ fileId: tenantLogos.fileId, sha256: uploadedFiles.sha256 })
+    .select({ fileId: tenantLogos.fileId, sha256: uploadedFiles.sha256, name: uploadedFiles.name })
     .from(tenantLogos)
     .innerJoin(uploadedFiles, eq(uploadedFiles.id, tenantLogos.fileId))
     .where(eq(tenantLogos.tenantId, tenantId))
+  if (held && held.name !== `${name}.png`) return []
   const kept = await keepPicture(
     tx,
     { tenantId, editionId: null },
@@ -2587,7 +2596,7 @@ async function seedLogo(
     held,
   )
   if (!held) await tx.insert(tenantLogos).values({ tenantId, fileId: kept.fileId })
-  return kept.object
+  return [kept.object]
 }
 
 /**

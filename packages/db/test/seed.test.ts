@@ -8,7 +8,7 @@ import {
 } from '@aws-sdk/client-s3'
 import { describe, expect, it } from 'vitest'
 import { open, orderQrCodeOf, providerAccountOf, sealingKey } from '../src/sealed'
-import { migrator } from './db'
+import { createEdition, createProgramItem, createTenant, migrator } from './db'
 
 // The seed refuses before it opens a connection: it runs where OPOS_ENV is local or dev, and a
 // missing variable stops it.
@@ -857,6 +857,49 @@ describe('db:seed shop', () => {
     },
   )
 
+  // A logo or a picture an org put in place of the demo one is the org's: the seed leaves it.
+  it(
+    'leaves a logo and an add-on picture an org replaced the demo ones with',
+    { timeout: 120_000 },
+    async () => {
+      expect(runSeed('local').status).toBe(0)
+      const b = await tenantId('convention-b')
+      const a = await tenantId('convention-a')
+      const held = async () => [
+        ...(await migrator<{ id: string; name: string; sha256: string }[]>`
+          select f.id, f.name, f.sha256 from tenant_logos l
+          join uploaded_files f on f.id = l.file_id where l.tenant_id = ${b}
+        `),
+        ...(await migrator<{ id: string; name: string; sha256: string }[]>`
+          select f.id, f.name, f.sha256 from add_on_pictures p
+          join uploaded_files f on f.id = p.file_id where p.tenant_id = ${a}
+        `),
+      ]
+      const demo = await held()
+      expect(demo).toHaveLength(2)
+      for (const file of demo) {
+        await migrator`
+          update uploaded_files set name = 'ours.png', sha256 = ${'1'.repeat(64)}
+          where id = ${file.id}
+        `
+      }
+      try {
+        expect(runSeed('local').status).toBe(0)
+
+        expect(await held()).toEqual(
+          demo.map((file) => ({ id: file.id, name: 'ours.png', sha256: '1'.repeat(64) })),
+        )
+      } finally {
+        for (const file of demo) {
+          await migrator`
+            update uploaded_files set name = ${file.name}, sha256 = ${file.sha256}
+            where id = ${file.id}
+          `
+        }
+      }
+    },
+  )
+
   // The orders of the edition with an open shop (docs/specs/0004-checkout-and-orders.md, Seed).
   it(
     'gives the coming edition an order in each status, with what each status holds',
@@ -1241,7 +1284,6 @@ describe('db:seed shop', () => {
       ['scanner_devices', 'name', 'Główne wejście', 'Main gate'],
       ['orders', 'holder_name', 'Demo Odrzucony', 'Demo Declined'],
       ['orders', 'note', 'Faktura 7/2026.', 'Invoice 7/2026.'],
-      ['uploaded_files', 'name', 'Koszulka – przód.png', 'T-shirt - front.png'],
     ] as const
     const counts = async () =>
       Promise.all(
@@ -1254,6 +1296,10 @@ describe('db:seed shop', () => {
             )[0]!.rows,
         ),
       )
+    // A convention the seed does not own keeps a programme item of the same English title.
+    const other = await createTenant()
+    const otherItem = await createProgramItem(other.id, await createEdition(other.id))
+    await migrator`update program_items set title = 'Opening ceremony' where id = ${otherItem}`
     const before = await counts()
     for (const [table, column, polish, former] of english) {
       await migrator`
@@ -1275,6 +1321,9 @@ describe('db:seed shop', () => {
     expect(run.status, run.stderr).toBe(0)
 
     expect(await counts()).toEqual(before)
+    expect(await migrator`select title from program_items where id = ${otherItem}`).toEqual([
+      { title: 'Opening ceremony' },
+    ])
     for (const [table, column, polish, former] of english) {
       const [left] = await migrator<{ polish: number; former: number }[]>`
         select count(*) filter (where ${migrator(column)} = ${polish})::int as polish,

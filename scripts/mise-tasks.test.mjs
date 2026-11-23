@@ -35,6 +35,19 @@ test('describes every mise task', () => {
     assert.match(task.description ?? '', /\S/, `${task.name} has no description`)
 })
 
+// `mise tasks` pads the names to the longest and sets the description beside it, two columns of
+// space each side; a longer row wraps. Who may run a command and what each flag does belong to
+// its help, not to this one line.
+const WIDTH = 120
+
+test(`describes every mise task on one row of a ${WIDTH}-column terminal`, () => {
+  const names = Math.max(...tasks.map((task) => task.name.length))
+  const wrapped = tasks
+    .filter((task) => names + 2 + task.description.length + 2 > WIDTH)
+    .map((task) => task.name)
+  assert.deepEqual(wrapped, [], `at most ${WIDTH - names - 4} characters`)
+})
+
 test('runs through pnpm only a root script of the same name', () => {
   for (const task of tasks.filter((candidate) => /^pnpm\b/.test(runOf(candidate)))) {
     assert.ok(scripts.includes(task.name), `${task.name} is not a root script`)

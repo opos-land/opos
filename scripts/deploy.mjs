@@ -25,7 +25,7 @@ import { parseArgs } from 'node:util'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 const COMMANDS =
-  'bootstrap, grant, login, plan, apply, destroy, output, secret-set, secret-get, state-passphrase'
+  'bootstrap, grant, login, plan, apply, destroy, import, output, secret-set, secret-get, state-passphrase'
 
 /** An error that names its exit status: 2 for a usage, a tool's own status for its failure. */
 const failure = (message, exitCode = 1) => Object.assign(new Error(message), { exitCode })
@@ -523,6 +523,37 @@ export async function deploy({
           TG_NO_AUTO_APPROVE: 'true',
           TG_PARALLELISM: '1',
         },
+      )
+    },
+
+    // Takes an object that exists, but that no state holds, into one unit's state under the
+    // address the unit's code gives it: a variable Coolify made from the compose file's default
+    // before the unit wrote it, which the unit then fails to create. The next apply plans the rest.
+    // Terragrunt refuses an import across a stack, so it runs in the generated unit's directory.
+    async import() {
+      if (rest.length !== 4) {
+        throw usage('pnpm deploy:import <environment> <unit> <address> <id>')
+      }
+      const [name, unit, address, id] = rest
+      const settings = environment(name)
+      const units = [
+        ...fs.read(join(settings.live, 'terragrunt.stack.hcl')).matchAll(/^unit "([^"]+)"/gm),
+      ].map(([, one]) => one)
+      if (!units.includes(unit)) throw failure(`${name} has no unit ${unit}`, 2)
+      const vars = { ...operator(settings), TG_NO_DEPENDENCY_FETCH_OUTPUT_FROM_STATE: 'true' }
+      interactive('terragrunt', ['stack', 'generate', '--working-dir', settings.live], vars)
+      interactive(
+        'terragrunt',
+        [
+          'run',
+          '--working-dir',
+          join(settings.live, '.terragrunt-stack', unit),
+          '--',
+          'import',
+          address,
+          id,
+        ],
+        vars,
       )
     },
 

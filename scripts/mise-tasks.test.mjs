@@ -7,13 +7,16 @@ import { fileURLToPath } from 'node:url'
 // Every root script has a mise task of the same name that runs it and says what it does, so
 // `mise tasks` lists the commands with their descriptions while the scripts stay their only
 // definition (docs/ARCHITECTURE.md, Tooling and versions). The tasks are read through mise itself,
-// so the test sees what `mise tasks` lists, includes and all.
+// so the test sees what `mise tasks` lists, includes and all, and the hidden tasks beside them.
 const root = fileURLToPath(new URL('..', import.meta.url))
 const scripts = Object.keys(JSON.parse(readFileSync(`${root}/package.json`, 'utf8')).scripts)
 // A lifecycle script runs on its own during `pnpm install`, never by name.
 const commands = scripts.filter((name) => name !== 'prepare')
 const tasks = JSON.parse(
-  execFileSync('mise', ['tasks', 'ls', '--json', '--no-global'], { cwd: root, encoding: 'utf8' }),
+  execFileSync('mise', ['tasks', 'ls', '--json', '--no-global', '--hidden'], {
+    cwd: root,
+    encoding: 'utf8',
+  }),
 )
 const runOf = (task) => [task.run].flat().join('\n')
 

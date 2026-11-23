@@ -39,6 +39,7 @@
     "deploy:plan": "node scripts/deploy.mjs plan",
     "deploy:apply": "node scripts/deploy.mjs apply",
     "deploy:destroy": "node scripts/deploy.mjs destroy",
+    "deploy:import": "node scripts/deploy.mjs import",
     "deploy:output": "node scripts/deploy.mjs output",
     "deploy:secret-set": "node scripts/deploy.mjs secret-set",
     "deploy:secret-get": "node scripts/deploy.mjs secret-get",

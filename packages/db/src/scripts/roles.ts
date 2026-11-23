@@ -5,7 +5,7 @@ import { applyRoles } from '../roles'
 function required(name: string) {
   const value = process.env[name]
   if (!value) {
-    console.error(`${name} is not set; run pnpm infra:init`)
+    console.error(`${name} is not set; run pnpm stack:init`)
     process.exit(1)
   }
   return value

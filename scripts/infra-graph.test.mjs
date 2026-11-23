@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { after, describe, it } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { main, readStack, renderPage } from './deploy-graph.mjs'
+import { main, readStack, renderPage } from './infra-graph.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -15,7 +15,7 @@ after(() => {
 
 /** A repository holding `files`, keyed by their path. */
 function repository(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'deploy-graph-'))
+  const dir = mkdtempSync(join(tmpdir(), 'infra-graph-'))
   fixtures.push(dir)
   for (const [path, text] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, path)), { recursive: true })
@@ -497,7 +497,7 @@ describe('renderPage', () => {
   })
 
   it('has a page that takes the stack', () => {
-    const template = readFileSync(join(ROOT, 'scripts/deploy-graph.html'), 'utf8')
+    const template = readFileSync(join(ROOT, 'scripts/infra-graph.html'), 'utf8')
     assert.ok(template.includes('/*STACK*/'))
   })
 })
@@ -536,16 +536,29 @@ describe('main', () => {
     assert.equal(await main([], { root, log, error: log, env: {} }), 2)
     assert.equal(await main(['prod'], { root, log, error: log, env: {} }), 2)
     assert.deepEqual(out, [
-      'usage: pnpm deploy:graph <environment> [--open], one of test',
-      'usage: pnpm deploy:graph <environment> [--open], one of test',
+      'usage: pnpm infra:graph <environment> [--open], one of test',
+      'usage: pnpm infra:graph <environment> [--open], one of test',
     ])
+  })
+
+  it('tells what it writes and its flag on --help or -h, and writes nothing', async () => {
+    const root = repository(STACK)
+    for (const args of [['--help'], ['test', '-h']]) {
+      const { out, log } = output()
+      assert.equal(await main(args, { root, log, error: log, env: {} }), 0)
+      assert.equal(out[0], 'usage: pnpm infra:graph <environment> [--open], one of test')
+      assert.match(out.join('\n'), /\.terragrunt-graph\.html/)
+      assert.match(out.join('\n'), /--open +opens it in the default browser/)
+      assert.match(out.join('\n'), /no sign-in/)
+    }
+    assert.throws(() => readFileSync(join(root, 'infra/live/test/.terragrunt-graph.html')))
   })
 
   it('refuses a flag it does not know', async () => {
     const root = repository(STACK)
     const { out, log } = output()
     assert.equal(await main(['test', '--nope'], { root, log, error: log, env: {} }), 2)
-    assert.equal(out[0], 'usage: pnpm deploy:graph <environment> [--open], one of test')
+    assert.equal(out[0], 'usage: pnpm infra:graph <environment> [--open], one of test')
   })
 
   describe('--open', () => {
@@ -607,7 +620,7 @@ describe('main', () => {
       assert.equal(code, 0)
       assert.deepEqual(out, [
         page(root),
-        'deploy:graph could not open the page (spawnSync xdg-open ENOENT): open it in a browser yourself.',
+        'infra:graph could not open the page (spawnSync xdg-open ENOENT): open it in a browser yourself.',
       ])
     })
 
@@ -624,6 +637,6 @@ describe('main', () => {
     const root = repository({ 'infra/live/bad/terragrunt.stack.hcl': 'unit "a" {\n' })
     const { out, log } = output()
     assert.equal(await main(['bad'], { root, log, error: log, env: {} }), 1)
-    assert.match(out[0], /^deploy:graph could not read the stack: /)
+    assert.match(out[0], /^infra:graph could not read the stack: /)
   })
 })

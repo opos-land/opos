@@ -19,7 +19,7 @@ token, with access to Dev's project alone, the permissions `read`, `read:sensiti
 way.
 
 ```sh
-mise run deploy:secret-set dev coolify-api-token
+mise run deploy:secret:set dev coolify-api-token
 ```
 
 CI holds no token: Coolify's API answers only the addresses its allowlist names. The release job

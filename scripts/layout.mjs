@@ -1,4 +1,4 @@
-// The layered layout of the pages of pnpm deploy:graph (scripts/deploy-graph.mjs): nodes in columns
+// The layered layout of the pages of pnpm infra:graph (scripts/infra-graph.mjs): nodes in columns
 // after what they depend on, ordered to keep edges apart.
 
 const NODE = { width: 220, height: 92, columnGap: 120, rowGap: 36, margin: 32, passage: 18 }

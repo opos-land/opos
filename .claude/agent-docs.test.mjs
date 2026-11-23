@@ -232,9 +232,9 @@ test('settings deny the real .env files and printing a secret, and leave templat
     'Read(./packages/*/.env)',
     'Read(./supabase/.env)',
     'Read(./supabase/signing_keys.json)',
-    'Bash(mise run deploy:secret-get:*)',
-    'Bash(pnpm deploy:secret-get:*)',
-    'Bash(node scripts/deploy.mjs secret-get:*)',
+    'Bash(mise run deploy:secret:get:*)',
+    'Bash(pnpm deploy:secret:get:*)',
+    'Bash(node scripts/deploy.mjs secret:get:*)',
   ])
   assert.ok(
     deny.every((rule) => !rule.includes('.env.')),

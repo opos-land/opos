@@ -152,7 +152,7 @@ export class TenantFactory {
     }
     if (input.credentials) {
       const key = apiEnv.PAYMENT_CREDENTIALS_KEY
-      if (!key) throw new Error('PAYMENT_CREDENTIALS_KEY is missing; run pnpm infra:init')
+      if (!key) throw new Error('PAYMENT_CREDENTIALS_KEY is missing; run pnpm stack:init')
       const sealed = seal(
         sealingKey(key),
         JSON.stringify(input.credentials),

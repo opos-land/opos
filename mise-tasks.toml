@@ -2,8 +2,11 @@
 # picker. Each task runs the root script of the same name, which stays the only definition of the
 # command and works without mise; extra arguments go through to it. turbo orders and caches what the
 # scripts run, so a task declares no sources, outputs or depends. `raw` hands the terminal to the
-# command, for turbo's interface and the prompts of drizzle-kit. The deploy commands at the end are
-# the exception: they have no root script.
+# command, for turbo's interface and the prompts of drizzle-kit.
+# `raw_args` hands every argument, --help too, to a command whose script answers --help, where
+# mise would print the task's definition instead.
+# A description says what the command does and then its arguments, on one row of a 120-column
+# terminal; who may run it and what each flag does belong to its help.
 # This file sits outside mise.toml, which turbo hashes: a description changes no cache.
 
 [local]
@@ -27,7 +30,7 @@ run = "pnpm lint"
 raw = true
 
 [test]
-description = "Run the tests of every package; the API and database suites need the local stack (infra:up)"
+description = "Run the tests of every package; the API and database suites need the local stack (stack:up)"
 run = "pnpm test"
 raw = true
 
@@ -57,7 +60,7 @@ run = "pnpm i18n:check"
 raw = true
 
 ["db:generate"]
-description = "Generate a Drizzle migration from the schema; to name it, pnpm --filter @opos/db db:generate --name=<name>"
+description = "Generate a Drizzle migration from the schema: [--name=<name>]"
 run = "pnpm db:generate"
 raw = true
 
@@ -87,12 +90,12 @@ run = "pnpm db:studio"
 raw = true
 
 ["db:verify"]
-description = "Check that every table follows the tenant isolation rules and the roles hold only the privileges they may"
+description = "Check every table's tenant isolation and that each role holds only the privileges it may"
 run = "pnpm db:verify"
 raw = true
 
 ["db:admin:grant"]
-description = "Grant the admin role to a confirmed account with a password and two-factor authentication on: --email <email>"
+description = "Grant the admin role to an account with a password and two-factor on: --email <email>"
 run = "pnpm db:admin:grant"
 raw = true
 
@@ -116,25 +119,48 @@ description = "Check that every file is formatted with Prettier and every Markdo
 run = "pnpm format:check"
 raw = true
 
-["infra:init"]
-description = "Set up the local stack once per checkout: .env files, secrets, signing key, Supabase, the bucket and the image server, database roles"
-run = "pnpm infra:init"
+["stack:init"]
+description = "Set up the local stack once per checkout: .env files, keys, containers and database roles"
+run = "pnpm stack:init"
 raw = true
 
-["infra:up"]
+["stack:up"]
 description = "Start the local Supabase stack, the bucket and the image server"
-run = "pnpm infra:up"
+run = "pnpm stack:up"
 raw = true
 
-["infra:down"]
+["stack:down"]
 description = "Stop the local Supabase stack, the bucket and the image server, keeping their data"
-run = "pnpm infra:down"
+run = "pnpm stack:down"
 raw = true
 
-["infra:reset"]
-description = "Wipe the data of the local Supabase stack and the bucket, start them again and set the database roles"
-run = "pnpm infra:reset"
+["stack:reset"]
+description = "Wipe the local stack's data, start it again and set the database roles"
+run = "pnpm stack:reset"
 raw = true
+
+# The commands of the code in infra/: they read or build it on this machine, sign in nowhere and
+# change no environment. OpenTofu and Terragrunt come from mise. infra:check runs Terragrunt in a
+# cache of its own, infra/.terragrunt-cache/check: a unit initialised there without its backend
+# would stay so in the deploy commands' cache, and their next plan would fail on "Backend
+# initialization required".
+
+["infra:check"]
+description = "Check the format of the infrastructure code and validate every unit, without a sign-in"
+run = "pnpm infra:check"
+
+["infra:images"]
+description = "Build the images as a deployment's server does and try the API and the portal, in Docker"
+run = "pnpm infra:images"
+
+["infra:lock"]
+description = "Write every module's provider lock file for Linux and macOS after a provider's version changed"
+run = "pnpm infra:lock"
+
+["infra:graph"]
+description = "Write a page of an environment's deployment and code: <environment> [--open]"
+run = "pnpm infra:graph"
+raw_args = true
 
 # The deploy commands: root scripts that run scripts/deploy.mjs, which takes the arguments and flags
 # itself (docs/adr/0070-run-the-deploy-commands-as-node-scripts.md). OpenTofu, Terragrunt and the
@@ -146,81 +172,68 @@ raw = true
 # another's outputs through OpenTofu and never from the bucket itself.
 
 ["deploy:login"]
-description = "Sign in to Scaleway and GitHub as yourself for the deploy commands of an environment; the Scaleway key expires after 12 hours: <environment>"
+description = "Sign in to Scaleway and GitHub for an environment's deploy commands: <environment>"
 run = "pnpm deploy:login"
+raw_args = true
 raw = true
 
 ["deploy:bootstrap"]
-description = "Once per environment, by an administrator of the Scaleway organisation, make the state bucket and its passphrase and the project of the bucket of uploaded files, and register the environment's domain; never by an agent: <environment>"
+description = "Make an environment's state bucket and passphrase and register its domain: <environment>"
 run = "pnpm deploy:bootstrap"
+raw_args = true
 raw = true
 
-["deploy:grant"]
-description = "Let people run the deploy commands of an environment, once its shared unit is applied; run by an administrator of the Scaleway organisation, never by an agent: <environment> <email>..."
-run = "pnpm deploy:grant"
+["deploy:access:grant"]
+description = "Let people run an environment's deploy commands: <environment> <email>..."
+run = "pnpm deploy:access:grant"
+raw_args = true
 raw = true
 
-["deploy:grant:revoke"]
-description = "Stop people from running the deploy commands of an environment; run by an administrator of the Scaleway organisation, never by an agent: <environment> <email>..."
-run = "pnpm deploy:grant:revoke"
+["deploy:access:revoke"]
+description = "Stop people from running an environment's deploy commands: <environment> <email>..."
+run = "pnpm deploy:access:revoke"
+raw_args = true
 raw = true
 
 ["deploy:plan"]
-description = "Show what applying an environment would change; --save plans as an apply does and keeps the plans for deploy:apply --saved, --ref <ref> plans another branch or tag: <environment> [unit]"
+description = "Show what applying an environment would change: <environment> [unit] [--save] [--ref <ref>]"
 run = "pnpm deploy:plan"
+raw_args = true
 raw = true
 
 ["deploy:apply"]
-description = "Plan an environment, ask, then apply exactly those plans, in rounds while units wait for others to be applied; --saved applies the plans of deploy:plan --save, --no-plan applies in order without showing a plan, --ref <ref> deploys another branch or tag until an apply without it; run by an operator, never by an agent: <environment> [unit]"
+description = "Plan, ask, then apply an environment: <environment> [unit] [--saved | --no-plan] [--ref <ref>]"
 run = "pnpm deploy:apply"
+raw_args = true
 raw = true
 
 ["deploy:destroy"]
-description = "Destroy one unit of an environment, after showing its plan and asking; run by an operator, never by an agent: <environment> <unit>"
+description = "Destroy one unit of an environment after showing its plan and asking: <environment> <unit>"
 run = "pnpm deploy:destroy"
+raw_args = true
 raw = true
 
 ["deploy:import"]
-description = "Take an object that exists but no state holds into one unit's state under its address, as a variable Coolify made from the compose file's default before the unit wrote it; hidden, as a repair; run by an operator, never by an agent: <environment> <unit> <address> <id>"
+description = "Take an object no state holds into a unit's state: <environment> <unit> <address> <id>"
 run = "pnpm deploy:import"
+raw_args = true
 raw = true
 hide = true
 
 ["deploy:output"]
 description = "Print the outputs of an environment's units: <environment> [unit]"
 run = "pnpm deploy:output"
+raw_args = true
 raw = true
 
-["deploy:secret-set"]
-description = "Enter the value of a secret a third party issued, read without echo; run by an operator, never by an agent: <environment> <name>"
-run = "pnpm deploy:secret-set"
+["deploy:secret:set"]
+description = "Enter the value of a secret a third party issued, without echo: <environment> <name>"
+run = "pnpm deploy:secret:set"
+raw_args = true
 raw = true
 
-["deploy:secret-get"]
-description = "Print the current value of one of an environment's secrets; run by an operator, never by an agent: <environment> <name>"
-run = "pnpm deploy:secret-get"
+["deploy:secret:get"]
+description = "Print the current value of one of an environment's secrets: <environment> <name>"
+run = "pnpm deploy:secret:get"
+raw_args = true
 raw = true
-
-["deploy:graph"]
-description = "Write a page of an environment's stack to open in a browser: the deployment, what runs where and what each part reaches, and the code, its units, what passes between them and the mistakes in their wiring; read from the checkout, needs no sign-in; --open opens it in the default browser: <environment> [--open]"
-run = "pnpm deploy:graph"
-
-["deploy:lock"]
-description = "Write the provider lock file of every module, for Linux and macOS, after a provider's version changed"
-run = 'for module in infra/modules/*/; do tofu -chdir="$module" providers lock -platform=linux_amd64 -platform=linux_arm64 -platform=darwin_arm64 || exit 1; done'
-
-["deploy:images"]
-description = "Build the images as a deployment's server does and try the API and the portal; needs Docker and no sign-in"
-run = "infra/docker/check.sh"
-
-["deploy:check"]
-description = "Check the format of the infrastructure code and validate every unit against its providers and its module's lock file; needs no sign-in"
-# A cache of its own: a unit initialised without its backend in the deploy commands' cache stays so,
-# and their next plan fails on "Backend initialization required"
-env = { TG_DOWNLOAD_DIR = "{{config_root}}/infra/.terragrunt-cache/check" }
-run = [
-  "tofu fmt -check -recursive infra",
-  "terragrunt hcl fmt --check --working-dir infra",
-  "terragrunt run --all --working-dir infra/live --no-auto-init --non-interactive --no-dependency-outputs -- init -backend=false -input=false -lockfile=readonly",
-  "terragrunt run --all --working-dir infra/live --no-auto-init --non-interactive --no-dependency-outputs -- validate",
-]

@@ -451,7 +451,7 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   ([0069](adr/0069-keep-an-environments-uploaded-files-in-a-scaleway-project-of-their-own.md));
   the local stack and CI run Versity Gateway as the bucket and imgproxy in containers beside
   Supabase's, which
-  `pnpm infra:init` and `pnpm infra:up` start ([compose.yaml](../infra/local/compose.yaml)). Mailpit takes the mail of `local` and `dev`, so neither sends to anyone; production sends
+  `pnpm stack:init` and `pnpm stack:up` start ([compose.yaml](../infra/local/compose.yaml)). Mailpit takes the mail of `local` and `dev`, so neither sends to anyone; production sends
   through Scaleway's Transactional Email, from its own domain
   ([0036](adr/0036-keep-every-secret-in-scaleway-secret-manager-and-give-ci-only-the-values-it-uses.md)).
 - Dev and production are not deployed yet. Dev runs in a project of its own on a shared Coolify
@@ -502,16 +502,24 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   name in [mise-tasks.toml](../mise-tasks.toml) runs it and says what it does, so `mise tasks` lists
   the commands; turbo stays the runner and mise caches nothing. The tasks stay out of `mise.toml`,
   which turbo hashes, and [mise-tasks.test.mjs](../scripts/mise-tasks.test.mjs) keeps both lists
-  equal ([0024](adr/0024-list-the-root-commands-as-mise-tasks-that-run-the-pnpm-scripts.md)). The
-  deploy commands are root scripts too, one Node script tested like the others, driving tools that
-  come from mise, beside `deploy:graph`, which only reads the checkout; no shell script runs on an
-  operator's machine
-  ([0070](adr/0070-run-the-deploy-commands-as-node-scripts.md)). `deploy:check`, `deploy:images`
-  and `deploy:lock` alone are mise tasks with no root script: they only run those tools.
+  equal ([0024](adr/0024-list-the-root-commands-as-mise-tasks-that-run-the-pnpm-scripts.md)). A
+  command's prefix names what it acts on, `stack` the local stack, `infra` the code in `infra/`
+  without a sign-in and `deploy` a deployed environment, and the command has one name in its root
+  script, its task, its script's file, its messages and the documents
+  ([0079](adr/0079-name-the-root-commands-by-what-they-act-on.md)). Every task runs the root
+  script of its name and nothing else, so `pnpm <name>` and `mise run <name>` do the same. A task's
+  description fits one row of the list; who may run a command and what its flags do are its
+  `--help`, which `mise run` hands on to a script that answers it. The
+  deploy commands are one Node script tested like the others, driving tools that come from mise; no
+  shell script runs on an operator's machine
+  ([0070](adr/0070-run-the-deploy-commands-as-node-scripts.md)). `infra:graph` only reads the
+  checkout, and `infra:check`, `infra:images` and `infra:lock` only run the tools from mise. A
+  command that drives a tool from mise runs as `pnpm <name>` only where mise's tools are on the
+  path.
 - The infrastructure lives in [infra](../infra/README.md): an environment is one directory with
   one `env.yaml`, its plain settings and the names of its secrets, and nothing else configures it.
   Every provider is pinned to an exact version with its lock file committed, at least 7 days old
-  like a dependency; `mise run deploy:check` validates every unit without a sign-in.
+  like a dependency; `mise run infra:check` validates every unit without a sign-in.
 - `minimumReleaseAge` refuses a version younger than 7 days; an urgent fix is a deliberate
   `minimumReleaseAgeExclude`, a transitive one a scoped `overrides` entry naming the advisory
   ([0015](adr/0015-run-a-pnpm-turborepo-monorepo-with-pinned-tools.md)).
@@ -523,7 +531,7 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   `build` and `test`; side effects such as `db:*` are never cached; runtime variables stay out of
   the hash; the schema and API suites never share the stack at once.
 - No `.env` at the root: each application, `packages/db` and `supabase/` keep their own beside a
-  committed `.env.example` naming every variable, secrets empty; `pnpm infra:init` fills them, and
+  committed `.env.example` naming every variable, secrets empty; `pnpm stack:init` fills them, and
   the API validates its own on start ([env.ts](../apps/api/src/config/env.ts)).
 - The local stack publishes its ports on every interface: bind the container engine to `127.0.0.1`.
 
@@ -747,7 +755,7 @@ the code ([AGENTS.md](../AGENTS.md#tests-first)); **Enforced by** is what refuse
 | Order | Step                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Test first                                                                                                           | Enforced by                                                                                                                                                                                                            |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1     | Table in `packages/db/src/schema/<table>.ts` with the columns of `packages/db/src/schema/columns.ts`, exported from `packages/db/src/schema/index.ts`: its own `tenant_id`, a composite foreign key, an index starting with `tenant_id`                                                                                                                                                                                                                                                                                                                                                                                                                                                    | `packages/db/test/rls.test.ts`: `covered`, `populated()`; a foreign parent in `packages/db/test/invariants.test.ts`  | `rls.test.ts` on a table missing from `covered` or its index; the foreign key: `tenant-isolation-reviewer`                                                                                                             |
-| 2     | `pnpm --filter @opos/db db:generate --name=<table>`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | step 1's                                                                                                             | `scripts/check-migrations.mjs` in `pre-push` and CI ([conflicts](#a-migration-applied-or-in-conflict))                                                                                                                 |
+| 2     | `pnpm db:generate --name=<table>`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | step 1's                                                                                                             | `scripts/check-migrations.mjs` in `pre-push` and CI ([conflicts](#a-migration-applied-or-in-conflict))                                                                                                                 |
 | 3     | `db:generate --custom --name=<table>_privileges`, written by hand before it is applied: forced RLS, `tenant_isolation`, revokes, narrowest grants, `<table>_set_updated_at`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | step 1's                                                                                                             | `pnpm db:verify` in CI; `.claude/hooks/migration-reminder.mjs` reminds; the trigger: nothing                                                                                                                           |
 | 4     | New privileges in `appWrites`, `appUpdates` or `globalReads` of `packages/db/src/verify.ts`; `pnpm db:migrate`, `pnpm db:verify`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | `rls.test.ts`: each write, `rejects an insert with another tenant id`                                                | `pnpm db:verify`; `rls.test.ts` for `globalReads`                                                                                                                                                                      |
 | 5     | Route in `packages/contract/src/<module>.ts` from `packages/contract/src/common.ts`, exported in `packages/contract/src/index.ts`; an error code in `packages/contract/src/errors.ts`, its message in `packages/i18n/src/errors.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `apps/api/test/<module>.test.ts` (`apps/api/test/route-needs.ts` is no test); `packages/contract/src/errors.test.ts` | `packages/contract/src/errors.test.ts` on a code without a message; `apps/api/test/tenant-routes.test.ts`, `apps/api/test/route-requirements.test.ts` on a route not served                                            |
@@ -763,7 +771,7 @@ the code ([AGENTS.md](../AGENTS.md#tests-first)); **Enforced by** is what refuse
 ### A migration applied or in conflict
 
 Drizzle applies a migration only when its journal timestamp is newer than the last applied and
-compares no text: an edit of an applied migration, before it is merged, takes `pnpm infra:reset`,
+compares no text: an edit of an applied migration, before it is merged, takes `pnpm stack:reset`,
 `pnpm db:migrate` and `pnpm db:seed`. On a conflict in `packages/db/drizzle/meta/_journal.json`,
 take `origin/develop`'s `packages/db/drizzle/meta`, generate yours again under the same names with
 the hand-written SQL restored, and run `node scripts/check-migrations.mjs --base origin/develop`.

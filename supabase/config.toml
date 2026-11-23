@@ -1,5 +1,5 @@
 # The local Supabase stack. Secrets and addresses come from supabase/.env through env(), which
-# `pnpm infra:init` writes. Never `supabase link`.
+# `pnpm stack:init` writes. Never `supabase link`.
 project_id = "opos"
 
 # The Data API is off; the local gateway still serves Auth at /auth/v1.
@@ -50,7 +50,7 @@ additional_redirect_urls = [
   "env(GOOGLE_CALLBACK_URL)",
 ]
 jwt_expiry = 900
-# The local ES256 key, which `pnpm infra:init` creates and git never sees.
+# The local ES256 key, which `pnpm stack:init` creates and git never sees.
 signing_keys_path = "./signing_keys.json"
 enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10

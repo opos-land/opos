@@ -129,8 +129,8 @@ dependencies and wires up the hooks. `mise tasks` lists the root commands with w
 one also runs as `pnpm <name>`, the form the documents use. Dependencies younger than 7 days are
 rejected by `minimumReleaseAge` — that is policy, not a failure
 ([versions](docs/ARCHITECTURE.md#tooling-and-versions)). The API tests need
-the database, the bucket and imgproxy: `pnpm infra:init` once in a new checkout, then
-`pnpm infra:up`. `pnpm test:e2e` also
+the database, the bucket and imgproxy: `pnpm stack:init` once in a new checkout, then
+`pnpm stack:up`. `pnpm test:e2e` also
 needs `pnpm db:migrate && pnpm db:seed` and Chromium (`pnpm --filter @opos/e2e exec playwright
 install chromium`), and does not run beside the API tests. Before every PR: typecheck, lint and
 tests green.
@@ -188,7 +188,7 @@ and in the script together.
 **Gates.** [.claude/hooks/migration-reminder.mjs](.claude/hooks/migration-reminder.mjs) hands the
 rules of a migration as context after it is edited. The permissions in
 [.claude/settings.json](.claude/settings.json) deny reading the real `.env` files and the Supabase
-signing keys (the `.env.example` templates stay readable) and running `deploy:secret-get`, which
+signing keys (the `.env.example` templates stay readable) and running `deploy:secret:get`, which
 prints a secret, and ask the user before an edit of the
 settings, `.claude/agents`, `.claude/hooks`, `scripts/tests-first.mjs`, `scripts/check-migrations.mjs`,
 `scripts/bff-boundary.mjs`, `lefthook.yml`, `.github/workflows` or `.github/rulesets`.
@@ -263,8 +263,8 @@ infrastructure changes only through the `deploy:*` commands, which an operator r
 identity, and a release only through CI. An agent never runs a deploy command that applies, destroys,
 imports or sets a secret
 ([environments](docs/ARCHITECTURE.md#environments)). The infrastructure code and its runbook are in
-[infra](infra/README.md); after a change there, `mise run deploy:check`, and `mise run
-deploy:images` when it touches the images.
+[infra](infra/README.md); after a change there, `mise run infra:check`, and `mise run
+infra:images` when it touches the images.
 
 **No AI-generated graphics.** Never generate images, illustrations, logos or icons, and never add
 them to the repository. Where no design exists yet, use shadcn/ui's defaults unchanged and real copy

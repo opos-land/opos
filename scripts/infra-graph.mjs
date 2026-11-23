@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// pnpm deploy:graph <environment> [--open]: a page of an environment's stack, to open in a
-// browser, of the deployment (scripts/deploy-layout.mjs) and of the code. It reads
+// pnpm infra:graph <environment> [--open]: a page of an environment's stack, to open in a
+// browser, of the deployment (scripts/infra-graph-deployment.mjs) and of the code. It reads
 // infra/live/<environment>/terragrunt.stack.hcl, its env.yaml, the units of infra/units and the
 // modules of infra/modules as they stand in the checkout, and nothing else: no sign-in, no state,
 // no plan. A value the files alone settle is shown resolved; one that needs a run (another unit's
@@ -14,12 +14,12 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
-import { readDeployment } from './deploy-layout.mjs'
+import { readDeployment } from './infra-graph-deployment.mjs'
 import { evaluate, shown } from './hcl.mjs'
 import { layoutGraph } from './layout.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const TEMPLATE = join(dirname(fileURLToPath(import.meta.url)), 'deploy-graph.html')
+const TEMPLATE = join(dirname(fileURLToPath(import.meta.url)), 'infra-graph.html')
 const PAGE = '.terragrunt-graph.html'
 
 /** The locals of a parsed file, evaluated in order of need; those that never resolve stay out. */
@@ -519,9 +519,24 @@ export async function main(
   const environments = readdirSync(live)
     .filter((name) => existsSync(join(live, name, 'terragrunt.stack.hcl')))
     .sort()
+  const synopsis = `usage: pnpm infra:graph <environment> [--open], one of ${environments.join(', ')}`
   const usage = () => {
-    error(`usage: pnpm deploy:graph <environment> [--open], one of ${environments.join(', ')}`)
+    error(synopsis)
     return 2
+  }
+  if (args.some((arg) => arg === '--help' || arg === '-h')) {
+    for (const line of [
+      synopsis,
+      '',
+      "Writes infra/live/<environment>/.terragrunt-graph.html, a page of the environment's",
+      'deployment and code to open in a browser: what runs where and what each part reaches, the',
+      'units, what passes between them and the mistakes in their wiring. It reads the checkout',
+      'alone and needs no sign-in.',
+      '',
+      '  --open  opens it in the default browser',
+    ])
+      log(line)
+    return 0
   }
   let parsed
   try {
@@ -535,7 +550,7 @@ export async function main(
   try {
     stack = await readStack(join(live, name), { root })
   } catch (failure) {
-    error(`deploy:graph could not read the stack: ${failure.message}`)
+    error(`infra:graph could not read the stack: ${failure.message}`)
     return 1
   }
   const page = join(live, name, PAGE)
@@ -549,7 +564,7 @@ export async function main(
     const result = spawn(command, commandArgs, { stdio: 'ignore' })
     if (result.error) {
       error(
-        `deploy:graph could not open the page (${result.error.message}): open it in a browser yourself.`,
+        `infra:graph could not open the page (${result.error.message}): open it in a browser yourself.`,
       )
     }
   }

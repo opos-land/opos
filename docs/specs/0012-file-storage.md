@@ -150,11 +150,11 @@ features'.
 ### Environment and the local stack
 
 The API's environment holds the bucket's address, region, name and key, named in its
-`.env.example` and filled locally by `pnpm infra:init`.
+`.env.example` and filled locally by `pnpm stack:init`.
 
 The local S3-compatible server is Versity Gateway: one container, its image pinned by its digest,
-that serves a directory of the local stack as the bucket. `pnpm infra:up` starts it beside
-Supabase's stack, `pnpm infra:reset` empties its directory, and the `check` and `e2e` jobs of CI
+that serves a directory of the local stack as the bucket. `pnpm stack:up` starts it beside
+Supabase's stack, `pnpm stack:reset` empties its directory, and the `check` and `e2e` jobs of CI
 start it the same way.
 
 ### Seed

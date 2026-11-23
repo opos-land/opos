@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// `pnpm infra:init`: writes the .env files from their templates, fills the empty
+// `pnpm stack:init`: writes the .env files from their templates, fills the empty
 // secrets, creates the local signing key, starts the Supabase CLI's local stack, writes the keys and
 // addresses it reports, starts the bucket and the image server of infra/local/compose.yaml and sets
 // the database roles. Safe to run again: a value already set is never
@@ -32,7 +32,7 @@ const DATABASE_KEYS = {
 
 /**
  * The bucket and the image server beside Supabase's stack, interpolated from apps/api/.env; the
- * root scripts infra:up, infra:down and infra:reset run the same command.
+ * root scripts stack:up, stack:down and stack:reset run the same command.
  */
 const STORAGE_COMPOSE = [
   'compose',
@@ -143,7 +143,7 @@ export function nodeExec(file, args, { cwd, env, showOutputOnFailure = false }) 
       else if (signal === 'SIGKILL') {
         reject(
           new Error(
-            `${command} was killed by SIGKILL; run it through mise (mise exec -- pnpm infra:init), since a binary installed by brew is killed by macOS when its signature is invalid`,
+            `${command} was killed by SIGKILL; run it through mise (mise exec -- pnpm stack:init), since a binary installed by brew is killed by macOS when its signature is invalid`,
           ),
         )
       } else reject(new Error(`${command} was killed by ${signal}`))
@@ -158,7 +158,7 @@ function parseStatus(output) {
 }
 
 /** `exec(file, args, { cwd, env, showOutputOnFailure })` returns stdout; `fs` has `exists`, `read` and `write`. */
-export async function initInfra({
+export async function initStack({
   exec = nodeExec,
   fs = nodeFs,
   env = process.env,
@@ -167,7 +167,7 @@ export async function initInfra({
 } = {}) {
   if (env.OPOS_ENV && env.OPOS_ENV !== 'local') {
     throw new Error(
-      `pnpm infra:init sets up the local stack only; OPOS_ENV is ${env.OPOS_ENV}, expected local`,
+      `pnpm stack:init sets up the local stack only; OPOS_ENV is ${env.OPOS_ENV}, expected local`,
     )
   }
 
@@ -310,7 +310,7 @@ export async function initInfra({
     for (const key of keys) {
       if (isSet(known(dir, key)) && databasePort(known(dir, key)) !== databasePort(status.DB_URL)) {
         warn(
-          `${dir}/.env: ${key} is on another port than the local stack reports; a checkout from before this stack removes its .env files and runs pnpm infra:init`,
+          `${dir}/.env: ${key} is on another port than the local stack reports; a checkout from before this stack removes its .env files and runs pnpm stack:init`,
         )
       }
     }
@@ -325,7 +325,7 @@ export async function initInfra({
 
 /* node:coverage ignore next 6 */
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  initInfra().catch((error) => {
+  initStack().catch((error) => {
     console.error(error.message)
     process.exitCode = 1
   })

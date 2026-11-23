@@ -4,8 +4,8 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { after, describe, it } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { readStack } from './deploy-graph.mjs'
-import { addressesIn, interpolate } from './deploy-layout.mjs'
+import { readStack } from './infra-graph.mjs'
+import { addressesIn, interpolate } from './infra-graph-deployment.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -15,7 +15,7 @@ after(() => {
 })
 
 function repository(files) {
-  const dir = mkdtempSync(join(tmpdir(), 'deploy-layout-'))
+  const dir = mkdtempSync(join(tmpdir(), 'infra-graph-deployment-'))
   fixtures.push(dir)
   for (const [path, text] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, path)), { recursive: true })

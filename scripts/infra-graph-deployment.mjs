@@ -1,4 +1,4 @@
-// The deployment view of pnpm deploy:graph (scripts/deploy-graph.mjs): what runs where and what
+// The deployment view of pnpm infra:graph (scripts/infra-graph.mjs): what runs where and what
 // each part reaches, read from the code alone, as the code view is. Every unit's module is
 // evaluated as OpenTofu would plan it, with the unit's inputs, as far as the files settle it:
 // - a Coolify application or service is its compose file, each service a container, routed at the
@@ -231,7 +231,7 @@ function stringsIn(value, path) {
 // ---------------------------------------------------------------------------------------------
 // The deployment
 
-/** What runs where, read from the units of a stack (readStack of scripts/deploy-graph.mjs). */
+/** What runs where, read from the units of a stack (readStack of scripts/infra-graph.mjs). */
 export function readDeployment(units, { root }) {
   const modules = evaluateModules(units, root)
   const instances = modules.all()

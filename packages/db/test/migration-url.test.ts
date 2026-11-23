@@ -11,7 +11,9 @@ describe('migrationUrl', () => {
   it.each([{}, { DATABASE_MIGRATION_URL: '' }, { DATABASE_MIGRATION_URL: '  ' }])(
     'throws when DATABASE_MIGRATION_URL is unset: %o',
     (env) => {
-      expect(() => migrationUrl(env)).toThrow(/DATABASE_MIGRATION_URL/)
+      expect(() => migrationUrl(env)).toThrow(
+        /DATABASE_MIGRATION_URL is not set; run pnpm stack:init/,
+      )
     },
   )
 

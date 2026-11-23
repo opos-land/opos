@@ -1,6 +1,6 @@
 # The local stack's containers beside Supabase's: the bucket and the image server of
-# docs/specs/0012-file-storage.md and docs/specs/0013-image-variants.md. `pnpm infra:up` starts them
-# with the variables of apps/api/.env, which `pnpm infra:init` fills; `pnpm infra:reset` empties
+# docs/specs/0012-file-storage.md and docs/specs/0013-image-variants.md. `pnpm stack:up` starts them
+# with the variables of apps/api/.env, which `pnpm stack:init` fills; `pnpm stack:reset` empties
 # the bucket. Each publishes its port on 127.0.0.1 alone, and only these two talk to each other:
 #
 #   docker compose -p opos-local --env-file apps/api/.env -f infra/local/compose.yaml config

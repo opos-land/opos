@@ -4,7 +4,7 @@
 # bucket of uploaded files with, in the project the bootstrap made for it.
 
 # Who is in the group stays out of the repository: an administrator adds people with
-# mise run deploy:grant, and OpenTofu leaves the members alone.
+# mise run deploy:access:grant, and OpenTofu leaves the members alone.
 resource "scaleway_iam_group" "operators" {
   name                = "${var.project}-operators"
   description         = "Run the deploy commands of the ${var.project} project"

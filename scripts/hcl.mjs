@@ -5,7 +5,7 @@
 // the value unknown, never wrong. A value only a run knows (a secret, an attribute a provider
 // computes, another unit's output) is an Opaque, which flows through templates and through the
 // functions that only reshape it, so that an address that holds a secret still shows where it
-// leads. Used by scripts/deploy-graph.mjs and scripts/deploy-layout.mjs.
+// leads. Used by scripts/infra-graph.mjs and scripts/infra-graph-deployment.mjs.
 
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'

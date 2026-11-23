@@ -264,6 +264,57 @@ describe('deploy', () => {
     await assert.rejects(call(['unknown', 'dev']), /usage: pnpm deploy:<command>/)
   })
 
+  const COMMANDS = [
+    'login',
+    'bootstrap',
+    'access:grant',
+    'access:revoke',
+    'plan',
+    'apply',
+    'destroy',
+    'import',
+    'output',
+    'secret:set',
+    'secret:get',
+  ]
+
+  it('lists every command with its arguments on --help alone, and runs nothing', async () => {
+    const tools = fakeTools()
+    const { out } = await call(['--help'], { tools })
+    for (const command of COMMANDS) assert.match(out, new RegExp(`pnpm deploy:${command} <`))
+    assert.deepEqual(tools.calls, [])
+  })
+
+  it("tells a command's arguments, flags and who runs it on --help or -h, and runs nothing", async () => {
+    for (const command of COMMANDS) {
+      for (const args of [
+        [command, '--help'],
+        [command, 'dev', '-h'],
+      ]) {
+        const tools = fakeTools()
+        const { out } = await call(args, { tools })
+        assert.match(out, new RegExp(`^usage: pnpm deploy:${command} <environment>`), command)
+        assert.match(out, /\n\nRun by (an operator|an administrator)/, command)
+        for (const line of out.split('\n')) assert.ok(line.length <= 100, `${command}: ${line}`)
+        assert.deepEqual(tools.calls, [], command)
+      }
+    }
+  })
+
+  it('keeps out of the help of a command what the task list no longer says', async () => {
+    const help = async (command) => (await call([command, '--help'])).out
+    assert.match(await help('apply'), /--saved +applies the plans of pnpm deploy:plan --save/)
+    assert.match(await help('apply'), /--no-plan +/)
+    assert.match(await help('apply'), /--ref <ref> +/)
+    assert.match(await help('plan'), /--save +/)
+    assert.match(await help('apply'), /never by an agent/)
+    assert.match(await help('bootstrap'), /an administrator of the Scaleway organisation/)
+    assert.match(await help('access:grant'), /an administrator of the Scaleway organisation/)
+    assert.match(await help('import'), /Coolify/)
+    assert.match(await help('login'), /12 hours/)
+    assert.doesNotMatch(await help('output'), /never by an agent/)
+  })
+
   it('stops for an environment without settings, before running anything', async () => {
     const tools = fakeTools()
     await assert.rejects(
@@ -332,7 +383,7 @@ describe('the operator key', () => {
 
   it('asks to sign in first when the profile holds no key', async () => {
     const tools = fakeTools({ accessKey: '' })
-    await assert.rejects(call(['output', 'dev'], { tools }), /mise run deploy:login dev first/)
+    await assert.rejects(call(['output', 'dev'], { tools }), /pnpm deploy:login dev first/)
     assert.deepEqual(lines(tools.calls, 'terragrunt'), [])
   })
 })
@@ -429,6 +480,8 @@ describe('bootstrap', () => {
     assert.equal(setting(files[SETTINGS], 'files', 'project_id'), FILES_ID)
     assert.equal(world.versions, 1)
     assert.match(out, /_scaleway-challenge\.dev TXT the-token/)
+    assert.match(out, /next: pnpm deploy:login dev, pnpm deploy:apply dev shared, then/)
+    assert.match(out, /pnpm deploy:access:grant dev <email>\.\.\. for each operator/)
     assert.match(out, /files project: dev-opos-land-files, 2{8}-/)
     // Every change shows before it runs: each of scw, and the passphrase's request
     assert.equal(traced.length, scwChanges(calls).length + tools.requests.length)
@@ -512,9 +565,9 @@ describe('bootstrap', () => {
   })
 })
 
-describe('grant', () => {
+describe('access', () => {
   it('puts people into the operators group', async () => {
-    const { tools, out } = await call(['grant', 'dev', 'a@example.com', 'b@example.com'])
+    const { tools, out } = await call(['access:grant', 'dev', 'a@example.com', 'b@example.com'])
     assert.deepEqual(
       lines(tools.calls, 'scw').filter((line) => line.includes('add-members')),
       [
@@ -526,13 +579,7 @@ describe('grant', () => {
   })
 
   it('takes out only the people who are in it', async () => {
-    const { tools, out } = await call([
-      'grant',
-      '--revoke',
-      'dev',
-      'a@example.com',
-      'b@example.com',
-    ])
+    const { tools, out } = await call(['access:revoke', 'dev', 'a@example.com', 'b@example.com'])
     assert.deepEqual(scwChanges(tools.calls), ['iam group remove-member'])
     assert.ok(
       lines(tools.calls, 'scw').includes(
@@ -544,14 +591,14 @@ describe('grant', () => {
 
   it('takes nobody out of a group with no members', async () => {
     const tools = fakeTools({ groups: [{ id: 'group-id', name: 'opos-land-dev-operators' }] })
-    await call(['grant', '--revoke', 'dev', 'a@example.com'], { tools })
+    await call(['access:revoke', 'dev', 'a@example.com'], { tools })
     assert.deepEqual(scwChanges(tools.calls), [])
   })
 
   it('changes nobody when one of the people is not a member of the organisation', async () => {
     const tools = fakeTools()
     await assert.rejects(
-      call(['grant', 'dev', 'a@example.com', 'c@example.com'], { tools }),
+      call(['access:grant', 'dev', 'a@example.com', 'c@example.com'], { tools }),
       /c@example\.com is not a member of the organisation/,
     )
     assert.deepEqual(scwChanges(tools.calls), [])
@@ -560,15 +607,19 @@ describe('grant', () => {
   it('stops before the shared unit made the group', async () => {
     const tools = fakeTools({ groups: [] })
     await assert.rejects(
-      call(['grant', 'dev', 'a@example.com'], { tools }),
-      /no group opos-land-dev-operators: first mise run deploy:apply dev shared/,
+      call(['access:grant', 'dev', 'a@example.com'], { tools }),
+      /no group opos-land-dev-operators: first pnpm deploy:apply dev shared/,
     )
   })
 
   it('asks for an environment and at least one person', async () => {
     await assert.rejects(
-      call(['grant', 'dev']),
-      /usage: pnpm deploy:grant \[--revoke\] <environment> <email>/,
+      call(['access:grant', 'dev']),
+      /usage: pnpm deploy:access:grant <environment> <email>\.\.\./,
+    )
+    await assert.rejects(
+      call(['access:revoke', 'dev']),
+      /usage: pnpm deploy:access:revoke <environment> <email>\.\.\./,
     )
   })
 })
@@ -599,7 +650,7 @@ describe('plan', () => {
     )
     assert.equal(terragrunt.env.DEPLOY_EXACT_PLAN, 'true')
     assert.deepEqual(removed, [PLANS])
-    assert.match(out, /mise run deploy:apply dev --saved/)
+    assert.match(out, /pnpm deploy:apply dev --saved/)
   })
 
   it('says which units to apply first when an exact plan fails', async () => {
@@ -657,14 +708,14 @@ describe("Supabase's access token", () => {
     const refused = tools({ http: { 'https://api.supabase.com': 401 } })
     await assert.rejects(
       call(['apply', 'dev'], { tools: refused, files: files(), answers: ['y'] }),
-      /the Supabase access token in supabase-access-token has lapsed or was revoked: make a new one \(infra\/SUPABASE\.md, The access token\) and store it with mise run deploy:secret-set dev supabase-access-token/,
+      /the Supabase access token in supabase-access-token has lapsed or was revoked: make a new one \(infra\/SUPABASE\.md, The access token\) and store it with pnpm deploy:secret:set dev supabase-access-token/,
     )
     assert.deepEqual(lines(refused.calls, 'terragrunt'), [])
 
     const empty = tools({ status: { 'scw secret version access': 1 } })
     await assert.rejects(
       call(['plan', 'dev'], { tools: empty, files: files() }),
-      /supabase-access-token holds no value: mise run deploy:secret-set dev supabase-access-token/,
+      /supabase-access-token holds no value: pnpm deploy:secret:set dev supabase-access-token/,
     )
     const unreachable = tools({ http: { 'https://api.supabase.com': 'unreachable' } })
     await assert.rejects(
@@ -735,7 +786,7 @@ describe('apply', () => {
     const stuck = fakeTools({ rounds: [['secrets'], []] })
     await assert.rejects(
       call(['apply', 'dev'], { tools: stuck, answers: ['y'] }),
-      /No unit planned: see the errors above\. A unit that reads shared plans once an administrator applied it: mise run deploy:apply dev shared/,
+      /No unit planned: see the errors above\. A unit that reads shared plans once an administrator applied it: pnpm deploy:apply dev shared/,
     )
     assert.equal(
       lines(stuck.calls, 'terragrunt').filter((line) => line.endsWith('apply')).length,
@@ -775,9 +826,9 @@ describe('apply', () => {
 
     await assert.rejects(
       call(['apply', 'dev', 'files', '--saved']),
-      /No plans are kept: mise run deploy:plan dev files --save first/,
+      /No plans are kept: pnpm deploy:plan dev files --save first/,
     )
-    await assert.rejects(call(['apply', 'dev', '--saved']), /mise run deploy:plan dev --save first/)
+    await assert.rejects(call(['apply', 'dev', '--saved']), /pnpm deploy:plan dev --save first/)
   })
 
   it('applies unit by unit with --no-plan, after one answer', async () => {
@@ -850,12 +901,12 @@ describe('destroy and output', () => {
   })
 })
 
-describe('secret-set', () => {
+describe('secret:set', () => {
   const secrets = [{ id: 'token-id', name: 'coolify-api-token' }]
 
   it("stores the value it reads without echo in the body of a request to Secret Manager's API alone", async () => {
     const tools = fakeTools({ secrets })
-    const { asked, out, traced } = await call(['secret-set', 'dev', 'coolify-api-token'], {
+    const { asked, out, traced } = await call(['secret:set', 'dev', 'coolify-api-token'], {
       tools,
       answers: ['the-token-value'],
     })
@@ -887,7 +938,7 @@ describe('secret-set', () => {
   it('stops when Secret Manager refuses the version', async () => {
     const tools = fakeTools({ secrets, http: { 'https://api.scaleway.com': 403 } })
     await assert.rejects(
-      call(['secret-set', 'dev', 'coolify-api-token'], { tools, answers: ['the-token-value'] }),
+      call(['secret:set', 'dev', 'coolify-api-token'], { tools, answers: ['the-token-value'] }),
       /Secret Manager refused a new version of coolify-api-token \(403\)/,
     )
   })
@@ -895,22 +946,22 @@ describe('secret-set', () => {
   it('changes nothing for an empty value or a secret the project lacks', async () => {
     const tools = fakeTools({ secrets })
     await assert.rejects(
-      call(['secret-set', 'dev', 'coolify-api-token'], { tools }),
+      call(['secret:set', 'dev', 'coolify-api-token'], { tools }),
       /nothing entered/,
     )
     await assert.rejects(
-      call(['secret-set', 'dev', 'missing'], { tools }),
+      call(['secret:set', 'dev', 'missing'], { tools }),
       /the project has no secret missing: apply the environment's secrets unit first/,
     )
     assert.deepEqual(scwChanges(tools.calls), [])
     await assert.rejects(
-      call(['secret-set', 'dev']),
-      /usage: pnpm deploy:secret-set <environment> <name>/,
+      call(['secret:set', 'dev']),
+      /usage: pnpm deploy:secret:set <environment> <name>/,
     )
   })
 })
 
-describe('secret-get', () => {
+describe('secret:get', () => {
   const tools = () =>
     fakeTools({
       secrets: [{ id: 'auth-id', name: 'basic-auth-password' }],
@@ -918,13 +969,13 @@ describe('secret-get', () => {
     })
 
   it('prints exactly the value, with a line break on a terminal alone', async () => {
-    const { written } = await call(['secret-get', 'dev', 'basic-auth-password'], { tools: tools() })
+    const { written } = await call(['secret:get', 'dev', 'basic-auth-password'], { tools: tools() })
     assert.equal(written, 'the-password')
 
     const terminal = []
     const fake = tools()
     await deploy({
-      args: ['secret-get', 'dev', 'basic-auth-password'],
+      args: ['secret:get', 'dev', 'basic-auth-password'],
       root: ROOT,
       env: { HOME: '/home/op' },
       fs: { exists: () => true, read: () => ENV_YAML },
@@ -942,12 +993,12 @@ describe('secret-get', () => {
 
   it('stops for a secret the project lacks', async () => {
     await assert.rejects(
-      call(['secret-get', 'dev', 'missing'], { tools: tools() }),
+      call(['secret:get', 'dev', 'missing'], { tools: tools() }),
       /the project has no secret missing/,
     )
     await assert.rejects(
-      call(['secret-get', 'dev']),
-      /usage: pnpm deploy:secret-get <environment> <name>/,
+      call(['secret:get', 'dev']),
+      /usage: pnpm deploy:secret:get <environment> <name>/,
     )
   })
 })

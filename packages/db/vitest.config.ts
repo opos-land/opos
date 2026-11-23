@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { defineConfig } from 'vitest/config'
 
-// packages/db/.env, which pnpm infra:init writes; the environment wins over it.
+// packages/db/.env, which pnpm stack:init writes; the environment wins over it.
 if (existsSync('.env')) process.loadEnvFile('.env')
 
 export default defineConfig({

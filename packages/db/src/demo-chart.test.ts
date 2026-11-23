@@ -1,6 +1,6 @@
 import { inflateSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
-import { demoAvatar, demoChart } from './demo-chart'
+import { demoAvatar, demoChart, demoPicture } from './demo-chart'
 
 /** The chunks of a PNG, by type. */
 function chunks(bytes: Buffer) {
@@ -92,5 +92,45 @@ describe('a demo avatar', () => {
 
   it('gives the same bytes every time, so a second run of the seed draws nothing anew', () => {
     expect(demoAvatar().bytes.equals(avatar.bytes)).toBe(true)
+  })
+})
+
+/** The colour of each pixel of a demo PNG, as `r,g,b`, by its place. */
+function pixelsOf(picture: { bytes: Buffer; width: number; height: number }) {
+  const pixels = inflateSync(chunks(picture.bytes).find((part) => part.type === 'IDAT')!.data)
+  const row = picture.width * 3 + 1
+  return (x: number, y: number) =>
+    pixels.subarray(y * row + 1 + x * 3, y * row + 4 + x * 3).join(',')
+}
+
+// The pictures of the demo merchandise, add-ons and logos: a figure on a plain ground, both taken
+// from the name, in the proportions a picture is given.
+describe('a demo picture', () => {
+  const picture = demoPicture('T-shirt - front', 900, 600)
+  const header = chunks(picture.bytes).find((part) => part.type === 'IHDR')!.data
+
+  it('is a PNG of the size it is asked for, in plain colour without alpha', () => {
+    expect([picture.width, picture.height]).toEqual([900, 600])
+    expect([header.readUInt32BE(0), header.readUInt32BE(4)]).toEqual([900, 600])
+    expect([header[8], header[9]]).toEqual([8, 2])
+  })
+
+  it('draws a figure in the middle of its ground: two colours and no more', () => {
+    const at = pixelsOf(picture)
+    const colours = new Set<string>()
+    for (let y = 0; y < picture.height; y += 1) {
+      for (let x = 0; x < picture.width; x += 1) colours.add(at(x, y))
+    }
+
+    expect(colours.size).toBe(2)
+    // A point a quarter of the shorter side right of the middle lies on every figure, a ring too.
+    expect(at(450 + 135, 300)).not.toBe(at(0, 0))
+    expect(at(899, 599)).toBe(at(0, 0))
+  })
+
+  it('gives the same bytes for the same name and size, and other bytes for another', () => {
+    expect(demoPicture('T-shirt - front', 900, 600).bytes.equals(picture.bytes)).toBe(true)
+    expect(demoPicture('T-shirt - back', 900, 600).bytes.equals(picture.bytes)).toBe(false)
+    expect(demoPicture('T-shirt - front', 600, 900).bytes.equals(picture.bytes)).toBe(false)
   })
 })

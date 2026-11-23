@@ -3,7 +3,7 @@ import { DeleteObjectsCommand, PutObjectCommand, S3Client } from '@aws-sdk/clien
 import { and, eq, isNotNull, isNull, notInArray, sql } from 'drizzle-orm'
 import { grantAdmin } from './admins'
 import { migrationDb } from './client'
-import { demoAvatar, demoChart } from './demo-chart'
+import { demoAvatar, demoChart, demoPicture } from './demo-chart'
 import { demoPdf } from './demo-pdf'
 import { migrationUrl, reachableUrl } from './migration-url'
 import {
@@ -12,6 +12,7 @@ import {
   accountProfiles,
   accountRecoveryCodes,
   accounts,
+  addOnPictures,
   addOns,
   admins,
   editionConsents,
@@ -21,6 +22,7 @@ import {
   editionMemberships,
   editions,
   editionShops,
+  merchandiseItemPictures,
   merchandiseItems,
   merchandiseOptionAxes,
   merchandiseOptionValues,
@@ -45,6 +47,7 @@ import {
   retiredTenantSlugs,
   shopSellers,
   scannerDevices,
+  tenantLogos,
   tenantMemberships,
   tenants,
   ticketTypeAddOns,
@@ -149,6 +152,17 @@ interface SeedTicketType {
   items?: string[]
 }
 
+/** The size of a demo picture, which the seed draws from its name in these proportions. */
+interface SeedPictureSize {
+  width: number
+  height: number
+}
+
+/** A demo picture of a merchandise item: its name, which is also its file's, and its size. */
+interface SeedPicture extends SeedPictureSize {
+  name: string
+}
+
 interface SeedAddOn {
   name: string
   description: string
@@ -156,6 +170,8 @@ interface SeedAddOn {
   kind: (typeof addOns.kind.enumValues)[number]
   capacity?: number
   placesLeftThreshold?: number
+  /** Its picture, drawn from its name. */
+  picture?: SeedPictureSize
 }
 
 interface SeedMerchandise {
@@ -164,6 +180,8 @@ interface SeedMerchandise {
   amountMinor: number
   perOrderLimit: number
   picturesIllustrative?: boolean
+  /** Its pictures in their order, each drawn from its name. */
+  pictures?: SeedPicture[]
   /** Left out, the item is sold as its one variant, with this stock; null while unlimited. */
   stock?: number | null
   /** Its axes with the labels of their values; `sizeCharts` gives each value a demo chart. */
@@ -298,6 +316,8 @@ interface SeedTenant {
   headEmail: string
   /** Suspended by the admin: off for everyone else, with everything it owns kept. */
   suspended?: boolean
+  /** Its logo, drawn from its name. */
+  logo?: SeedPictureSize
   /** Left out, the convention has set nothing of its shop. */
   shop?: SeedShop
   editions: SeedEdition[]
@@ -442,6 +462,7 @@ const DEMO_CATALOG: SeedCatalog = {
       kind: 'limited',
       capacity: 40,
       placesLeftThreshold: 10,
+      picture: { width: 1200, height: 800 },
     },
     {
       name: 'Sleeping room',
@@ -457,6 +478,11 @@ const DEMO_CATALOG: SeedCatalog = {
       amountMinor: 8000,
       perOrderLimit: 5,
       picturesIllustrative: true,
+      pictures: [
+        { name: 'T-shirt - front', width: 1200, height: 1200 },
+        { name: 'T-shirt - back', width: 1200, height: 1200 },
+        { name: 'T-shirt - print', width: 1600, height: 1000 },
+      ],
       axes: [
         { name: 'Cut', values: ["Women's", "Men's"], sizeCharts: true },
         { name: 'Size', values: SIZES },
@@ -471,6 +497,7 @@ const DEMO_CATALOG: SeedCatalog = {
       description: 'Hard enamel pin, 3 cm.',
       amountMinor: 1500,
       perOrderLimit: 10,
+      pictures: [{ name: 'Enamel pin', width: 800, height: 1000 }],
       stock: 200,
     },
   ],
@@ -697,6 +724,7 @@ const TENANTS: SeedTenant[] = [
   {
     slug: 'convention-a',
     name: 'Convention A',
+    logo: { width: 480, height: 240 },
     defaultLocale: 'pl',
     timezone: 'Europe/Warsaw',
     headEmail: 'head@convention-a.test',
@@ -822,6 +850,7 @@ const TENANTS: SeedTenant[] = [
   {
     slug: 'convention-b',
     name: 'Convention B',
+    logo: { width: 320, height: 320 },
     defaultLocale: 'en',
     timezone: 'Europe/Prague',
     headEmail: 'head@convention-b.test',
@@ -950,6 +979,11 @@ const DOCUMENT_FILE_KIND = 'edition-document'
 const SIZE_CHART_FILE_KIND = 'merchandise-size-chart'
 /** The sizes the API makes of a size chart's master, each an object beside it. */
 const CHART_SIZES = ['small', 'large']
+/** The kinds the API declares for the pictures the seed draws from a name, and their sizes. */
+const MERCHANDISE_PICTURE_FILE_KIND = 'merchandise-picture'
+const ADD_ON_PICTURE_FILE_KIND = 'add-on-picture'
+const LOGO_FILE_KIND = 'convention-logo'
+const PICTURE_SIZES = ['small', 'large']
 /** The kind the API declares for an account's avatar, the label it keeps one under, and its sizes. */
 const AVATAR_FILE_KIND = 'profile-avatar'
 const AVATAR_LABEL = 'avatar'
@@ -1226,6 +1260,7 @@ async function seedTenant(spec: SeedTenant) {
       }
     }
 
+    if (spec.logo) objects.push(await seedLogo(tx, tenantId, spec.name, spec.logo))
     if (spec.shop) await seedShop(tx, tenantId, spec.shop)
     for (const edition of spec.editions) {
       if (!edition.shop) continue
@@ -1688,6 +1723,24 @@ async function seedCatalog(
           .values({ ...at, name: addOn.name, ...values })
           .returning({ id: addOns.id })
     addOnIds.set(addOn.name, saved!.id)
+    if (addOn.picture) {
+      const [held] = await tx
+        .select({ fileId: addOnPictures.fileId, sha256: uploadedFiles.sha256 })
+        .from(addOnPictures)
+        .innerJoin(uploadedFiles, eq(uploadedFiles.id, addOnPictures.fileId))
+        .where(eq(addOnPictures.addOnId, saved!.id))
+      const kept = await keepPicture(
+        tx,
+        at,
+        ADD_ON_PICTURE_FILE_KIND,
+        { name: addOn.name, ...addOn.picture },
+        held,
+      )
+      if (!held) {
+        await tx.insert(addOnPictures).values({ ...at, addOnId: saved!.id, fileId: kept.fileId })
+      }
+      objects.push(kept.object)
+    }
   }
 
   const itemIds = new Map<string, string>()
@@ -1715,6 +1768,7 @@ async function seedCatalog(
           .values({ ...at, name: item.name, ...values })
           .returning({ id: merchandiseItems.id })
     itemIds.set(item.name, saved!.id)
+    objects.push(...(await seedItemPictures(tx, { ...at, merchandiseItemId: saved!.id }, item)))
     objects.push(...(await seedVariants(tx, { ...at, merchandiseItemId: saved!.id }, item)))
   }
 
@@ -2389,6 +2443,111 @@ async function seedSizeChart(
     bytes: chart.bytes,
     type: 'image/png',
     stale: redrawn ? CHART_SIZES.map((size) => key.replace(/master$/, size)) : [],
+  }
+}
+
+/**
+ * The pictures of a demo item, each found by the name of its file: one the item lacks is added
+ * after those it has, and one an org added stays.
+ */
+async function seedItemPictures(
+  tx: Tx,
+  of: { tenantId: string; editionId: string; merchandiseItemId: string },
+  item: SeedMerchandise,
+): Promise<PendingObject[]> {
+  const objects: PendingObject[] = []
+  for (const picture of item.pictures ?? []) {
+    const [held] = await tx
+      .select({ fileId: merchandiseItemPictures.fileId, sha256: uploadedFiles.sha256 })
+      .from(merchandiseItemPictures)
+      .innerJoin(uploadedFiles, eq(uploadedFiles.id, merchandiseItemPictures.fileId))
+      .where(
+        and(
+          eq(merchandiseItemPictures.merchandiseItemId, of.merchandiseItemId),
+          eq(uploadedFiles.name, `${picture.name}.png`),
+        ),
+      )
+    const kept = await keepPicture(tx, of, MERCHANDISE_PICTURE_FILE_KIND, picture, held)
+    if (!held) {
+      const [last] = await tx
+        .select({ position: sql<number>`coalesce(max(${merchandiseItemPictures.position}), 0)` })
+        .from(merchandiseItemPictures)
+        .where(eq(merchandiseItemPictures.merchandiseItemId, of.merchandiseItemId))
+      await tx
+        .insert(merchandiseItemPictures)
+        .values({ ...of, fileId: kept.fileId, position: last!.position + 1 })
+    }
+    objects.push(kept.object)
+  }
+  return objects
+}
+
+/** The logo of a demo convention, drawn from its name. */
+async function seedLogo(
+  tx: Tx,
+  tenantId: string,
+  name: string,
+  size: SeedPictureSize,
+): Promise<PendingObject> {
+  const [held] = await tx
+    .select({ fileId: tenantLogos.fileId, sha256: uploadedFiles.sha256 })
+    .from(tenantLogos)
+    .innerJoin(uploadedFiles, eq(uploadedFiles.id, tenantLogos.fileId))
+    .where(eq(tenantLogos.tenantId, tenantId))
+  const kept = await keepPicture(
+    tx,
+    { tenantId, editionId: null },
+    LOGO_FILE_KIND,
+    { name, ...size },
+    held,
+  )
+  if (!held) await tx.insert(tenantLogos).values({ tenantId, fileId: kept.fileId })
+  return kept.object
+}
+
+/**
+ * A picture of a demo convention or of one of its editions, drawn by code from its name and kept
+ * as the master the API makes its sizes from. The file a feature's row points at already gets the
+ * bytes drawn now; without one, a file is kept for the row the caller adds.
+ */
+async function keepPicture(
+  tx: Tx,
+  at: { tenantId: string; editionId: string | null },
+  kind: string,
+  picture: SeedPicture,
+  held: { fileId: string; sha256: string } | undefined,
+): Promise<{ fileId: string; object: PendingObject }> {
+  const drawn = demoPicture(picture.name, picture.width, picture.height)
+  const file = {
+    contentType: 'image/png',
+    size: drawn.bytes.length,
+    sha256: createHash('sha256').update(drawn.bytes).digest('hex'),
+    name: `${picture.name}.png`,
+    width: drawn.width,
+    height: drawn.height,
+  }
+  let fileId = held?.fileId
+  // The API keeps the sizes it made of a master: those of a master drawn anew go with it.
+  const redrawn = held !== undefined && held.sha256 !== file.sha256
+  if (fileId) {
+    // The seed owns its demo files: a picture drawn anew since the last run is the file's new bytes.
+    await tx.update(uploadedFiles).set(file).where(eq(uploadedFiles.id, fileId))
+  } else {
+    const [kept] = await tx
+      .insert(uploadedFiles)
+      .values({ ...at, kind, ...file })
+      .returning({ id: uploadedFiles.id })
+    fileId = kept!.id
+  }
+  const key = masterObjectKey(at.tenantId, fileId)
+  return {
+    fileId,
+    object: {
+      key,
+      bytes: drawn.bytes,
+      type: 'image/png',
+      stale: redrawn ? PICTURE_SIZES.map((size) => key.replace(/master$/, size)) : [],
+    },
   }
 }
 

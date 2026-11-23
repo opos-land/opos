@@ -780,6 +780,85 @@ describe('db:seed shop', () => {
     expect(again!.sha256).toBe(chart!.sha256)
   })
 
+  // The pictures of the demo shop and the logos of the demo conventions, drawn by code: a figure
+  // on a plain ground, in the proportions each one is given.
+  it(
+    'gives the demo items and an add-on pictures, and two conventions a logo, kept in the bucket',
+    { timeout: 120_000 },
+    async () => {
+      const run = runSeed('local')
+      expect(run.status, run.stderr).toBe(0)
+      const a = await tenantId('convention-a')
+      const edition = await editionId(a, '2026')
+      type Kept = {
+        owner: string
+        kind: string
+        name: string
+        id: string
+        tenant: string
+        edition: string | null
+        size: number
+        sha256: string
+        content_type: string
+        width: number
+        height: number
+      }
+      const pictures = async () => [
+        ...(await migrator<Kept[]>`
+          select i.name as owner, f.kind, f.name, f.id, f.tenant_id as tenant,
+            f.edition_id as edition, f.size, f.sha256, f.content_type, f.width, f.height
+          from merchandise_item_pictures p
+          join merchandise_items i on i.id = p.merchandise_item_id
+          join uploaded_files f on f.id = p.file_id
+          where p.edition_id = ${edition} order by i.position, p.position
+        `),
+        ...(await migrator<Kept[]>`
+          select o.name as owner, f.kind, f.name, f.id, f.tenant_id as tenant,
+            f.edition_id as edition, f.size, f.sha256, f.content_type, f.width, f.height
+          from add_on_pictures p
+          join add_ons o on o.id = p.add_on_id
+          join uploaded_files f on f.id = p.file_id
+          where p.edition_id = ${edition} order by o.position
+        `),
+        ...(await migrator<Kept[]>`
+          select t.slug as owner, f.kind, f.name, f.id, f.tenant_id as tenant,
+            f.edition_id as edition, f.size, f.sha256, f.content_type, f.width, f.height
+          from tenant_logos l
+          join tenants t on t.id = l.tenant_id
+          join uploaded_files f on f.id = l.file_id
+          where t.slug like 'convention-_' order by t.slug
+        `),
+      ]
+      const kept = await pictures()
+
+      expect(kept.map((file) => [file.owner, file.kind, file.name])).toEqual([
+        ['T-shirt', 'merchandise-picture', 'T-shirt - front.png'],
+        ['T-shirt', 'merchandise-picture', 'T-shirt - back.png'],
+        ['T-shirt', 'merchandise-picture', 'T-shirt - print.png'],
+        ['Enamel pin', 'merchandise-picture', 'Enamel pin.png'],
+        ['Miniature painting workshop', 'add-on-picture', 'Miniature painting workshop.png'],
+        ['convention-a', 'convention-logo', 'Convention A.png'],
+        ['convention-b', 'convention-logo', 'Convention B.png'],
+      ])
+      // An edition's picture lies under its edition, a logo under its convention alone.
+      expect(
+        kept.filter((file) => file.kind === 'convention-logo').map((file) => file.edition),
+      ).toEqual([null, null])
+      for (const file of kept) {
+        const bytes = await object(`tenants/${file.tenant}/${file.id}/master`)
+        expect(bytes.subarray(1, 4).toString('latin1')).toBe('PNG')
+        expect(file.content_type).toBe('image/png')
+        expect(bytes.length).toBe(file.size)
+        expect(createHash('sha256').update(bytes).digest('hex')).toBe(file.sha256)
+        expect([bytes.readUInt32BE(16), bytes.readUInt32BE(20)]).toEqual([file.width, file.height])
+      }
+
+      // A second run keeps the same files.
+      expect(runSeed('local').status).toBe(0)
+      expect(await pictures()).toEqual(kept)
+    },
+  )
+
   // The orders of the edition with an open shop (docs/specs/0004-checkout-and-orders.md, Seed).
   it(
     'gives the coming edition an order in each status, with what each status holds',

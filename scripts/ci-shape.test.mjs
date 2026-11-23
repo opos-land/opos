@@ -100,14 +100,14 @@ test('the run block reader follows block scalars, folded or not', () => {
   assert.deepEqual(blocks, ['one', '          two\n          three', '          four'])
 })
 
-test('no job installs the tools of the deploy commands', () => {
+test('a job installs only Node and the Supabase CLI unless it enables another tool itself', () => {
   const tools = read('../mise.toml').split('\n[tools]\n')[1].split(/\n\[/)[0]
   const names = [...tools.matchAll(/^(?!#)"?([^"=\s]+)"? = /gm)].map((match) => match[1])
-  const deploy = names.filter((name) => !['node', 'aqua:supabase/cli'].includes(name))
-  assert.ok(deploy.length > 0)
+  const others = names.filter((name) => !['node', 'aqua:supabase/cli'].includes(name))
+  assert.ok(others.length > 0)
   const disabled = /^env:\n {2}MISE_DISABLE_TOOLS: (\S+)$/m.exec(ci)
   assert.ok(disabled, 'the workflow disables tools for every job')
-  assert.deepEqual(disabled[1].split(',').sort(), deploy.sort())
+  assert.deepEqual(disabled[1].split(',').sort(), others.sort())
 })
 
 test('check runs the doc links and the migration journal', () => {
@@ -143,12 +143,51 @@ test("secrets scans the checked commit's history, not every branch the checkout 
   assert.deepEqual(scans, ['--redact --no-banner --log-opts="--full-history HEAD"'])
 })
 
-test('gitleaks is a pinned release binary, checked against its checksum', () => {
-  assert.match(ci, /releases\/download\/v8\.30\.1\/gitleaks_8\.30\.1_linux_x64\.tar\.gz/)
-  assert.match(ci, /[0-9a-f]{64} {2}gitleaks\.tar\.gz/)
-  assert.match(ci, /sha256sum --check/)
-  assert.match(ci, /gitleaks dir \. --redact --no-banner/)
-  assert.match(ci, /gitleaks git \. --redact --no-banner/)
+test('gitleaks comes from mise, in the secrets job alone and before both scans', () => {
+  assert.match(read('../mise.toml'), /^"aqua:gitleaks\/gitleaks" = "\d+\.\d+\.\d+"$/m)
+  assert.doesNotMatch(ci, /releases\/download|sha256sum/)
+  const secrets = job('secrets')
+  // The job's own list is the workflow's without gitleaks
+  const workflowList = /^env:\n {2}MISE_DISABLE_TOOLS: (\S+)$/m.exec(ci)[1].split(',')
+  const jobList = /^ {6}MISE_DISABLE_TOOLS: (\S+)$/m.exec(secrets)
+  assert.ok(jobList, 'the secrets job sets its own list of disabled tools')
+  assert.deepEqual(
+    jobList[1].split(',').sort(),
+    workflowList.filter((name) => name !== 'aqua:gitleaks/gitleaks').sort(),
+  )
+  const mise = secrets.indexOf('jdx/mise-action@')
+  assert.ok(mise > 0)
+  assert.ok(mise < secrets.indexOf('gitleaks dir . --redact --no-banner'))
+  assert.ok(mise < secrets.indexOf('gitleaks git . --redact --no-banner'))
+})
+
+// A download that differs from its checksum in mise.lock stops the install
+// (docs/adr/0077-lock-the-tools-checksums-in-mise-lock.md)
+test('every job installs the tools from mise.lock alone', () => {
+  assert.match(ci, /^env:\n(?: {2}.*\n)* {2}MISE_LOCKED: 'true'$/m)
+  assert.match(read('../mise.toml'), /^lockfile = true$/m)
+})
+
+test('mise.lock holds a checksum of every tool of mise.toml for every platform', () => {
+  const toml = read('../mise.toml')
+  const tools = toml.split('\n[tools]\n')[1].split(/\n\[/)[0]
+  const pins = [...tools.matchAll(/^(?!#)"?([^"=\s]+)"? = "([^"]+)"/gm)]
+  const platforms = JSON.parse(/^lockfile_platforms = (\[.*\])$/m.exec(toml)[1])
+  assert.deepEqual(platforms.sort(), ['linux-x64', 'macos-arm64', 'windows-x64'])
+  const lock = read('../mise.lock')
+  for (const [, name, version] of pins) {
+    const quoted = name.includes(':') ? `"${name}"` : name
+    const head = `[[tools.${quoted}]]\nversion = "${version}"\n`
+    assert.ok(lock.includes(head), `mise.lock locks ${name} ${version}`)
+    const entry = lock.slice(lock.indexOf(head)).split('\n[[')[0]
+    for (const platform of platforms) {
+      assert.match(
+        entry,
+        new RegExp(`\\."platforms\\.${platform}"\\]\\nchecksum = "sha256:[0-9a-f]{64}"`),
+        `${name} on ${platform}`,
+      )
+    }
+  }
 })
 
 test('gitleaks keeps its default rules', () => {

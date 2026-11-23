@@ -491,9 +491,13 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 
 ## Tooling and versions
 
-- [mise.toml](../mise.toml) pins Node, the Supabase CLI and the tools of the deploy commands:
-  OpenTofu, Terragrunt and the CLIs of Scaleway and GitHub. `packageManager` pins pnpm, `engines`
-  repeats Node and pnpm, and a mismatch aborts the install.
+- [mise.toml](../mise.toml) pins Node, the Supabase CLI, gitleaks, the linters and the tools of the
+  deploy commands: OpenTofu, Terragrunt and the CLIs of Scaleway and GitHub. `packageManager` pins
+  pnpm, `engines` repeats Node and pnpm, and a mismatch aborts the install.
+- [mise.lock](../mise.lock) holds every tool's download and its checksum for each platform of
+  `lockfile_platforms`, and changes in the same commit as a pin; an install checks the download
+  against it, and CI installs from it alone, refusing a tool it does not hold
+  ([0077](adr/0077-lock-the-tools-checksums-in-mise-lock.md)).
 - A root script is the command, and it runs as `pnpm <name>` without mise. A mise task of the same
   name in [mise-tasks.toml](../mise-tasks.toml) runs it and says what it does, so `mise tasks` lists
   the commands; turbo stays the runner and mise caches nothing. The tasks stay out of `mise.toml`,

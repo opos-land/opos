@@ -260,8 +260,8 @@ script or an iframe created outside the consent feature and anything loaded from
 **Dev and production are shared.** A working checkout never points at them: no `supabase link`, no
 remote database URL, project reference or access token in a `.env` or `mise.local.toml`. Their
 infrastructure changes only through the `deploy:*` commands, which an operator runs under their own
-identity, and a release only through CI. An agent never runs a deploy command that applies, destroys
-or sets a secret
+identity, and a release only through CI. An agent never runs a deploy command that applies, destroys,
+imports or sets a secret
 ([environments](docs/ARCHITECTURE.md#environments)). The infrastructure code and its runbook are in
 [infra](infra/README.md); after a change there, `mise run deploy:check`, and `mise run
 deploy:images` when it touches the images.

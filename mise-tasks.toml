@@ -180,6 +180,12 @@ description = "Destroy one unit of an environment, after showing its plan and as
 run = "pnpm deploy:destroy"
 raw = true
 
+["deploy:import"]
+description = "Take an object that exists but no state holds into one unit's state under its address, as a variable Coolify made from the compose file's default before the unit wrote it; hidden, as a repair; run by an operator, never by an agent: <environment> <unit> <address> <id>"
+run = "pnpm deploy:import"
+raw = true
+hide = true
+
 ["deploy:output"]
 description = "Print the outputs of an environment's units: <environment> [unit]"
 run = "pnpm deploy:output"

@@ -467,7 +467,7 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   ([migration-url.ts](../packages/db/src/migration-url.ts)).
 - The infrastructure of Dev and production changes only through the `deploy:*` commands, which
   apply the OpenTofu units from an operator's machine, under their own identity; no workflow runs
-  them, and an agent never runs one that applies, destroys or sets a secret
+  them, and an agent never runs one that applies, destroys, imports or sets a secret
   ([0035](adr/0035-describe-the-infrastructure-in-opentofu-units-run-by-terragrunt.md)).
 - A release comes from CI: once the checks of a push to `develop` passed, Dev deploys the commit
   they passed, through a push to Coolify's webhook signed with a secret that can deploy and change

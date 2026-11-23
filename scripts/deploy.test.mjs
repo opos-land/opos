@@ -812,6 +812,33 @@ describe('destroy and output', () => {
     )
   })
 
+  it('imports an object that exists into one unit, under its address', async () => {
+    const address = 'coolify_environment_variable.this["OPOS_SEED"]'
+    const { tools } = await call(['import', 'dev', 'deployment', address, 'application:app:env'])
+    // Terragrunt refuses an import across a stack: the stack is generated, then the import runs in
+    // the one unit's directory
+    const [generated, imported] = tools.calls.filter(({ file }) => file === 'terragrunt')
+    assert.deepEqual(generated.args, ['stack', 'generate', '--working-dir', LIVE])
+    assert.deepEqual(imported.args, [
+      'run',
+      '--working-dir',
+      `${LIVE}/.terragrunt-stack/deployment`,
+      '--',
+      'import',
+      address,
+      'application:app:env',
+    ])
+    assert.equal(imported.env.TG_NO_DEPENDENCY_FETCH_OUTPUT_FROM_STATE, 'true')
+    await assert.rejects(
+      call(['import', 'dev', 'deployment', address]),
+      /usage: pnpm deploy:import <environment> <unit> <address> <id>/,
+    )
+    await assert.rejects(
+      call(['import', 'dev', 'nowhere', address, 'application:app:env']),
+      /dev has no unit nowhere/,
+    )
+  })
+
   it("prints every unit's outputs, or one's", async () => {
     assert.deepEqual(lines((await call(['output', 'dev'])).tools.calls, 'terragrunt'), [
       `stack output --working-dir ${LIVE}`,

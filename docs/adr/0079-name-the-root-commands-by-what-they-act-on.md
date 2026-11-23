@@ -1,6 +1,6 @@
 # 0079. Name the root commands by what they act on
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-11-23
 
 ## Context

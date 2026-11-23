@@ -19,6 +19,9 @@ shows. The prefixes had grown apart from what the commands act on:
   `deploy:grant:revoke`, and `deploy:secret-set`.
 - A command was named apart from its script: `deploy:graph` ran `scripts/deploy-graph.mjs` beside
   `scripts/deploy.mjs`, which runs the other deploy commands.
+- Nineteen descriptions wrapped in a 120-column terminal, `deploy:apply` over five rows: they held
+  what each flag does and who may run the command, a rule repeated in every deploy command's line.
+  `mise run <name> --help` printed mise's definition of the task and said it took no arguments.
 
 ## Decision
 
@@ -33,6 +36,10 @@ shows. The prefixes had grown apart from what the commands act on:
 - A command has one name everywhere it is named: its root script, its mise task, its script's file
   when it has one of its own (`scripts/stack-init.mjs`), the usage and hints its script prints, and
   the documents.
+- A task's description says what the command does and then its arguments, on one row of a
+  120-column terminal. Who may run the command and what each flag does are its help: a script that
+  takes arguments prints it on `--help`, and its task hands every argument on (`raw_args`), so
+  `mise run <name> --help` prints the same.
 
 ## Alternatives
 
@@ -40,9 +47,18 @@ shows. The prefixes had grown apart from what the commands act on:
 - **`dev:*` for the stack.** Dev is the shared environment the documents name.
 - **The offline commands kept under `deploy:*`.** One prefix for everything about `infra/`, but a
   check that needs no sign-in would sit in the list beside the commands an agent never runs.
+- **Who may run a command kept in its description.** Seen where a command is chosen, but each row
+  of the list wraps, and the rule is written once per command instead of once in its help.
+- **A usage spec per task for its help.** Turned down in
+  [0024](0024-list-the-root-commands-as-mise-tasks-that-run-the-pnpm-scripts.md): with a spec,
+  mise no longer hands the arguments to the root script, and each flag is written twice.
 
 ## Consequences
 
 - CI, the hooks, the `.env.example` templates and the documents name the new commands; accepted
   records and implemented specs keep the names of their date.
 - A checkout keeps its `.env` files and its stack: only the names of the commands change.
+- The deploy commands and `infra:graph` answer `--help`; the `db:*` scripts that take arguments do
+  not yet, and their tasks keep mise's own `--help` until they do.
+- `scripts/mise-tasks.test.mjs` keeps every description on one row and hands `--help` on exactly to
+  the commands whose script answers it.

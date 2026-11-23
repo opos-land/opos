@@ -264,6 +264,57 @@ describe('deploy', () => {
     await assert.rejects(call(['unknown', 'dev']), /usage: pnpm deploy:<command>/)
   })
 
+  const COMMANDS = [
+    'login',
+    'bootstrap',
+    'access:grant',
+    'access:revoke',
+    'plan',
+    'apply',
+    'destroy',
+    'import',
+    'output',
+    'secret:set',
+    'secret:get',
+  ]
+
+  it('lists every command with its arguments on --help alone, and runs nothing', async () => {
+    const tools = fakeTools()
+    const { out } = await call(['--help'], { tools })
+    for (const command of COMMANDS) assert.match(out, new RegExp(`pnpm deploy:${command} <`))
+    assert.deepEqual(tools.calls, [])
+  })
+
+  it("tells a command's arguments, flags and who runs it on --help or -h, and runs nothing", async () => {
+    for (const command of COMMANDS) {
+      for (const args of [
+        [command, '--help'],
+        [command, 'dev', '-h'],
+      ]) {
+        const tools = fakeTools()
+        const { out } = await call(args, { tools })
+        assert.match(out, new RegExp(`^usage: pnpm deploy:${command} <environment>`), command)
+        assert.match(out, /\n\nRun by (an operator|an administrator)/, command)
+        for (const line of out.split('\n')) assert.ok(line.length <= 100, `${command}: ${line}`)
+        assert.deepEqual(tools.calls, [], command)
+      }
+    }
+  })
+
+  it('keeps out of the help of a command what the task list no longer says', async () => {
+    const help = async (command) => (await call([command, '--help'])).out
+    assert.match(await help('apply'), /--saved +applies the plans of pnpm deploy:plan --save/)
+    assert.match(await help('apply'), /--no-plan +/)
+    assert.match(await help('apply'), /--ref <ref> +/)
+    assert.match(await help('plan'), /--save +/)
+    assert.match(await help('apply'), /never by an agent/)
+    assert.match(await help('bootstrap'), /an administrator of the Scaleway organisation/)
+    assert.match(await help('access:grant'), /an administrator of the Scaleway organisation/)
+    assert.match(await help('import'), /Coolify/)
+    assert.match(await help('login'), /12 hours/)
+    assert.doesNotMatch(await help('output'), /never by an agent/)
+  })
+
   it('stops for an environment without settings, before running anything', async () => {
     const tools = fakeTools()
     await assert.rejects(

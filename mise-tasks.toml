@@ -3,6 +3,8 @@
 # command and works without mise; extra arguments go through to it. turbo orders and caches what the
 # scripts run, so a task declares no sources, outputs or depends. `raw` hands the terminal to the
 # command, for turbo's interface and the prompts of drizzle-kit.
+# `raw_args` hands every argument, --help too, to a command whose script answers --help, where
+# mise would print the task's definition instead.
 # A description says what the command does and then its arguments, on one row of a 120-column
 # terminal; who may run it and what each flag does belong to its help.
 # This file sits outside mise.toml, which turbo hashes: a description changes no cache.
@@ -158,6 +160,7 @@ run = "pnpm infra:lock"
 ["infra:graph"]
 description = "Write a page of an environment's deployment and code: <environment> [--open]"
 run = "pnpm infra:graph"
+raw_args = true
 
 # The deploy commands: root scripts that run scripts/deploy.mjs, which takes the arguments and flags
 # itself (docs/adr/0070-run-the-deploy-commands-as-node-scripts.md). OpenTofu, Terragrunt and the
@@ -171,55 +174,66 @@ run = "pnpm infra:graph"
 ["deploy:login"]
 description = "Sign in to Scaleway and GitHub for an environment's deploy commands: <environment>"
 run = "pnpm deploy:login"
+raw_args = true
 raw = true
 
 ["deploy:bootstrap"]
 description = "Make an environment's state bucket and passphrase and register its domain: <environment>"
 run = "pnpm deploy:bootstrap"
+raw_args = true
 raw = true
 
 ["deploy:access:grant"]
 description = "Let people run an environment's deploy commands: <environment> <email>..."
 run = "pnpm deploy:access:grant"
+raw_args = true
 raw = true
 
 ["deploy:access:revoke"]
 description = "Stop people from running an environment's deploy commands: <environment> <email>..."
 run = "pnpm deploy:access:revoke"
+raw_args = true
 raw = true
 
 ["deploy:plan"]
 description = "Show what applying an environment would change: <environment> [unit] [--save] [--ref <ref>]"
 run = "pnpm deploy:plan"
+raw_args = true
 raw = true
 
 ["deploy:apply"]
 description = "Plan, ask, then apply an environment: <environment> [unit] [--saved | --no-plan] [--ref <ref>]"
 run = "pnpm deploy:apply"
+raw_args = true
 raw = true
 
 ["deploy:destroy"]
 description = "Destroy one unit of an environment after showing its plan and asking: <environment> <unit>"
 run = "pnpm deploy:destroy"
+raw_args = true
 raw = true
 
 ["deploy:import"]
 description = "Take an object no state holds into a unit's state: <environment> <unit> <address> <id>"
 run = "pnpm deploy:import"
+raw_args = true
 raw = true
 hide = true
 
 ["deploy:output"]
 description = "Print the outputs of an environment's units: <environment> [unit]"
 run = "pnpm deploy:output"
+raw_args = true
 raw = true
 
 ["deploy:secret:set"]
 description = "Enter the value of a secret a third party issued, without echo: <environment> <name>"
 run = "pnpm deploy:secret:set"
+raw_args = true
 raw = true
 
 ["deploy:secret:get"]
 description = "Print the current value of one of an environment's secrets: <environment> <name>"
 run = "pnpm deploy:secret:get"
+raw_args = true
 raw = true

@@ -541,6 +541,19 @@ describe('main', () => {
     ])
   })
 
+  it('tells what it writes and its flag on --help or -h, and writes nothing', async () => {
+    const root = repository(STACK)
+    for (const args of [['--help'], ['test', '-h']]) {
+      const { out, log } = output()
+      assert.equal(await main(args, { root, log, error: log, env: {} }), 0)
+      assert.equal(out[0], 'usage: pnpm infra:graph <environment> [--open], one of test')
+      assert.match(out.join('\n'), /\.terragrunt-graph\.html/)
+      assert.match(out.join('\n'), /--open +opens it in the default browser/)
+      assert.match(out.join('\n'), /no sign-in/)
+    }
+    assert.throws(() => readFileSync(join(root, 'infra/live/test/.terragrunt-graph.html')))
+  })
+
   it('refuses a flag it does not know', async () => {
     const root = repository(STACK)
     const { out, log } = output()

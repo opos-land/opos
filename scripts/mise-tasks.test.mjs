@@ -9,7 +9,8 @@ import { fileURLToPath } from 'node:url'
 // definition (docs/ARCHITECTURE.md, Tooling and versions). The tasks are read through mise itself,
 // so the test sees what `mise tasks` lists, includes and all, and the hidden tasks beside them.
 const root = fileURLToPath(new URL('..', import.meta.url))
-const scripts = Object.keys(JSON.parse(readFileSync(`${root}/package.json`, 'utf8')).scripts)
+const packageScripts = JSON.parse(readFileSync(`${root}/package.json`, 'utf8')).scripts
+const scripts = Object.keys(packageScripts)
 // A lifecycle script runs on its own during `pnpm install`, never by name.
 const commands = scripts.filter((name) => name !== 'prepare')
 const tasks = JSON.parse(
@@ -46,6 +47,34 @@ test(`describes every mise task on one row of a ${WIDTH}-column terminal`, () =>
     .filter((task) => names + 2 + task.description.length + 2 > WIDTH)
     .map((task) => task.name)
   assert.deepEqual(wrapped, [], `at most ${WIDTH - names - 4} characters`)
+})
+
+// A command whose script answers --help gets it through `mise run` as well: its task hands every
+// argument on (`raw_args`), where mise would otherwise print the task's own definition.
+// `mise tasks ls --json` does not show raw_args, so each task's block of the file is read.
+const scriptFile = (name) => /^node (scripts\/[\w-]+\.mjs)\b/.exec(packageScripts[name])?.[1]
+const answersHelp = (name) =>
+  scriptFile(name) !== undefined &&
+  readFileSync(`${root}/${scriptFile(name)}`, 'utf8').includes("'--help'")
+const block = (name) =>
+  readFileSync(`${root}/mise-tasks.toml`, 'utf8')
+    .split(/^(?=\[)/m)
+    .find((part) => part.startsWith(`["${name}"]`) || part.startsWith(`[${name}]`))
+
+test('hands --help on to the commands whose script answers it, and to no other', () => {
+  const answering = commands.filter(answersHelp)
+  assert.ok(answering.includes('deploy:apply') && answering.includes('infra:graph'))
+  for (const name of commands)
+    assert.equal(/^raw_args = true$/m.test(block(name)), answering.includes(name), name)
+})
+
+test('shows the help of the command, not of the task, through mise run', () => {
+  const help = execFileSync('mise', ['run', 'deploy:output', '--help'], {
+    cwd: root,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  })
+  assert.match(help, /^usage: pnpm deploy:output <environment> \[unit\]$/m)
 })
 
 // A task is only the root script of its name with a description: what the command runs, and the

@@ -507,7 +507,9 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   without a sign-in and `deploy` a deployed environment, and the command has one name in its root
   script, its task, its script's file, its messages and the documents
   ([0079](adr/0079-name-the-root-commands-by-what-they-act-on.md)). Every task runs the root
-  script of its name and nothing else, so `pnpm <name>` and `mise run <name>` do the same. The
+  script of its name and nothing else, so `pnpm <name>` and `mise run <name>` do the same. A task's
+  description fits one row of the list; who may run a command and what its flags do are its
+  `--help`, which `mise run` hands on to a script that answers it. The
   deploy commands are one Node script tested like the others, driving tools that come from mise; no
   shell script runs on an operator's machine
   ([0070](adr/0070-run-the-deploy-commands-as-node-scripts.md)). `infra:graph` only reads the

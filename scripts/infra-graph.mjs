@@ -519,9 +519,24 @@ export async function main(
   const environments = readdirSync(live)
     .filter((name) => existsSync(join(live, name, 'terragrunt.stack.hcl')))
     .sort()
+  const synopsis = `usage: pnpm infra:graph <environment> [--open], one of ${environments.join(', ')}`
   const usage = () => {
-    error(`usage: pnpm infra:graph <environment> [--open], one of ${environments.join(', ')}`)
+    error(synopsis)
     return 2
+  }
+  if (args.some((arg) => arg === '--help' || arg === '-h')) {
+    for (const line of [
+      synopsis,
+      '',
+      "Writes infra/live/<environment>/.terragrunt-graph.html, a page of the environment's",
+      'deployment and code to open in a browser: what runs where and what each part reaches, the',
+      'units, what passes between them and the mistakes in their wiring. It reads the checkout',
+      'alone and needs no sign-in.',
+      '',
+      '  --open  opens it in the default browser',
+    ])
+      log(line)
+    return 0
   }
   let parsed
   try {

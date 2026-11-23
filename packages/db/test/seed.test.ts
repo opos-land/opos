@@ -38,6 +38,23 @@ describe('db:seed', { timeout: 30_000 }, () => {
     },
   )
 
+  it('lists its data with --list, needing no environment and opening no connection', () => {
+    const result = spawnSync(process.execPath, ['--import', 'tsx', 'src/seed.ts', '--list'], {
+      env: { PATH: process.env.PATH },
+      encoding: 'utf8',
+    })
+
+    expect(result.stderr).toBe('')
+    expect(result.status).toBe(0)
+    expect(result.stdout).toMatch(/^Every account signs in with the password password123\.$/m)
+    expect(result.stdout).toMatch(
+      /^ {2}head@convention-a\.test +Anna Nowak +head of convention-a$/m,
+    )
+    expect(result.stdout).toMatch(
+      /^ {2}convention-c +Convention C +pl, Europe\/Warsaw +suspended$/m,
+    )
+  })
+
   it('ignores the old flag on production', () => {
     const result = spawnSync(
       process.execPath,

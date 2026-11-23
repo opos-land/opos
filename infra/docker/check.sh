@@ -35,6 +35,19 @@ if ! grep -q 'Invalid environment' <<<"$log"; then
   exit 1
 fi
 
+# A build whose install layer came from the cache leaves the manifests newer than the install; a
+# step of the tools still runs, past pnpm's check of the dependencies, to the validation of its
+# environment
+echo "Running a step of the tools with the manifests newer than the install"
+log=$(docker run --rm -u 0 opos-tools:check sh -c \
+  'touch /repo/package.json /repo/packages/db/package.json &&
+   su node -s /bin/sh -c "cd /repo/packages/db && pnpm run db:roles"' 2>&1 || true)
+if ! grep -q 'OPOS_APP_PASSWORD is not set' <<<"$log"; then
+  echo "$log" >&2
+  echo "A step of the tools did not reach the validation of its environment" >&2
+  exit 1
+fi
+
 echo "Asking the portal for a route"
 docker run --rm -d --name "$name" -p 127.0.0.1:39080:8080 opos-portal:check >/dev/null
 docker run --rm -d --name "$guarded" -p 127.0.0.1:39081:8080 \
@@ -111,4 +124,4 @@ if grep -q '^BASIC_AUTH_PASSWORD=' <<<"$environ"; then
   exit 1
 fi
 
-echo "The images build, the api resolves its imports and the frontends serve their routes with their commit, behind basic auth when asked"
+echo "The images build, the api resolves its imports, the tools run past pnpm's check and the frontends serve their routes with their commit, behind basic auth when asked"

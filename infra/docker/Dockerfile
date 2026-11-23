@@ -78,7 +78,11 @@ RUN pnpm turbo prune @opos/db --docker
 # The scripts run from their sources, so the image keeps the development dependencies. It is the
 # one container that holds the postgres URL.
 FROM base AS tools
-ENV NODE_EXTRA_CA_CERTS=/etc/ssl/supabase/ca.crt
+# pnpm checks the dependencies before a script and installs when a manifest is newer than the last
+# install, which it is whenever the install below comes from the build cache and the sources do
+# not; the dependencies are fixed at build time, and the node user may not write them anyway
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/supabase/ca.crt \
+    pnpm_config_verify_deps_before_run=false
 COPY infra/docker/supabase-ca.crt /etc/ssl/supabase/ca.crt
 COPY --from=prune-db /repo/out/json/ ./
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \

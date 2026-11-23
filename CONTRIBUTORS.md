@@ -20,6 +20,17 @@ Each module's domain owner sets its rules ([PRODUCT.md 7](docs/PRODUCT.md#7-modu
 Open: whether the domain owner of tickets also owns attendee registrations, as far as a paid
 ticket makes them ([brief 0001](docs/briefs/0001-convention-shop.md), D15).
 
+## The core and the deployment
+
+The core and the deployment belong to no module; the specs name the team as their owner
+([file storage](docs/specs/0012-file-storage.md), [deployment](docs/specs/0015-deployment.md)).
+
+| Part                                                      | Held by                             |
+| --------------------------------------------------------- | ----------------------------------- |
+| the core's code, file storage and image variants among it | the team, Adrian Wieprzkowicz first |
+| the servers and the deployment                            | Jakub Neumann                       |
+| the administrator of the Scaleway organisation            | Jakub Neumann                       |
+
 ## Admins
 
 The admins run the platform and set the rules of its administration

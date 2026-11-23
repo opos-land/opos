@@ -48,9 +48,12 @@ test(`describes every mise task on one row of a ${WIDTH}-column terminal`, () =>
   assert.deepEqual(wrapped, [], `at most ${WIDTH - names - 4} characters`)
 })
 
-test('runs through pnpm only a root script of the same name', () => {
-  for (const task of tasks.filter((candidate) => /^pnpm\b/.test(runOf(candidate)))) {
+// A task is only the root script of its name with a description: what the command runs, and the
+// variables it sets, live in the script, so `pnpm <name>` and `mise run <name>` do the same.
+test('runs from every mise task the root script of its name, and nothing else', () => {
+  for (const task of tasks) {
     assert.ok(scripts.includes(task.name), `${task.name} is not a root script`)
     assert.equal(runOf(task), `pnpm ${task.name}`, task.name)
+    assert.deepEqual(task.env, [], `${task.name} sets variables the root script does not`)
   }
 })

@@ -145,9 +145,9 @@ On every run, without signing in:
 - `scripts/compose.test.mjs`: the services and their ports; the `postgres` URL to the tools alone;
   the bucket's key to the API alone; imgproxy's key to the API and imgproxy alone; imgproxy's image
   and settings those of the local stack.
-- `mise run deploy:check`: the format and every unit valid against its module's lock file.
-- `mise run deploy:images` in CI's `images` job: the images build, the API resolves its imports,
-  the frontends answer behind basic auth.
+- `mise run infra:check`: the format and every unit valid against its module's lock file.
+- `mise run infra:images`, whose script CI's `images` job runs: the images build, the API resolves
+  its imports, the frontends answer behind basic auth.
 
 After a deployment, by hand: the checks of [infra/README.md](../../infra/README.md#the-deployment).
 

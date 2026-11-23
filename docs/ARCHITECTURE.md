@@ -506,16 +506,18 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   command's prefix names what it acts on, `stack` the local stack, `infra` the code in `infra/`
   without a sign-in and `deploy` a deployed environment, and the command has one name in its root
   script, its task, its script's file, its messages and the documents
-  ([0079](adr/0079-name-the-root-commands-by-what-they-act-on.md)). The
-  deploy commands are root scripts too, one Node script tested like the others, driving tools that
-  come from mise, beside `deploy:graph`, which only reads the checkout; no shell script runs on an
-  operator's machine
-  ([0070](adr/0070-run-the-deploy-commands-as-node-scripts.md)). `deploy:check`, `deploy:images`
-  and `deploy:lock` alone are mise tasks with no root script: they only run those tools.
+  ([0079](adr/0079-name-the-root-commands-by-what-they-act-on.md)). Every task runs the root
+  script of its name and nothing else, so `pnpm <name>` and `mise run <name>` do the same. The
+  deploy commands are one Node script tested like the others, driving tools that come from mise; no
+  shell script runs on an operator's machine
+  ([0070](adr/0070-run-the-deploy-commands-as-node-scripts.md)). `infra:graph` only reads the
+  checkout, and `infra:check`, `infra:images` and `infra:lock` only run the tools from mise. A
+  command that drives a tool from mise runs as `pnpm <name>` only where mise's tools are on the
+  path.
 - The infrastructure lives in [infra](../infra/README.md): an environment is one directory with
   one `env.yaml`, its plain settings and the names of its secrets, and nothing else configures it.
   Every provider is pinned to an exact version with its lock file committed, at least 7 days old
-  like a dependency; `mise run deploy:check` validates every unit without a sign-in.
+  like a dependency; `mise run infra:check` validates every unit without a sign-in.
 - `minimumReleaseAge` refuses a version younger than 7 days; an urgent fix is a deliberate
   `minimumReleaseAgeExclude`, a transitive one a scoped `overrides` entry naming the advisory
   ([0015](adr/0015-run-a-pnpm-turborepo-monorepo-with-pinned-tools.md)).

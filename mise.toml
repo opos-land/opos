@@ -13,10 +13,17 @@ node = "24.15.0"
 # Lint the GitHub Actions workflows, actionlint, and the shell in them and in scripts, shellcheck
 "aqua:rhysd/actionlint" = "1.7.12"
 "aqua:koalaman/shellcheck" = "0.11.0"
+# Secrets in the staged changes before a commit, and in the tree and the history in the secrets job
+# of CI, the one job that installs it
+"aqua:gitleaks/gitleaks" = "8.30.1"
 
 [settings]
 # pnpm is pinned by packageManager in package.json; corepack provides it
 node.corepack = true
+# mise.lock records every tool's download and checksum for the platforms below, and an install
+# checks the download against it
+lockfile = true
+lockfile_platforms = ["linux-x64", "macos-arm64", "windows-x64"]
 
 [hooks]
 # One command sets a checkout up: after the tools, the dependencies and the git hooks. It runs on

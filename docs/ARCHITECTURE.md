@@ -491,9 +491,13 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 
 ## Tooling and versions
 
-- [mise.toml](../mise.toml) pins Node, the Supabase CLI and the tools of the deploy commands:
-  OpenTofu, Terragrunt and the CLIs of Scaleway and GitHub. `packageManager` pins pnpm, `engines`
-  repeats Node and pnpm, and a mismatch aborts the install.
+- [mise.toml](../mise.toml) pins Node, the Supabase CLI, gitleaks, the linters and the tools of the
+  deploy commands: OpenTofu, Terragrunt and the CLIs of Scaleway and GitHub. `packageManager` pins
+  pnpm, `engines` repeats Node and pnpm, and a mismatch aborts the install.
+- [mise.lock](../mise.lock) holds every tool's download and its checksum for each platform of
+  `lockfile_platforms`, and changes in the same commit as a pin; an install checks the download
+  against it, and CI installs from it alone, refusing a tool it does not hold
+  ([0077](adr/0077-lock-the-tools-checksums-in-mise-lock.md)).
 - A root script is the command, and it runs as `pnpm <name>` without mise. A mise task of the same
   name in [mise-tasks.toml](../mise-tasks.toml) runs it and says what it does, so `mise tasks` lists
   the commands; turbo stays the runner and mise caches nothing. The tasks stay out of `mise.toml`,
@@ -546,7 +550,9 @@ tenant and accounts and only reads the seed.
 three jobs: `check` (format, typecheck, lint, the tests, the tests-first, migration, database and
 catalog checks, the BFF boundary over the built bundles), `e2e`, and `secrets` (gitleaks over the
 whole history of the checked commit, a PR's merge or a push, and over no other branch; `pnpm audit`
-on high advisories).
+on high advisories). lefthook `pre-commit` runs the same gitleaks over the staged changes, so a
+secret is stopped before it enters a commit
+([0078](adr/0078-scan-the-staged-changes-for-secrets-before-a-commit.md)).
 
 - PRs target `develop`, where CI blocks nothing. `main` changes only through a PR from `develop`
   with the three jobs green ([protect-main.json](../.github/rulesets/protect-main.json);

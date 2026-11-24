@@ -29,6 +29,10 @@ pre-commit:
     - name: markdown-tables
       glob: '*.md'
       run: node scripts/markdown-tables.mjs {staged_files}
+    # Every installed dependency comes under an allowed licence, as the check job of CI checks
+    - name: deps-licenses
+      glob: 'pnpm-lock.yaml'
+      run: node scripts/deps-licenses.mjs
     # The staged changes hold no secret, as the secrets job of CI checks after a push
     - name: gitleaks
       run: gitleaks git --pre-commit --staged --redact --no-banner

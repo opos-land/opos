@@ -523,6 +523,11 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - `minimumReleaseAge` refuses a version younger than 7 days; an urgent fix is a deliberate
   `minimumReleaseAgeExclude`, a transitive one a scoped `overrides` entry naming the advisory
   ([0015](adr/0015-run-a-pnpm-turborepo-monorepo-with-pinned-tools.md)).
+- Every installed dependency, development ones too, comes under a licence of `ALLOWED` in
+  [deps-licenses.mjs](../scripts/deps-licenses.mjs), so none asks more of OPOS than its own licence
+  allows; a package naming no licence fails. `pnpm deps:licenses` checks it in the `check` job and
+  in lefthook `pre-commit` when the lockfile is staged, and a licence enters the list only through a
+  decision record ([0088](adr/0088-allow-dependencies-only-under-listed-licences.md)).
 - Dependabot ([dependabot.yml](../.github/dependabot.yml)) proposes the updates of the npm
   dependencies, the actions, the compose images and the OpenTofu providers weekly to `develop`, each
   ecosystem waiting the same 7 days as `minimumReleaseAge`; a group gathers only packages that move
@@ -562,7 +567,7 @@ tenant and accounts and only reads the seed.
 ## CI
 
 [ci.yml](../.github/workflows/ci.yml) runs on every PR and every push to `develop` and `main`, in
-three jobs: `check` (format, typecheck, lint, the tests, the tests-first, migration, database and
+three jobs: `check` (the dependencies' licences, format, typecheck, lint, the tests, the tests-first, migration, database and
 catalog checks, the BFF boundary over the built bundles), `e2e`, and `secrets` (gitleaks over the
 whole history of the checked commit, a PR's merge or a push, and over no other branch; `pnpm audit`
 on high advisories). lefthook `pre-commit` runs the same gitleaks over the staged changes, so a

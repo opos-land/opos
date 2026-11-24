@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "local": "vite",
+    "local:start": "vite",
     "build": "vite build",
     "typecheck": "tsc",
     "lint": "eslint --max-warnings 0 .",

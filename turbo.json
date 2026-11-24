@@ -20,7 +20,7 @@
       "env": ["VITE_API_URL", "SUPABASE_SECRET_KEY"],
       "outputs": ["dist/**"]
     },
-    "local": {
+    "local:start": {
       "dependsOn": ["i18n:compile"],
       "cache": false,
       "persistent": true,

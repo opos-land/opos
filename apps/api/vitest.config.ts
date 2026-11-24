@@ -18,8 +18,8 @@ const ADMIN_LOG_TESTS = ['test/admin.test.ts', 'test/admin-profiles.test.ts']
 
 /**
  * Every worker runs a whole API with connection pools of its own, and the local database serves
- * 100 connections: four leave room for the stack's own and for a running `pnpm local`. More
- * workers would save no time, since the run lasts as long as its longest file.
+ * 100 connections: four leave room for the stack's own and for a running `pnpm local:start`.
+ * More workers would save no time, since the run lasts as long as its longest file.
  */
 const MAX_WORKERS = 4
 

@@ -51,7 +51,7 @@ export default defineConfig({
       stderr: 'pipe',
     },
     {
-      command: 'pnpm run local',
+      command: 'pnpm run local:start',
       cwd: app('panel'),
       url: stack.panel,
       env: devServerEnv,
@@ -59,7 +59,7 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: 'pnpm run local',
+      command: 'pnpm run local:start',
       cwd: app('portal'),
       url: stack.portal,
       env: devServerEnv,
@@ -67,7 +67,7 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: 'pnpm run local',
+      command: 'pnpm run local:start',
       cwd: app('admin'),
       url: stack.admin,
       env: devServerEnv,

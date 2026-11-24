@@ -17,6 +17,8 @@ shows. The prefixes had grown apart from what the commands act on:
   beside the commands that apply and destroy one.
 - A command's parts were joined three ways: `db:admin:grant`, `deploy:grant` with
   `deploy:grant:revoke`, and `deploy:secret-set`.
+- `local`, which runs the applications in watch mode, could not be called as `mise local`: mise's
+  own `local` command, deprecated but still there, takes the name before a task does.
 - A command was named apart from its script: `deploy:graph` ran `scripts/deploy-graph.mjs` beside
   `scripts/deploy.mjs`, which runs the other deploy commands.
 - Nineteen descriptions wrapped in a 120-column terminal, `deploy:apply` over five rows: they held
@@ -28,6 +30,7 @@ shows. The prefixes had grown apart from what the commands act on:
 - A root command's prefix names what it acts on:
   - none, `test`, `format`, `i18n` and `db`: the code of the applications and packages, and their
     database;
+  - `local`: the applications running on a checkout, `local:start` in watch mode;
   - `stack`: the local stack of a checkout, its Supabase, bucket and image server;
   - `infra`: the code in `infra/`, on the machine it runs on, without a sign-in;
   - `deploy`: a deployed environment, under the operator's own identity.
@@ -43,7 +46,9 @@ shows. The prefixes had grown apart from what the commands act on:
 
 ## Alternatives
 
-- **`local:*` for the stack.** `local` already runs the applications in watch mode.
+- **`local:*` for the stack.** `local` names the applications running on a checkout.
+- **`start` for the applications, with no prefix.** Free of mise's own commands, but beside
+  `stack:up` a bare `start` does not say what it starts.
 - **`dev:*` for the stack.** Dev is the shared environment the documents name.
 - **The offline commands kept under `deploy:*`.** One prefix for everything about `infra/`, but a
   check that needs no sign-in would sit in the list beside the commands an agent never runs.

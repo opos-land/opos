@@ -1,6 +1,6 @@
 # 0020. Build the panel and the portal from shadcn/ui, with its default look until a design exists
 
-- Status: Accepted
+- Status: Superseded by [0090](0090-build-the-frontends-from-shadcn-ui-with-tweakcns-amber-minimal-theme-until-a-design-exists.md)
 - Date: 2026-11-08
 
 ## Context

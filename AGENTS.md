@@ -272,8 +272,9 @@ imports or sets a secret
 infra:images` when it touches the images.
 
 **No AI-generated graphics.** Never generate images, illustrations, logos or icons, and never add
-them to the repository. Where no design exists yet, use shadcn/ui's defaults unchanged and real copy
-([PRODUCT.md 8](docs/PRODUCT.md#8-design-and-public-image)); they are not a finished look. A test
+them to the repository. Where no design exists yet, use shadcn/ui's components with the
+placeholder theme of `src/styles.css` and real copy
+([PRODUCT.md 8](docs/PRODUCT.md#8-design-and-public-image)); it is not a finished look. A test
 fixture a tool draws from code, such as a small image with a place written into it, is no graphic
 and may be added; an image a generative model made never is.
 

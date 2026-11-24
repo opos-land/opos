@@ -4,7 +4,7 @@ terraform {
   required_providers {
     coolify = {
       source  = "coolify-terraform/coolify"
-      version = "0.1.30"
+      version = "0.1.32"
     }
     scaleway = {
       source  = "scaleway/scaleway"

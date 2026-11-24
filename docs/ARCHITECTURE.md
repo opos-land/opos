@@ -752,7 +752,7 @@ steps of [adding a feature](#adding-a-feature).
   token alone ([0059](adr/0059-pair-a-scanner-with-a-code-and-know-it-by-a-token.md)). A guard
   names the scanner before anything of a request is read, and the device is judged at every
   request in its tenant's transaction: revoked, ended, or enabled by an org whose access has
-  ended, it opens nothing. It is judged there by the secret the phone sent, the token or the
+  ended or who no longer writes the tickets of its edition, it opens nothing. It is judged there by the secret the phone sent, the token or the
   pairing code, which the scanner must still hold: a new pairing code replaces both, and the hash
   that found the scanner across tenants was read a moment before. An org gives a new pairing
   code only to a scanner that ends no later than its own access. A scan reads the orders of the scanner's own edition that the code

@@ -16,6 +16,9 @@ import {
   addOrderAnswer,
   addOrg,
   addPaymentAttempt,
+  addQrCode,
+  aQrCode,
+  carryQrCode,
   closeTenantDb,
   deleteCreatedTenants,
   member,
@@ -266,6 +269,32 @@ describe('the ticket holder list', () => {
         '2027-06-01 00:30',
       ],
       [manual.number, 'Paid - manual', '', '', 'Standard', '', '', '', '2027-06-01 11:00'],
+    ])
+  })
+
+  // A "Buy more" order holds no ticket: what it bought is listed on the ticket of its QR code.
+  it('lists on a ticket the add-ons of every paid order on its QR code', async () => {
+    const { d, workshop, room, order } = await desk()
+    const ada = await order({ holderName: 'Ada', placedAt: '2027-03-01T10:00:00Z' })
+    const code = await addQrCode(d.t.id, d.edition, ada.id, aQrCode())
+    const more = async (status: string, addOnIds: string[]) => {
+      const added = await addOrder(d.t.id, d.edition, { status, ageBand: null, addOnIds })
+      await carryQrCode(d.t.id, d.edition, added.id, code)
+    }
+    await more('paid', [workshop])
+    await more('paid', [room])
+    // An order on the code that nobody paid for, or that was canceled, adds nothing.
+    await more('awaiting-payment', [room])
+    await more('canceled', [room])
+    // Another ticket keeps its own add-ons alone.
+    const grace = await order({ holderName: 'Grace', placedAt: '2027-03-02T10:00:00Z' })
+    await addQrCode(d.t.id, d.edition, grace.id, aQrCode())
+
+    const { rows } = await file(d, '/exports/ticket-holders')
+
+    expect(rows.map((row) => [row[0], row[5]])).toEqual([
+      [ada.number, 'Workshop, Sleeping room'],
+      [grace.number, ''],
     ])
   })
 

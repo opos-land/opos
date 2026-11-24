@@ -176,6 +176,33 @@ describe('the reminder of an edition', () => {
     )
   })
 
+  // The recipient is chosen when the email is written: the order it was queued for may be
+  // canceled before, while another order on the code is still paid.
+  it('goes to another order still paid on the code when its order is canceled before it is written', async () => {
+    const d = await desk()
+    const first = await paid(d, 'first@example.test', { placedAt: '2027-05-01T10:00:00Z' })
+    const more = await addOrder(d.t.id, d.edition, {
+      status: 'paid',
+      email: 'more@example.test',
+      ageBand: null,
+      placedAt: '2027-05-02T10:00:00Z',
+    })
+    await carry(d, more.id, first.codeId)
+    expect(await run(d, DUE)).toMatchObject({ queued: 1 })
+    await setColumn('orders', first.id, 'status', 'canceled')
+    await setColumn('orders', first.id, 'holds', false)
+
+    await app.get(OrderEmailsOutbox).run(jobTime(), { tenantId: d.t.id })
+
+    const rows = (await storedRows('order_emails', d.t.id)).filter(
+      (row) => row.kind === 'pre-edition-reminder',
+    )
+    expect(rows.map((row) => [row.order_id, row.recipient, row.withdrawn_at !== null])).toEqual([
+      [first.id, 'first@example.test', true],
+      [more.id, 'more@example.test', false],
+    ])
+  })
+
   // R7: once an edition, whatever runs again or changes afterwards.
   it('goes out once: not when the job runs again, runs twice at once, or the days change', async () => {
     const d = await desk()
@@ -281,6 +308,40 @@ describe('what a reminder says', () => {
 
     expect(mail.Text).toMatch(/pisemną zgodę opiekuna/)
     expect(mail.Text).toContain('https://convention.test/consent.pdf')
+  })
+
+  // A "Buy more" order has no age band of its own: the ticket on its code has.
+  it('tells the guardian rules of the ticket on the code to an order that holds no ticket', async () => {
+    const d = await desk()
+    await setCatalogSettings(d.t.id, d.edition, {
+      guardianConsentFormUrl: 'https://convention.test/consent.pdf',
+      teenFromAge: 13,
+      adultFromAge: 18,
+    })
+    await d.head('patch', '/shop', { reminderDaysBefore: 3 }).expect(200)
+    const email = testEmail('buyer')
+    addresses.push(email)
+    const ticket = await d.paid({
+      email,
+      emailConfirmation: email,
+      ageBand: 'teen',
+      guardianConsentAcknowledged: true,
+    })
+    await app.get(OrderEmailsOutbox).run(jobTime(), { tenantId: d.t.id })
+    const more = await addOrder(d.t.id, d.edition, { status: 'paid', email, ageBand: null })
+    const [{ qr_code_id: code }] = (await storedRows('order_qr_code_orders', d.t.id)).filter(
+      (row) => row.order_id === ticket.orderId,
+    ) as [{ qr_code_id: string }]
+    await carry(d, more.id, code)
+    await setColumn('orders', ticket.orderId, 'status', 'canceled')
+    await setColumn('orders', ticket.orderId, 'holds', false)
+    expect(await run(d, DUE)).toMatchObject({ queued: 1 })
+    expect(await app.get(OrderEmailsOutbox).run(jobTime(), { tenantId: d.t.id })).toMatchObject({
+      sent: 1,
+    })
+
+    const mail = (await waitForMail(email, 2)).find((sent) => /wkrótce/.test(sent.Subject))!
+    expect(mail.Text).toMatch(/pisemną zgodę opiekuna/)
   })
 
   it('tells the buyer of a child’s ticket that a guardian must be present', async () => {

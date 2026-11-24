@@ -381,15 +381,20 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
       // The reminder before the edition (docs/specs/0011-pre-edition-reminder.md, R4): the QR
       // code the order carries now, with what the edition says of its hours and its pick-up.
       case 'pre-edition-reminder': {
-        // Queued for a paid order: one canceled since has no code to show at the gate.
+        const sharing = await this.emails.codeOrders(order.id)
+        // Queued for a paid order: one canceled since has no code to show at the gate. The
+        // reminder of its code goes to the earliest order on it still paid, if one is (R3).
         if (order.status !== 'paid') {
           await this.emails.withdraw(email.id, now)
+          const next = sharing.find((other) => other.status === 'paid' && other.email !== null)
+          if (next?.email) await this.emails.queue(next, 'pre-edition-reminder', next.email)
           return WITHDRAWN
         }
         const { qrCode, pictures } = await this.code(order, handedOver)
         const told = await this.emails.reminderOf(order.editionId)
-        const guardian =
-          order.ageBand === 'child' || order.ageBand === 'teen' ? order.ageBand : null
+        // A "Buy more" order holds no ticket: the guardian rules are those of the code's ticket.
+        const ageBand = sharing.find((other) => other.holdsTicket)?.ageBand ?? order.ageBand
+        const guardian = ageBand === 'child' || ageBand === 'teen' ? ageBand : null
         return {
           pictures,
           write: () =>

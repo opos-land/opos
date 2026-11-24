@@ -11,6 +11,7 @@
   "scripts": {
     "prepare": "lefthook install",
     "local:start": "turbo run local:start --ui=tui",
+    "local:links": "node scripts/local-links.mjs",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",

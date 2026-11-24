@@ -1,6 +1,6 @@
 // What every tenant route of the contract needs, shared by the tests that call
 // each route by its need: route-requirements.test.ts and the concurrent writes of
-// tenants-editions.test.ts.
+// write-race-demotion.test.ts.
 
 export type Level = 'read' | 'write'
 export type Need =

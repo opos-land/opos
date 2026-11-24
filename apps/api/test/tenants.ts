@@ -39,8 +39,9 @@ export async function addVerifiedFactor(accountId: string, status = 'verified') 
   `)
 }
 
-export async function tenantWithHead(defaultLocale?: string) {
-  const head = await member()
+/** A tenant of its own, headed by `head` or by a new account. */
+export async function tenantWithHead(defaultLocale?: string, { head }: { head?: Member } = {}) {
+  head ??= await member()
   const slug = `api-${randomUUID().slice(0, 8)}`
   const { id } = await createTenant(db, {
     slug,

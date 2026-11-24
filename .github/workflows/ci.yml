@@ -106,8 +106,8 @@ jobs:
           TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
           TURBO_CACHE: ${{ github.event_name == 'push' && 'local:rw,remote:rw' || 'local:rw,remote:r' }}
       # In a step of their own: this runner also hosts the stack, and the type checker and the linter
-      # would take the time the tests' deadlines count on
-      - run: pnpm turbo run test ${TURBO_ARGS:+"$TURBO_ARGS"}
+      # would take the time the tests' deadlines count on. The frontends test in the frontend job.
+      - run: pnpm turbo run test '--filter=!@opos/admin' '--filter=!@opos/panel' '--filter=!@opos/portal' ${TURBO_ARGS:+"$TURBO_ARGS"}
         env:
           TURBO_ARGS: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
           TURBO_FORCE: ${{ github.event_name == 'push' }}
@@ -139,6 +139,36 @@ jobs:
             sleep 1
           done
           exit 1
+
+  # The tests of the three frontends, which need no stack: on check's runner, which hosts it, they
+  # would take the cores the API tests and their deadlines count on. The same remote cache as check.
+  frontend:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event_name == 'push' && 'cache-write' || 'cache-read' }}
+      deployment: false
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          # turbo --affected diffs against the base branch and needs the history
+          fetch-depth: 0
+      - uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: .turbo/cache
+          key: turbo-frontend-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-frontend-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run test --filter=@opos/admin --filter=@opos/panel --filter=@opos/portal ${TURBO_ARGS:+"$TURBO_ARGS"}
+        env:
+          TURBO_ARGS: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+          TURBO_FORCE: ${{ github.event_name == 'push' }}
+          TURBO_SCM_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+          TURBO_API: ${{ vars.TURBO_API }}
+          TURBO_TEAM: opos
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
+          TURBO_CACHE: ${{ github.event_name == 'push' && 'local:rw,remote:rw' || 'local:rw,remote:r' }}
 
   # Whether a pull request changes anything e2e reads (scripts/e2e-scope.mjs). On a push the job runs
   # with no step and answers nothing, so e2e runs: a skipped job here would skip the release too,
@@ -201,7 +231,7 @@ jobs:
   # (_coolify-release.yml); release-dev.yml does the same by hand
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
-    needs: [check, e2e, images, secrets]
+    needs: [check, frontend, e2e, images, secrets]
     # The called job reads the webhook secret of its environment only when the caller passes its
     # secrets on
     uses: ./.github/workflows/_coolify-release.yml

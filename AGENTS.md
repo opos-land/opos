@@ -143,8 +143,8 @@ tests green.
 Every user-facing string sits in a Lingui macro and is translated into `pl` in the same commit,
 reusing the glossary renderings ([localization](docs/ARCHITECTURE.md#localization)).
 
-**CI gates** ([CI](docs/ARCHITECTURE.md#ci)): a PR into `main` needs the jobs `check`, `e2e` and
-`secrets` green; `secrets` scans the whole history of what it checks, so a secret in any commit a
+**CI gates** ([CI](docs/ARCHITECTURE.md#ci)): a PR into `main` needs the jobs `check`, `frontend`,
+`e2e` and `secrets` green; `secrets` scans the whole history of what it checks, so a secret in any commit a
 branch carries fails it, while another branch's commits never fail it. An action is pinned by a full commit hash, and `${{ github.* }}` never appears in a `run` step: it goes through
 `env`.
 

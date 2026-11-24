@@ -236,7 +236,7 @@ export function PaidAgainstTotal({ order }: Pick<Props, 'order'>) {
   return (
     <dl className="grid max-w-md grid-cols-2 gap-x-4 gap-y-1 text-sm">
       <dt>
-        <Trans>Paid</Trans>
+        <Trans>Amount paid</Trans>
       </dt>
       <dd className="text-right tabular-nums">{money.format(order.paidMinor)}</dd>
       <dt>

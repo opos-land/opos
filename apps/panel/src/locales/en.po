@@ -453,6 +453,10 @@ msgstr "Amount"
 msgid "Amount off ({currency})"
 msgstr "Amount off ({currency})"
 
+#: src/features/orders/components/order-changes.tsx
+msgid "Amount paid"
+msgstr "Amount paid"
+
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "An adult from the age of"
 msgstr "An adult from the age of"
@@ -2320,7 +2324,6 @@ msgstr "Outside the sale window"
 msgid "Page not found"
 msgstr "Page not found"
 
-#: src/features/orders/components/order-changes.tsx
 #: src/features/orders/pages/order-page.tsx
 msgid "Paid"
 msgstr "Paid"

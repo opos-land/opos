@@ -450,6 +450,7 @@ describe('the page of an order', () => {
     const review = await section('This order needs review')
 
     expect(await review.findByText(/amount paid differs/i)).toBeDefined()
+    expect(review.getByText('Amount paid')).toBeDefined()
     expect(review.getByText('140 PLN')).toBeDefined()
     expect(review.getByText('150 PLN')).toBeDefined()
     expect(review.getByText('10 PLN')).toBeDefined()
@@ -477,6 +478,8 @@ describe('the page of an order', () => {
     view()
 
     const facts = await section('The order')
+    // An amount of its own, apart from the moment the order was paid.
+    expect(facts.getByText('Amount paid')).toBeDefined()
     expect(facts.getByText('140 PLN')).toBeDefined()
     expect(facts.getByText('150 PLN')).toBeDefined()
     expect(facts.getByText('Difference')).toBeDefined()

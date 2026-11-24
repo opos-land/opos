@@ -26,7 +26,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
           COMMIT: ${{ github.sha }}
-          REQUIRED: check e2e images secrets
+          REQUIRED: check frontend e2e images secrets
         run: |
           run=$(gh api "repos/$REPOSITORY/actions/workflows/ci.yml/runs?event=push&branch=develop&head_sha=$COMMIT&per_page=1" \
             --jq '.workflow_runs[0].id // empty')

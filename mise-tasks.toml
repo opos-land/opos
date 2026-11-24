@@ -9,9 +9,9 @@
 # terminal; who may run it and what each flag does belong to its help.
 # This file sits outside mise.toml, which turbo hashes: a description changes no cache.
 
-[local]
+["local:start"]
 description = "Run the API, the panel, the portal and the admin application in watch mode"
-run = "pnpm local"
+run = "pnpm local:start"
 raw = true
 
 [build]

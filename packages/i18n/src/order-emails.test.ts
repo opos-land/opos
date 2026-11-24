@@ -62,6 +62,7 @@ const confirmation: ConfirmationData = {
   ],
   discountMinor: null,
   picksUp: true,
+  pickupInformation: null,
   qrCode: 'QRCODEQRCODE',
   qrCodeCid: 'qr@opos',
   orderLink: 'https://portal.test/order#token',
@@ -141,6 +142,26 @@ describe('the confirmation of a paid order', () => {
     )
     expect(noForm.parts.join(' ')).toContain('consent has to be brought on paper')
     expect(noForm.parts.join(' ')).not.toContain('form')
+  })
+
+  it('tells the edition’s pick-up information when it set one, in place of the general sentence', async () => {
+    const told = { ...confirmation, pickupInformation: 'At the desk in hall A.\nFrom 10 to 18.' }
+
+    const email = await read(orderConfirmationEmail(told), 'en')
+    const polish = await read(orderConfirmationEmail(told), 'pl')
+
+    expect(email.parts).toEqual(
+      expect.arrayContaining([
+        'Picking up merchandise',
+        'At the desk in hall A.',
+        'From 10 to 18.',
+      ]),
+    )
+    expect(email.parts.join(' ')).not.toContain('picked up at the convention')
+    expect(polish.parts).toContain('Odbiór gadżetów')
+    // An order with no merchandise has nothing to pick up, whatever the edition says.
+    const none = await read(orderConfirmationEmail({ ...told, picksUp: false }), 'en')
+    expect(none.parts.join(' ')).not.toMatch(/hall A|Picking up/)
   })
 
   it('says nothing of a pick-up for an order with no merchandise, and lists no documents when none was accepted', async () => {

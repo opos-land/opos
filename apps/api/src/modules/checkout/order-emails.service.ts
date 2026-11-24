@@ -270,6 +270,8 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
           order.ageBand === 'teen'
             ? { formUrl: await this.emails.guardianFormUrl(order.editionId) }
             : null
+        const picksUp = lines.some((line) => line.kind === 'merchandise')
+        const { pickupInformation } = await this.emails.reminderOf(order.editionId)
         return {
           pictures,
           write: ({ locale, signInLink }) =>
@@ -281,7 +283,8 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
               // What a discount code took off is a row of its own, not something sold.
               lines: lines.filter((line) => line.kind !== 'discount'),
               discountMinor: lines.find((line) => line.kind === 'discount')?.amountMinor ?? null,
-              picksUp: lines.some((line) => line.kind === 'merchandise'),
+              picksUp,
+              pickupInformation,
               qrCode,
               qrCodeCid: QR_CODE_CID,
               orderLink,

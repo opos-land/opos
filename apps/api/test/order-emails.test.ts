@@ -195,6 +195,30 @@ describe('the confirmation of a paid order', () => {
     expect(await mailTo(to)).toHaveLength(1)
   })
 
+  it('tells where merchandise is picked up when the edition says so', async () => {
+    const s = await shop('en')
+    const to = buyer()
+    const pin = await addMerchandiseItem(s.t.id, s.edition, { name: 'Pin', stock: 5 })
+    await offerWith(s.t.id, s.edition, s.standard, { itemIds: [pin.id] })
+    await setCatalogSettings(s.t.id, s.edition, { pickupInformation: 'At the desk in hall A.' })
+    await s.pay(
+      await s.place(to, {
+        cart: {
+          ticket: { ticketTypeId: s.standard },
+          items: [{ variantId: pin.variantId, quantity: 1 }],
+        },
+        expectedTotalMinor: 15000,
+      }),
+    )
+
+    await send(s)
+
+    const [mail] = await mailTo(to)
+    expect(mail!.Text).toContain('PICKING UP MERCHANDISE')
+    expect(mail!.Text).toContain('At the desk in hall A.')
+    expect(mail!.Text).not.toContain('Merchandise is picked up at the convention')
+  })
+
   it('is written in the language of the account whose address it is, with a sign-in link', async () => {
     const s = await shop()
     const account = await createAccount({ locale: 'en' })

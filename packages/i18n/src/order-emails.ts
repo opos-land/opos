@@ -42,6 +42,8 @@ export interface ConfirmationData extends OrderOf {
   discountMinor: number | null
   /** Whether the order holds merchandise, which is picked up at the edition. */
   picksUp: boolean
+  /** Where and when the edition hands merchandise over; null while it has set nothing. */
+  pickupInformation: string | null
   /** The QR code as text; its picture travels with the email under `qrCodeCid`. */
   qrCode: string
   qrCodeCid: string
@@ -97,14 +99,19 @@ export function orderConfirmationEmail(data: ConfirmationData): OrderEmailConten
         alt: msg`The QR code of the order ${number}`,
         caption: data.qrCode,
       },
-      ...(data.picksUp
+      ...(data.picksUp && data.pickupInformation
         ? [
-            {
-              kind: 'paragraph' as const,
-              text: msg`Merchandise is picked up at the convention. Nothing is sent by post.`,
-            },
+            { kind: 'heading' as const, text: msg`Picking up merchandise` },
+            { kind: 'quote' as const, lines: data.pickupInformation.split('\n') },
           ]
-        : []),
+        : data.picksUp
+          ? [
+              {
+                kind: 'paragraph' as const,
+                text: msg`Merchandise is picked up at the convention. Nothing is sent by post.`,
+              },
+            ]
+          : []),
       { kind: 'link', label: msg`See your order`, url: data.orderLink },
       ...(data.signInLink
         ? [

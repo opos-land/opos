@@ -347,7 +347,7 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - Screens are built from shadcn/ui components on Base UI, which the CLI of each application adds to
   its `shared/ui` as it writes them, but for formatting, lint fixes and their own texts moved into
   Lingui macros; an application's own compositions of them sit beside them. They are styled only
-  through the tokens of `src/styles.css`, which carry shadcn/ui's names and tweakcn's Amber Minimal
+  through the tokens of `src/styles.css`, which carry shadcn/ui's names and a published tweakcn
   theme until the designer's, departing from it where its text falls under 4.5:1; their fonts are
   packages served from the application's own origin
   ([0090](adr/0090-build-the-frontends-from-shadcn-ui-with-tweakcns-amber-minimal-theme-until-a-design-exists.md));

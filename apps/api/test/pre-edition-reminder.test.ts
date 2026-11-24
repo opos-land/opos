@@ -187,6 +187,7 @@ describe('the reminder of an edition', () => {
       ageBand: null,
       placedAt: '2027-05-02T10:00:00Z',
     })
+    await setColumn('orders', more.id, 'paid_at', '2026-01-01T00:00:00Z')
     await carry(d, more.id, first.codeId)
     expect(await run(d, DUE)).toMatchObject({ queued: 1 })
     await setColumn('orders', first.id, 'status', 'canceled')
@@ -201,6 +202,26 @@ describe('the reminder of an edition', () => {
       [first.id, 'first@example.test', true],
       [more.id, 'more@example.test', false],
     ])
+  })
+
+  // R6: an order paid after the reminder went out gets none, also by taking a canceled one's place.
+  it('goes to no order on the code paid after it was queued', async () => {
+    const d = await desk()
+    const first = await paid(d, 'first@example.test', { placedAt: '2027-05-01T10:00:00Z' })
+    expect(await run(d, DUE)).toMatchObject({ queued: 1 })
+    const later = await addOrder(d.t.id, d.edition, {
+      status: 'paid',
+      email: 'later@example.test',
+      ageBand: null,
+    })
+    await setColumn('orders', later.id, 'paid_at', '2099-01-01T00:00:00Z')
+    await carry(d, later.id, first.codeId)
+    await setColumn('orders', first.id, 'status', 'canceled')
+    await setColumn('orders', first.id, 'holds', false)
+
+    await app.get(OrderEmailsOutbox).run(jobTime(), { tenantId: d.t.id })
+
+    expect(await reminders(d)).toEqual([[first.id, 'first@example.test']])
   })
 
   // R7: once an edition, whatever runs again or changes afterwards.

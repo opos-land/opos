@@ -723,7 +723,10 @@ steps of [adding a feature](#adding-a-feature).
   carries and notes that the reminder went out in one transaction of the edition's tenant, so it
   is queued whole or not at all, once an edition. The email is written when it is sent, from the
   order as it then stands: it carries the QR code, so it is withdrawn like a confirmation when
-  the order has left its address, and an order canceled since gets none.
+  the order has left its address, and an order canceled since gets none. The reminder of its
+  code then goes to the earliest order on the code still paid, if one was paid before the
+  reminder went out. A "Buy more" order has no age band: the guardian rules a reminder tells are
+  those of the order on its code that holds the ticket.
 - **Links and devices.** A link opening an order or a ticket without a sign-in, and a scanner
   device's `Authorization: Bearer` token, carry at least 128 random bits, stored as a hash; their
   lookup returns only the ids that open the tenant context. A device's access ends no later than

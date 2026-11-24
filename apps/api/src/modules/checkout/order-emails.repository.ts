@@ -33,6 +33,7 @@ export interface ClaimedEmail {
   recipient: string
   orderId: string
   failedAttempts: number
+  queuedAt: Date
 }
 
 /**
@@ -57,6 +58,7 @@ export class OrderEmailsRepository {
         recipient: orderEmails.recipient,
         orderId: orderEmails.orderId,
         failedAttempts: orderEmails.failedAttempts,
+        queuedAt: orderEmails.queuedAt,
       })
       .from(orderEmails)
       .where(
@@ -242,14 +244,19 @@ export class OrderEmailsRepository {
 
   /**
    * The orders on the QR code the order carries, itself among them, the earliest placed first:
-   * whether each is paid, its email, and the age band of the one that holds the ticket.
+   * whether and when each was paid, its email, and the age band of the one that holds the
+   * ticket. It picks who gets a QR code, so it names the order's tenant and edition itself.
    */
-  async codeOrders(orderId: string) {
+  async codeOrders(order: { tenantId: string; editionId: string; id: string }) {
+    const inEdition = and(
+      eq(orderQrCodeOrders.tenantId, order.tenantId),
+      eq(orderQrCodeOrders.editionId, order.editionId),
+    )
     const carried = this.context
       .tx()
       .select({ qrCodeId: orderQrCodeOrders.qrCodeId })
       .from(orderQrCodeOrders)
-      .where(eq(orderQrCodeOrders.orderId, orderId))
+      .where(and(inEdition, eq(orderQrCodeOrders.orderId, order.id)))
     return this.context
       .tx()
       .select({
@@ -259,11 +266,12 @@ export class OrderEmailsRepository {
         status: orders.status,
         email: orders.email,
         ageBand: orders.ageBand,
+        paidAt: orders.paidAt,
         holdsTicket: sql<boolean>`exists (select 1 from ${orderLines} where ${orderLines.orderId} = ${orders.id} and ${orderLines.kind} = 'ticket')`,
       })
       .from(orderQrCodeOrders)
       .innerJoin(orders, eq(orders.id, orderQrCodeOrders.orderId))
-      .where(inArray(orderQrCodeOrders.qrCodeId, carried))
+      .where(and(inEdition, inArray(orderQrCodeOrders.qrCodeId, carried)))
       .orderBy(asc(orders.placedAt), asc(orders.id))
   }
 

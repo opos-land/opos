@@ -119,7 +119,31 @@ jobs:
           done
           exit 1
 
+  # Whether a pull request changes anything e2e reads (scripts/e2e-scope.mjs). On a push the job runs
+  # with no step and answers nothing, so e2e runs: a skipped job here would skip the release too,
+  # which waits on e2e.
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      e2e: ${{ steps.e2e.outputs.e2e }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        if: github.event_name == 'pull_request'
+        with:
+          # The diff counts from the merge base with the base branch
+          fetch-depth: 0
+      # Node of the runner: the script needs no dependency
+      - id: e2e
+        if: github.event_name == 'pull_request'
+        run: node scripts/e2e-scope.mjs --base "origin/$BASE_REF"
+        env:
+          BASE_REF: ${{ github.base_ref }}
+
+  # Skipped by its `if`, the job passes the check the ruleset requires; it runs whenever scope did
+  # not answer false: on a push, and when scope failed
   e2e:
+    needs: [scope]
+    if: ${{ !cancelled() && needs.scope.outputs.e2e != 'false' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6

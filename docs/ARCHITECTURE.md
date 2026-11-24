@@ -562,6 +562,11 @@ on high advisories). lefthook `pre-commit` runs the same gitleaks over the stage
 secret is stopped before it enters a commit
 ([0078](adr/0078-scan-the-staged-changes-for-secrets-before-a-commit.md)).
 
+- On a PR, `e2e` runs only when the change touches a path it reads; one confined to the documents,
+  the deployment, the agents' configuration, the other workflows or the tooling scripts skips it,
+  which passes its required check. What it does not read is listed in
+  [e2e-scope.mjs](../scripts/e2e-scope.mjs), and any path the list does not name runs it; a push
+  runs it always ([0086](adr/0086-skip-the-e2e-job-on-a-pull-request-it-cannot-fail.md)).
 - PRs target `develop`, where CI blocks nothing. `main` changes only through a PR from `develop`
   with the three jobs green ([protect-main.json](../.github/rulesets/protect-main.json);
   [0017](adr/0017-integrate-on-develop-and-release-through-main.md)).

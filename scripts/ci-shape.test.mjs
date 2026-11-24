@@ -296,6 +296,39 @@ test('check and e2e set up the stack with stack:init, before the database steps'
   }
 })
 
+// A job skipped by its `if` passes a required check; one whose scope failed or was never asked runs
+// (docs/adr/0086-skip-the-e2e-job-on-a-pull-request-it-cannot-fail.md)
+test('e2e runs unless the scope of a pull request says it cannot fail it', () => {
+  const e2e = job('e2e')
+  assert.deepEqual(needs(e2e), ['scope'])
+  assert.match(
+    e2e,
+    /^ {4}if: \$\{\{ !cancelled\(\) && needs\.scope\.outputs\.e2e != 'false' \}\}$/m,
+  )
+})
+
+// A skipped job skips every job after it in the chain of needs that keeps the default status check,
+// the release of a push included: on a push scope runs, and only its steps stand aside
+test('scope diffs a pull request against its base branch, and on a push runs without a step', () => {
+  const scope = job('scope')
+  assert.doesNotMatch(scope, /^ {4}if:/m)
+  assert.match(scope, /^ {4}outputs:\n {6}e2e: \$\{\{ steps\.e2e\.outputs\.e2e \}\}$/m)
+  const checkout = step('scope', '- uses: actions/checkout@')
+  assert.match(checkout, /if: github\.event_name == 'pull_request'/)
+  assert.match(checkout, /fetch-depth: 0/)
+  const diff = step('scope', '- id: e2e')
+  assert.match(diff, /if: github\.event_name == 'pull_request'/)
+  assert.match(diff, /run: node scripts\/e2e-scope\.mjs --base "origin\/\$BASE_REF"/)
+  assert.match(diff, /BASE_REF: \$\{\{ github\.base_ref \}\}/)
+  // Node of the runner: the script needs no dependency, and the job installs none
+  assert.doesNotMatch(scope, /mise-action|pnpm install/)
+})
+
+test('a push to develop runs e2e before its release, which never takes a skipped e2e', () => {
+  assert.ok(needs(job('release')).includes('e2e'))
+  assert.doesNotMatch(job('release'), /always\(\)|!cancelled\(\)/)
+})
+
 test('no job starts the stack through compose', () => {
   assert.doesNotMatch(ci, /docker compose/)
 })

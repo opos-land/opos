@@ -10,6 +10,7 @@ import {
   merchandiseVariantValues,
   orderCustomFieldAnswers,
   orderLines,
+  orderQrCodeOrders,
   orders,
   paymentAttempts,
   ticketTypes,
@@ -196,6 +197,20 @@ export class SalesRepository {
       .innerJoin(addOns, eq(addOns.id, orderLines.addOnId))
       .where(eq(orderLines.editionId, editionId))
       .orderBy(asc(addOns.position), asc(addOns.id))
+  }
+
+  /** The QR code each order of the edition carries, with the order's status. */
+  qrCodeOrders(editionId: string) {
+    return this.context
+      .tx()
+      .select({
+        orderId: orderQrCodeOrders.orderId,
+        qrCodeId: orderQrCodeOrders.qrCodeId,
+        status: orders.status,
+      })
+      .from(orderQrCodeOrders)
+      .innerJoin(orders, eq(orders.id, orderQrCodeOrders.orderId))
+      .where(eq(orderQrCodeOrders.editionId, editionId))
   }
 
   /** Every answer of the edition's orders, by order and field. */

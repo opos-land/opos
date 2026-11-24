@@ -723,7 +723,10 @@ steps of [adding a feature](#adding-a-feature).
   carries and notes that the reminder went out in one transaction of the edition's tenant, so it
   is queued whole or not at all, once an edition. The email is written when it is sent, from the
   order as it then stands: it carries the QR code, so it is withdrawn like a confirmation when
-  the order has left its address, and an order canceled since gets none.
+  the order has left its address, and an order canceled since gets none. The reminder of its
+  code then goes to the earliest order on the code still paid, if one was paid before the
+  reminder went out. A "Buy more" order has no age band: the guardian rules a reminder tells are
+  those of the order on its code that holds the ticket.
 - **Links and devices.** A link opening an order or a ticket without a sign-in, and a scanner
   device's `Authorization: Bearer` token, carry at least 128 random bits, stored as a hash; their
   lookup returns only the ids that open the tenant context. A device's access ends no later than
@@ -749,7 +752,7 @@ steps of [adding a feature](#adding-a-feature).
   token alone ([0059](adr/0059-pair-a-scanner-with-a-code-and-know-it-by-a-token.md)). A guard
   names the scanner before anything of a request is read, and the device is judged at every
   request in its tenant's transaction: revoked, ended, or enabled by an org whose access has
-  ended, it opens nothing. It is judged there by the secret the phone sent, the token or the
+  ended or who no longer writes the tickets of its edition, it opens nothing. It is judged there by the secret the phone sent, the token or the
   pairing code, which the scanner must still hold: a new pairing code replaces both, and the hash
   that found the scanner across tenants was read a moment before. An org gives a new pairing
   code only to a scanner that ends no later than its own access. A scan reads the orders of the scanner's own edition that the code

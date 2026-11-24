@@ -21,7 +21,7 @@ import {
   tenants,
   ticketTypes,
 } from '@opos/db'
-import { and, asc, desc, eq, isNotNull, isNull, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNotNull, isNull, lte, sql } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { type KeptEmail } from './kept-email'
 import { type OrderEmailKind } from './orders.repository'
@@ -33,6 +33,7 @@ export interface ClaimedEmail {
   recipient: string
   orderId: string
   failedAttempts: number
+  queuedAt: Date
 }
 
 /**
@@ -57,6 +58,7 @@ export class OrderEmailsRepository {
         recipient: orderEmails.recipient,
         orderId: orderEmails.orderId,
         failedAttempts: orderEmails.failedAttempts,
+        queuedAt: orderEmails.queuedAt,
       })
       .from(orderEmails)
       .where(
@@ -238,6 +240,54 @@ export class OrderEmailsRepository {
       .innerJoin(orderQrCodes, eq(orderQrCodes.id, orderQrCodeOrders.qrCodeId))
       .where(eq(orderQrCodeOrders.orderId, orderId))
     return row
+  }
+
+  /**
+   * The orders on the QR code the order carries, itself among them, the earliest placed first:
+   * whether and when each was paid, its email, and the age band of the one that holds the
+   * ticket. It picks who gets a QR code, so it names the order's tenant and edition itself.
+   */
+  async codeOrders(order: { tenantId: string; editionId: string; id: string }) {
+    const inEdition = and(
+      eq(orderQrCodeOrders.tenantId, order.tenantId),
+      eq(orderQrCodeOrders.editionId, order.editionId),
+    )
+    const carried = this.context
+      .tx()
+      .select({ qrCodeId: orderQrCodeOrders.qrCodeId })
+      .from(orderQrCodeOrders)
+      .where(and(inEdition, eq(orderQrCodeOrders.orderId, order.id)))
+    return this.context
+      .tx()
+      .select({
+        id: orders.id,
+        tenantId: orders.tenantId,
+        editionId: orders.editionId,
+        status: orders.status,
+        email: orders.email,
+        ageBand: orders.ageBand,
+        paidAt: orders.paidAt,
+        holdsTicket: sql<boolean>`exists (select 1 from ${orderLines} where ${orderLines.orderId} = ${orders.id} and ${orderLines.kind} = 'ticket')`,
+      })
+      .from(orderQrCodeOrders)
+      .innerJoin(orders, eq(orders.id, orderQrCodeOrders.orderId))
+      .where(and(inEdition, inArray(orderQrCodeOrders.qrCodeId, carried)))
+      .orderBy(asc(orders.placedAt), asc(orders.id))
+  }
+
+  /** Queues an email of the order to the address, for the outbox to send. */
+  async queue(
+    order: { tenantId: string; editionId: string; id: string },
+    kind: OrderEmailKind,
+    recipient: string,
+  ) {
+    await this.context.tx().insert(orderEmails).values({
+      tenantId: order.tenantId,
+      editionId: order.editionId,
+      orderId: order.id,
+      kind,
+      recipient,
+    })
   }
 
   /** An order link for the order: only the hash of its token is kept. */

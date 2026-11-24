@@ -270,6 +270,8 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
           order.ageBand === 'teen'
             ? { formUrl: await this.emails.guardianFormUrl(order.editionId) }
             : null
+        const picksUp = lines.some((line) => line.kind === 'merchandise')
+        const { pickupInformation } = await this.emails.reminderOf(order.editionId)
         return {
           pictures,
           write: ({ locale, signInLink }) =>
@@ -281,7 +283,8 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
               // What a discount code took off is a row of its own, not something sold.
               lines: lines.filter((line) => line.kind !== 'discount'),
               discountMinor: lines.find((line) => line.kind === 'discount')?.amountMinor ?? null,
-              picksUp: lines.some((line) => line.kind === 'merchandise'),
+              picksUp,
+              pickupInformation,
               qrCode,
               qrCodeCid: QR_CODE_CID,
               orderLink,
@@ -381,15 +384,27 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
       // The reminder before the edition (docs/specs/0011-pre-edition-reminder.md, R4): the QR
       // code the order carries now, with what the edition says of its hours and its pick-up.
       case 'pre-edition-reminder': {
-        // Queued for a paid order: one canceled since has no code to show at the gate.
+        const sharing = await this.emails.codeOrders(order)
+        // Queued for a paid order: one canceled since has no code to show at the gate. The
+        // reminder of its code goes to the earliest order on it still paid, if one is (R3), and
+        // paid before the reminder went out: one paid after gets none (R6).
         if (order.status !== 'paid') {
           await this.emails.withdraw(email.id, now)
+          const next = sharing.find(
+            (other) =>
+              other.status === 'paid' &&
+              other.email !== null &&
+              other.paidAt !== null &&
+              other.paidAt.getTime() <= email.queuedAt.getTime(),
+          )
+          if (next?.email) await this.emails.queue(next, 'pre-edition-reminder', next.email)
           return WITHDRAWN
         }
         const { qrCode, pictures } = await this.code(order, handedOver)
         const told = await this.emails.reminderOf(order.editionId)
-        const guardian =
-          order.ageBand === 'child' || order.ageBand === 'teen' ? order.ageBand : null
+        // A "Buy more" order holds no ticket: the guardian rules are those of the code's ticket.
+        const ageBand = sharing.find((other) => other.holdsTicket)?.ageBand ?? order.ageBand
+        const guardian = ageBand === 'child' || ageBand === 'teen' ? ageBand : null
         return {
           pictures,
           write: () =>

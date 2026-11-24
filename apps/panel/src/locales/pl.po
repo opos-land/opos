@@ -453,6 +453,10 @@ msgstr "Kwota"
 msgid "Amount off ({currency})"
 msgstr "Kwota rabatu ({currency})"
 
+#: src/features/orders/components/order-changes.tsx
+msgid "Amount paid"
+msgstr "Zapłacona kwota"
+
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "An adult from the age of"
 msgstr "Dorosły: od ilu lat"
@@ -2320,7 +2324,6 @@ msgstr "Poza okresem sprzedaży"
 msgid "Page not found"
 msgstr "Nie znaleziono strony"
 
-#: src/features/orders/components/order-changes.tsx
 #: src/features/orders/pages/order-page.tsx
 msgid "Paid"
 msgstr "Zapłacono"

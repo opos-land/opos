@@ -622,6 +622,19 @@ export async function addQrCode(
   return row!.id
 }
 
+/** Puts an order on a QR code another order carries, as a "Buy more" order is. */
+export async function carryQrCode(
+  tenantId: string,
+  editionId: string,
+  orderId: string,
+  qrCodeId: string,
+) {
+  await db.execute(sql`
+    insert into order_qr_code_orders (tenant_id, edition_id, order_id, qr_code_id)
+    values (${tenantId}, ${editionId}, ${orderId}, ${qrCodeId})
+  `)
+}
+
 /**
  * A discount code of an edition as its rows alone: ten percent, valid from 2020 until 2099 and
  * with no limit unless told, applying to what is named.

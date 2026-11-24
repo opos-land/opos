@@ -46,6 +46,18 @@ describe('a new discount code', () => {
     expect(createDiscountCodeSchema.safeParse(code(changes)).success).toBe(false)
   })
 
+  // The API fills a window left out: from now until the edition ends.
+  it('leaves its window to the API when either end is left out', () => {
+    const open = code({ validFrom: undefined, validUntil: undefined })
+
+    expect(createDiscountCodeSchema.parse(open)).toMatchObject({
+      validFrom: undefined,
+      validUntil: undefined,
+    })
+    expect(createDiscountCodeSchema.safeParse(code({ validFrom: undefined })).success).toBe(true)
+    expect(createDiscountCodeSchema.safeParse(code({ validUntil: undefined })).success).toBe(true)
+  })
+
   // A thing is named once: a code applies to it or it does not.
   it('names each thing it applies to once', () => {
     const twice = { ticketTypeIds: [TYPE, TYPE] }

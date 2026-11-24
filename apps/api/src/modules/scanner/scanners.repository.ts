@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { MAX_LISTED_HAND_OUTS, type Scanner, type ScannerDetail } from '@opos/contract'
 import {
   accounts,
+  editionMemberships,
   editions,
   orderLines,
   orders,
@@ -60,9 +61,24 @@ const enabledBy = and(
   eq(tenantMemberships.tenantId, scannerDevices.tenantId),
 )
 
-/** That membership is one whose access has not ended at `now`. */
-const inTheTeam = (now: Date) =>
-  or(isNull(tenantMemberships.expiresAt), gt(tenantMemberships.expiresAt, now))
+/**
+ * That membership is one whose access has not ended at `now`, and that writes the tickets of the
+ * scanner's edition: a head by the role, an org by their access to that edition. A device's
+ * access ends no later than that of the org who enabled it (docs/ARCHITECTURE.md, Modules waiting
+ * for their domain owner).
+ */
+const orgStands = (now: Date) =>
+  and(
+    or(isNull(tenantMemberships.expiresAt), gt(tenantMemberships.expiresAt, now)),
+    or(
+      eq(tenantMemberships.role, 'head'),
+      sql`exists (select 1 from ${editionMemberships}
+        where ${editionMemberships.tenantMembershipId} = ${tenantMemberships.id}
+          and ${editionMemberships.tenantId} = ${scannerDevices.tenantId}
+          and ${editionMemberships.editionId} = ${scannerDevices.editionId}
+          and ${editionMemberships.ticketsAccess} = 'write')`,
+    ),
+  )
 
 @Injectable()
 export class ScannersRepository {
@@ -142,8 +158,8 @@ export class ScannersRepository {
 
   /**
    * Gives the scanner of the edition a new pairing code, when it stands at `now`: not revoked,
-   * not ended, and enabled by an org who is still in the team with an access that has not ended,
-   * since a code for any other scanner would pair no phone. Its row is locked first; then, in one
+   * not ended, and enabled by an org who is still in the team with an access that has not ended
+   * and who writes the tickets of its edition, since a code for any other scanner would pair no phone. Its row is locked first; then, in one
    * statement, the phone that held it loses its token and the scanner waits for the phone that
    * opens the new code. Answers whether it did.
    */
@@ -164,7 +180,7 @@ export class ScannersRepository {
           eq(scannerDevices.id, id),
           isNull(scannerDevices.revokedAt),
           gt(scannerDevices.expiresAt, now),
-          inTheTeam(now),
+          orgStands(now),
         ),
       )
       .for('update', { of: scannerDevices })
@@ -290,7 +306,7 @@ export class ScannersRepository {
                 isNull(scannerDevices.pairedAt),
                 eq(scannerDevices.pairingCodeHash, by.pairingCodeHash),
               ),
-          inTheTeam(now),
+          orgStands(now),
         ),
       )
     const [row] = await (paired ? query : query.for('update', { of: scannerDevices }))

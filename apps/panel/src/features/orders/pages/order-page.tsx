@@ -26,6 +26,7 @@ import {
   CancelForm,
   EmailForm,
   HolderForm,
+  PaidAgainstTotal,
   ResendButton,
   ReviewPanel,
 } from '../components/order-changes'
@@ -79,6 +80,10 @@ export function OrderPage() {
   const order = found.data
   const canWrite = atLeast(level, 'write')
   const paid = order.status === 'paid' || order.status === 'paid-manual'
+  // A payment the convention holds that is not the total, in any status; while the order is in
+  // review, its panel shows it.
+  const differs =
+    order.status !== 'needs-review' && order.paidMinor > 0 && order.paidMinor !== order.totalMinor
   const editionId = edition.id
   const base = `/${tenant.slug}/editions/${edition.slug}`
 
@@ -144,6 +149,7 @@ export function OrderPage() {
             </Fact>
           )}
         </dl>
+        {differs && <PaidAgainstTotal order={order} />}
       </Section>
       <Section title={<Trans>What the order holds</Trans>}>
         <OrderLines editionId={editionId} order={order} canChange={canWrite && paid} />

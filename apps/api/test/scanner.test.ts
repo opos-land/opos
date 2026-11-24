@@ -145,6 +145,44 @@ describe('a scanner', () => {
     }
   })
 
+  // A device's access ends no later than that of the org who enabled it: their tickets write
+  // access to the scanner's edition, not their place in the team alone.
+  it('reads nothing once its org has no tickets write access to its edition, whoever paired it since', async () => {
+    const g = await gate()
+    const order = await g.paid()
+    const org = await member()
+    const orgId = await addOrg(g.t.id, org)
+    await addEditionAccess(g.t.id, orgId, g.edition, { tickets: 'write' })
+    const ofOrg = await addScanner(g.t.id, g.edition, { membershipId: orgId })
+    await scan(ofOrg.token, order.code).expect(200)
+    const [access] = (await storedRows('edition_memberships', g.t.id)).filter(
+      (row) => row.tenant_membership_id === orgId,
+    )
+
+    // Lowered to read: the org stays in the team, and the scanner stops.
+    await setColumn('edition_memberships', String(access!.id), 'tickets_access', 'read')
+    expect((await scan(ofOrg.token, order.code).expect(401)).body).toMatchObject(revoked)
+    await setColumn('edition_memberships', String(access!.id), 'tickets_access', 'write')
+    await scan(ofOrg.token, order.code).expect(200)
+
+    // The head pairs the phone again: the scanner stays the org's, and stops with their access.
+    const renewed = await request(app.getHttpServer())
+      .post(`/editions/${g.edition}/scanners/${ofOrg.id}/pairing-code`)
+      .use(session(g.t.head.token))
+      .set('X-Tenant-Slug', g.t.slug)
+      .expect(200)
+    const paired = (await pair((renewed.body as { pairingCode: string }).pairingCode).expect(200))
+      .body as PairedScanner
+    await scan(paired.token, order.code).expect(200)
+    // Access to the edition removed while the org stays in the team.
+    const removing = await openTransaction()
+    await removing.sql`delete from edition_memberships where id = ${String(access!.id)}`
+    await removing.commit()
+    expect((await scan(paired.token, order.code).expect(401)).body).toMatchObject(revoked)
+    // A head's scanner holds every edition's access by the role itself.
+    await scan(g.token, order.code).expect(200)
+  })
+
   it('reads nothing once it is revoked, once it has ended, and once its org has', async () => {
     const g = await gate()
     const order = await g.paid()

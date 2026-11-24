@@ -1,0 +1,92 @@
+# Version updates of what the repository pins, proposed once a week to develop
+# (docs/ARCHITECTURE.md, Tooling and versions). The tools of mise.toml and the base images of
+# infra/docker/Dockerfile, named through ARG, are outside Dependabot's sight and stay by hand.
+#
+# Every update waits the 7 days of minimumReleaseAge in pnpm-workspace.yaml, and no group takes
+# every dependency: such a group opens its pull request once one member is past its cooldown,
+# carrying along the others that are not (scripts/dependabot.test.mjs).
+
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: chore(repo)
+    ignore:
+      # Node's major is that of mise.toml and engines, changed by hand with them
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
+    # Packages released together, or which require each other at one version
+    groups:
+      aws-sdk:
+        patterns: ['@aws-sdk/*']
+      commitlint:
+        patterns: ['@commitlint/*']
+      drizzle:
+        patterns: [drizzle-orm, drizzle-kit]
+      eslint:
+        patterns: [eslint, '@eslint/*']
+      lingui:
+        patterns: ['@lingui/*']
+      nestjs:
+        patterns: ['@nestjs/*']
+      orpc:
+        patterns: ['@orpc/*']
+      react:
+        patterns: [react, react-dom, '@types/react', '@types/react-dom']
+      tailwindcss:
+        patterns: [tailwindcss, '@tailwindcss/*']
+
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci(repo)
+
+  - package-ecosystem: docker-compose
+    directories:
+      - /infra/docker
+      - /infra/local
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: build(infra)
+    # The deployment and the local stack run the same imgproxy (scripts/compose.test.mjs)
+    groups:
+      imgproxy:
+        patterns: ['*imgproxy*']
+
+  - package-ecosystem: opentofu
+    directories:
+      - /infra/modules/*
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore(infra)
+    # A provider several modules use moves in all of them at once
+    groups:
+      coolify:
+        patterns: ['*coolify*']
+      scaleway:
+        patterns: ['*scaleway*']

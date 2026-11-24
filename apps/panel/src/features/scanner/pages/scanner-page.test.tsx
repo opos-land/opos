@@ -191,6 +191,48 @@ describe('a scanner', () => {
     expect(screen.queryByRole('checkbox', { name: /Entry/ })).toBeNull()
   })
 
+  // docs/specs/0007-scanner.md, H1 and H4: a perk goes with entry, an add-on has a mark of its own.
+  it('marks each add-on on its own, as its order’s page does', async () => {
+    device.handOut.mockResolvedValue(
+      shown({
+        addOns: [
+          {
+            lineId: 'line-room',
+            name: 'Room',
+            handedOutAt: '2026-06-05T09:00:00.000Z',
+            handedOutBy: 'Main gate',
+          },
+        ],
+      }),
+    )
+    view()
+    await read()
+
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Room' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Mark as handed out' }))
+
+    await waitFor(() =>
+      expect(device.handOut).toHaveBeenCalledWith('the-token', {
+        code: CODE,
+        orderId: 'order-1',
+        lineIds: ['line-room'],
+      }),
+    )
+    expect(await screen.findByText(/Handed out .* by Main gate/)).toBeDefined()
+    expect(screen.queryByRole('checkbox', { name: 'Room' })).toBeNull()
+    // Entry is still to be marked: the add-on went alone.
+    expect(screen.getByRole('checkbox', { name: /Entry/ })).toBeDefined()
+  })
+
+  it('shows the add-ons of an order with no ticket, each to be marked', async () => {
+    device.scan.mockResolvedValue(shown({ entry: null, ageBand: null, items: [] }))
+    view()
+
+    await read()
+
+    expect(await screen.findByRole('checkbox', { name: 'Room' })).toBeDefined()
+  })
+
   it('shows items alone for an order with no ticket', async () => {
     device.scan.mockResolvedValue(shown({ entry: null, ageBand: null, addOns: [] }))
     view()

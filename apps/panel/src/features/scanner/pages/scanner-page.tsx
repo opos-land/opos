@@ -249,7 +249,10 @@ function Mark({ at, by, timezone }: { at: string; by: string | null; timezone: s
   )
 }
 
-/** An order a code opened: its ticket holder, entry and items, and the marks the org makes. */
+/**
+ * An order a code opened: its ticket holder, entry, add-ons and items, and the marks the org
+ * makes.
+ */
 function Order({
   order,
   timezone,
@@ -266,10 +269,28 @@ function Order({
   const choose = (lineId: string, checked: boolean) =>
     setChosen((held) => (checked ? [...held, lineId] : held.filter((id) => id !== lineId)))
   const notice = order.ageBand ? AGE_NOTICES[order.ageBand] : undefined
-  // In the order of the page: entry, then the items.
-  const open = [order.entry, ...order.items].flatMap((line) =>
+  // In the order of the page: entry, then the add-ons, then the items.
+  const open = [order.entry, ...order.addOns, ...order.items].flatMap((line) =>
     line && !line.handedOutAt ? [line.lineId] : [],
   )
+  /** A line with a mark of its own: when and by which scanner, or a box to choose it. */
+  const line = (
+    of: { lineId: string; handedOutAt: string | null; handedOutBy: string | null },
+    label: string,
+  ) =>
+    of.handedOutAt ? (
+      <p key={of.lineId}>
+        {label} <Mark at={of.handedOutAt} by={of.handedOutBy} timezone={timezone} />
+      </p>
+    ) : (
+      <CheckboxField
+        key={of.lineId}
+        label={label}
+        checked={chosen.includes(of.lineId)}
+        disabled={busy}
+        onChange={(checked) => choose(of.lineId, checked)}
+      />
+    )
   const picked = open.filter((lineId) => chosen.includes(lineId))
   const { number } = order
 
@@ -292,13 +313,6 @@ function Order({
           {order.entry.perks.length > 0 && (
             <p className="text-sm">{order.entry.perks.join(', ')}</p>
           )}
-          {order.addOns.length > 0 && (
-            <ul className="text-sm">
-              {order.addOns.map((addOn) => (
-                <li key={addOn.lineId}>{addOn.name}</li>
-              ))}
-            </ul>
-          )}
           {order.entry.handedOutAt ? (
             <p>
               <Trans>Entry</Trans>{' '}
@@ -314,23 +328,12 @@ function Order({
           )}
         </div>
       )}
+      {/* A perk goes with entry; an add-on has a mark of its own (docs/specs/0007-scanner.md, H4). */}
+      {order.addOns.map((addOn) => line(addOn, addOn.name))}
       {order.items.map((item) => {
         const name =
           item.variant.length > 0 ? `${item.name} (${item.variant.join(', ')})` : item.name
-        const label = item.quantity > 1 ? `${item.quantity} × ${name}` : name
-        return item.handedOutAt ? (
-          <p key={item.lineId}>
-            {label} <Mark at={item.handedOutAt} by={item.handedOutBy} timezone={timezone} />
-          </p>
-        ) : (
-          <CheckboxField
-            key={item.lineId}
-            label={label}
-            checked={chosen.includes(item.lineId)}
-            disabled={busy}
-            onChange={(checked) => choose(item.lineId, checked)}
-          />
-        )
+        return line(item, item.quantity > 1 ? `${item.quantity} × ${name}` : name)
       })}
       {open.length > 0 && (
         <Button disabled={busy || picked.length === 0} onClick={() => onHandOut(picked)}>

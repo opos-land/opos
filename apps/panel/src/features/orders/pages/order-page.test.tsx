@@ -471,6 +471,30 @@ describe('the page of an order', () => {
     )
   })
 
+  // docs/specs/0006-order-management.md, R5: marked paid, the order keeps showing the difference.
+  it('shows what was paid beside the total and the difference whenever they differ', async () => {
+    readOrder.mockResolvedValue(order({ paidMinor: 14000 }))
+    view()
+
+    const facts = await section('The order')
+    expect(facts.getByText('140 PLN')).toBeDefined()
+    expect(facts.getByText('150 PLN')).toBeDefined()
+    expect(facts.getByText('Difference')).toBeDefined()
+    expect(facts.getByText('10 PLN')).toBeDefined()
+    expect(screen.queryByRole('heading', { name: 'This order needs review' })).toBeNull()
+    cleanup()
+
+    // Paid as much as the total, or with no payment at all as a manual order: nothing to tell.
+    for (const same of [order(), order({ status: 'paid-manual', paidMinor: 0, attempts: [] })]) {
+      readOrder.mockResolvedValue(same)
+      view()
+      const none = await section('The order')
+      expect(none.queryByText('Difference')).toBeNull()
+      expect(none.queryByText('Total of the order')).toBeNull()
+      cleanup()
+    }
+  })
+
   it('shows a manual order with its reason, and offers it no email to change or resend', async () => {
     readOrder.mockResolvedValue(
       order({

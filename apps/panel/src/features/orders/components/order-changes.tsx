@@ -225,13 +225,43 @@ export function CancelForm({ editionId, order }: Props) {
 }
 
 /**
+ * What the payments the convention holds add up to beside the order's total, and the difference
+ * between them, which the convention settles outside OPOS (docs/specs/0006-order-management.md,
+ * R5).
+ */
+export function PaidAgainstTotal({ order }: Pick<Props, 'order'>) {
+  const money = useMoney()
+  const difference = Math.abs(order.totalMinor - order.paidMinor)
+
+  return (
+    <dl className="grid max-w-md grid-cols-2 gap-x-4 gap-y-1 text-sm">
+      <dt>
+        <Trans>Paid</Trans>
+      </dt>
+      <dd className="text-right tabular-nums">{money.format(order.paidMinor)}</dd>
+      <dt>
+        <Trans>Total of the order</Trans>
+      </dt>
+      <dd className="text-right tabular-nums">{money.format(order.totalMinor)}</dd>
+      {difference > 0 && (
+        <>
+          <dt>
+            <Trans>Difference</Trans>
+          </dt>
+          <dd className="text-right tabular-nums">{money.format(difference)}</dd>
+        </>
+      )}
+    </dl>
+  )
+}
+
+/**
  * An order that needs review (R2-R5): why, what was paid beside the total, and the two ways to
  * settle it.
  */
 export function ReviewPanel({ editionId, order, canWrite }: Props & { canWrite: boolean }) {
   const { t } = useLingui()
   const { api } = useCurrentTenant()
-  const money = useMoney()
   const refresh = useRefresh()
   const [reason, setReason] = useState('')
   const params = { editionId, orderId: order.id }
@@ -246,29 +276,11 @@ export function ReviewPanel({ editionId, order, canWrite }: Props & { canWrite: 
     onSuccess: refresh,
   })
   const { number } = order
-  const difference = Math.abs(order.totalMinor - order.paidMinor)
 
   return (
     <Section title={<Trans>This order needs review</Trans>}>
       {order.reviewCause && <p className="text-sm">{t(REVIEW_CAUSE_LABELS[order.reviewCause])}</p>}
-      <dl className="grid max-w-md grid-cols-2 gap-x-4 gap-y-1 text-sm">
-        <dt>
-          <Trans>Paid</Trans>
-        </dt>
-        <dd className="text-right tabular-nums">{money.format(order.paidMinor)}</dd>
-        <dt>
-          <Trans>Total of the order</Trans>
-        </dt>
-        <dd className="text-right tabular-nums">{money.format(order.totalMinor)}</dd>
-        {difference > 0 && (
-          <>
-            <dt>
-              <Trans>Difference</Trans>
-            </dt>
-            <dd className="text-right tabular-nums">{money.format(difference)}</dd>
-          </>
-        )}
-      </dl>
+      <PaidAgainstTotal order={order} />
       <p className="max-w-2xl text-sm">
         <Trans>
           The money is with the convention. Marked paid, the order stays at its total and gets its

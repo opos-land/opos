@@ -31,7 +31,7 @@ jobs:
       name: ${{ github.event_name == 'push' && 'cache-write' || 'cache-read' }}
       deployment: false
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # turbo --affected diffs against main and needs the history
           fetch-depth: 0
@@ -148,7 +148,7 @@ jobs:
       name: ${{ github.event_name == 'push' && 'cache-write' || 'cache-read' }}
       deployment: false
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # turbo --affected diffs against the base branch and needs the history
           fetch-depth: 0
@@ -178,7 +178,7 @@ jobs:
     outputs:
       e2e: ${{ steps.e2e.outputs.e2e }}
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: github.event_name == 'pull_request'
         with:
           # The diff counts from the merge base with the base branch
@@ -197,7 +197,7 @@ jobs:
     if: ${{ !cancelled() && needs.scope.outputs.e2e != 'false' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5
       - run: pnpm install --frozen-lockfile
       # The applications' dev addresses
@@ -224,7 +224,7 @@ jobs:
   images:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: infra/docker/check.sh
 
   # Dev runs the head of develop once its checks passed, through a push signed for Coolify
@@ -244,7 +244,7 @@ jobs:
     env:
       MISE_DISABLE_TOOLS: aqua:opentofu/opentofu,aqua:gruntwork-io/terragrunt,aqua:scaleway/scaleway-cli,aqua:cli/cli,aqua:rhysd/actionlint,aqua:koalaman/shellcheck
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # gitleaks git walks every commit the checked commit carries
           fetch-depth: 0

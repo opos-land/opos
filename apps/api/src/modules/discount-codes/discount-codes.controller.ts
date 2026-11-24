@@ -44,11 +44,17 @@ export class DiscountCodesController {
       const { ticketTypeIds, addOnIds, itemIds, validFrom, validUntil, ...terms } = input.body
       const applies = { ticketTypeIds, addOnIds, itemIds }
       await this.checkApplies(editionId, applies)
+      // A window left out runs from the moment the code is made until its edition ends.
+      const from = validFrom ? new Date(validFrom) : new Date()
+      const until = validUntil ? new Date(validUntil) : await this.codes.editionEnd(editionId)
+      if (until.getTime() <= from.getTime()) {
+        throw invalidField('validUntil', 'The window ends after it starts')
+      }
       const tenantId = this.context.tenant().id
       const id = await this.codes.insert(tenantId, editionId, {
         ...terms,
-        validFrom: new Date(validFrom),
-        validUntil: new Date(validUntil),
+        validFrom: from,
+        validUntil: until,
       })
       await this.codes.apply(tenantId, editionId, id, applies)
       return this.codes.get(editionId, id)

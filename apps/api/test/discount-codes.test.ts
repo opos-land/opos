@@ -94,6 +94,50 @@ describe('setting a discount code', () => {
     expect(list(await c.as('get').expect(200))).toEqual([code(res)])
   })
 
+  it('is valid from now until the edition ends when its window is left out', async () => {
+    const c = await convention()
+    const before = Date.now()
+
+    const res = await c
+      .as('post', '', c.body({ validFrom: undefined, validUntil: undefined }))
+      .expect(201)
+
+    const from = Date.parse(code(res).validFrom)
+    expect(from).toBeGreaterThanOrEqual(before - 1000)
+    expect(from).toBeLessThanOrEqual(Date.now())
+    expect(code(res).validUntil).toBe('2027-06-03T00:00:00.000Z')
+  })
+
+  it('fills either end of its window alone, and refuses one that would end before it starts', async () => {
+    const c = await convention()
+
+    const until = await c.as('post', '', c.body({ validUntil: undefined })).expect(201)
+    const from = await c
+      .as(
+        'post',
+        '',
+        c.body({ code: 'late-10', validFrom: undefined, validUntil: '2099-01-01T00:00:00.000Z' }),
+      )
+      .expect(201)
+    const ended = await addEdition(c.t.id, { startsAt: '2020-01-01', endsAt: '2020-01-03' })
+    const past = await request(app.getHttpServer())
+      .post(`/editions/${ended}/discount-codes`)
+      .use(session(c.t.head.token))
+      .set('X-Tenant-Slug', c.t.slug)
+      .send({
+        ...c.body({ validFrom: undefined, validUntil: undefined }),
+        ticketTypeIds: [await addTicketType(c.t.id, ended)],
+      })
+      .expect(400)
+
+    expect(code(until)).toMatchObject({
+      validFrom: '2026-01-01T00:00:00.000Z',
+      validUntil: '2027-06-03T00:00:00.000Z',
+    })
+    expect(Date.parse(code(from).validFrom)).toBeLessThanOrEqual(Date.now())
+    expect(past.body).toMatchObject({ code: 'request.invalid' })
+  })
+
   it('takes an amount instead of a percent', async () => {
     const c = await convention()
 

@@ -6,6 +6,7 @@ import {
   discountCodeMerchandiseItems,
   discountCodes,
   discountCodeTicketTypes,
+  editions,
   merchandiseItems,
   orders,
   ticketTypes,
@@ -164,6 +165,17 @@ export class DiscountCodesRepository {
       return 'itemIds'
     }
     return undefined
+  }
+
+  /** When the edition ends: where a code's window runs to unless the org says otherwise. */
+  async editionEnd(editionId: string): Promise<Date> {
+    const [row] = await this.context
+      .tx()
+      .select({ endsAt: editions.endsAt })
+      .from(editions)
+      .where(eq(editions.id, editionId))
+    if (!row) throw notFound('edition')
+    return row.endsAt
   }
 
   async insert(tenantId: string, editionId: string, terms: Terms): Promise<string> {

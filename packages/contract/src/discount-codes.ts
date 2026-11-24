@@ -72,6 +72,10 @@ export const createDiscountCodeSchema = z
   .strictObject({
     ...fields,
     usageLimit: fields.usageLimit.default(null),
+    /** Left out, the code is valid from the moment it is made. */
+    validFrom: timestamp.optional(),
+    /** Left out, the code is valid until its edition ends. */
+    validUntil: timestamp.optional(),
     ticketTypeIds: ids.default([]),
     addOnIds: ids.default([]),
     itemIds: ids.default([]),
@@ -85,7 +89,11 @@ export const createDiscountCodeSchema = z
         message: 'A percent code has a percent and an amount code an amount, never both',
       })
     }
-    if (Date.parse(code.validUntil) <= Date.parse(code.validFrom)) {
+    if (
+      code.validFrom !== undefined &&
+      code.validUntil !== undefined &&
+      Date.parse(code.validUntil) <= Date.parse(code.validFrom)
+    ) {
       ctx.addIssue({
         code: 'custom',
         path: ['validUntil'],

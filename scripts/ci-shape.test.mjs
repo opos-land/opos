@@ -367,18 +367,20 @@ test('a push runs the tests uncached', () => {
 })
 
 test('a pull request runs the tests on what it affects, and a push uncached, in each turbo step', () => {
-  const steps = job('check')
-  for (const tasks of ['typecheck lint', 'test']) {
-    const start = steps.indexOf(`- run: pnpm turbo run ${tasks} \${TURBO_ARGS:+"$TURBO_ARGS"}`)
-    assert.notEqual(start, -1, tasks)
-    const step = steps.slice(start, steps.indexOf('\n      - ', start + 1))
+  for (const [name, first] of [
+    ['check', '- run: pnpm turbo run typecheck lint ${TURBO_ARGS:+"$TURBO_ARGS"}'],
+    ['check', '- run: pnpm turbo run test'],
+    ['frontend', '- run: pnpm turbo run test'],
+  ]) {
+    const text = step(name, first)
+    assert.match(text.split('\n')[0], /\$\{TURBO_ARGS:\+"\$TURBO_ARGS"\}$/, first)
     assert.match(
-      step,
+      text,
       /TURBO_ARGS: \$\{\{ github\.event_name == 'pull_request' && '--affected' \|\| '' \}\}/,
-      tasks,
+      first,
     )
-    assert.match(step, /TURBO_FORCE: \$\{\{ github\.event_name == 'push' \}\}/, tasks)
-    assert.match(step, /TURBO_SCM_BASE: /, tasks)
+    assert.match(text, /TURBO_FORCE: \$\{\{ github\.event_name == 'push' \}\}/, first)
+    assert.match(text, /TURBO_SCM_BASE: /, first)
   }
 })
 
@@ -391,11 +393,14 @@ const step = (name, first) => {
   return end === -1 ? steps.slice(start) : steps.slice(start, end)
 }
 
-test('check enters the environment that writes to the remote cache only on a push, and records no deployment', () => {
-  assert.match(
-    job('check'),
-    /^ {4}environment:\n {6}name: \$\{\{ github\.event_name == 'push' && 'cache-write' \|\| 'cache-read' \}\}\n {6}deployment: false\n {4}steps:$/m,
-  )
+test('check and frontend enter the environment that writes to the remote cache only on a push, and record no deployment', () => {
+  for (const name of ['check', 'frontend']) {
+    assert.match(
+      job(name),
+      /^ {4}environment:\n {6}name: \$\{\{ github\.event_name == 'push' && 'cache-write' \|\| 'cache-read' \}\}\n {6}deployment: false\n {4}steps:$/m,
+      name,
+    )
+  }
   for (const name of ['e2e', 'secrets']) assert.doesNotMatch(job(name), /^ {4}environment:/m, name)
 })
 
@@ -413,12 +418,13 @@ test('OpenTofu writes both environments of check, and only develop and main ente
 })
 
 test('every step that runs turbo tasks gets the remote cache of its environment, and never an empty cache mode', () => {
-  for (const first of [
-    '- run: pnpm turbo run typecheck lint ${TURBO_ARGS:+"$TURBO_ARGS"}',
-    '- run: pnpm turbo run test ${TURBO_ARGS:+"$TURBO_ARGS"}',
-    '- run: pnpm build',
+  for (const [name, first] of [
+    ['check', '- run: pnpm turbo run typecheck lint ${TURBO_ARGS:+"$TURBO_ARGS"}'],
+    ['check', '- run: pnpm turbo run test'],
+    ['check', '- run: pnpm build'],
+    ['frontend', '- run: pnpm turbo run test'],
   ]) {
-    const text = step('check', first)
+    const text = step(name, first)
     assert.match(text, /TURBO_API: \$\{\{ vars\.TURBO_API \}\}$/m, first)
     assert.match(text, /TURBO_TEAM: opos$/m, first)
     assert.match(text, /TURBO_TOKEN: \$\{\{ secrets\.TURBO_TOKEN \}\}$/m, first)
@@ -454,6 +460,36 @@ test('the tests get a step of their own, on a runner that also hosts the stack',
     steps.indexOf('pnpm turbo run typecheck lint') < steps.indexOf('pnpm turbo run test'),
     'the tests run after typecheck and lint',
   )
+})
+
+/** The packages a `pnpm turbo run test` step of `name` names in its filters, negated or not. */
+const testFilters = (name) => {
+  const text = step(name, '- run: pnpm turbo run test')
+  const line = text.split('\n')[0]
+  return {
+    line,
+    included: [...line.matchAll(/--filter=(@opos\/[\w-]+)/g)].map((match) => match[1]).sort(),
+    excluded: [...line.matchAll(/'--filter=!(@opos\/[\w-]+)'/g)].map((match) => match[1]).sort(),
+  }
+}
+
+// The frontends' tests need no stack and would take its runner's cores from the API tests
+test('the frontends test in a job of their own without the stack, and check tests the rest', () => {
+  const frontends = readdirSync(new URL('../apps/', import.meta.url))
+    .filter((name) => name !== 'api')
+    .map((name) => `@opos/${name}`)
+    .sort()
+  const frontend = testFilters('frontend')
+  assert.deepEqual(frontend.included, frontends)
+  assert.deepEqual(frontend.excluded, [])
+  assert.match(frontend.line, /\$\{TURBO_ARGS:\+"\$TURBO_ARGS"\}$/)
+  const check = testFilters('check')
+  assert.deepEqual(check.excluded, frontends)
+  assert.deepEqual(check.included, [])
+  assert.match(check.line, /\$\{TURBO_ARGS:\+"\$TURBO_ARGS"\}$/)
+  assert.doesNotMatch(job('frontend'), /stack:|db:/)
+  // turbo --affected diffs against the base branch and needs the history
+  assert.match(step('frontend', '- uses: actions/checkout@'), /fetch-depth: 0/)
 })
 
 test('the API tests wait for the schema tests, which hold table locks, with the settings of test', () => {
@@ -502,8 +538,8 @@ test('the test files that write the admin log run one after another, each in a g
   assert.doesNotMatch(config, /fileParallelism:/)
 })
 
-test('the ruleset requires check, e2e and secrets', () => {
-  assert.deepEqual(requiredChecks(ruleset).sort(), ['check', 'e2e', 'secrets'])
+test('the ruleset requires check, e2e, frontend and secrets', () => {
+  assert.deepEqual(requiredChecks(ruleset).sort(), ['check', 'e2e', 'frontend', 'secrets'])
 })
 
 test('the ruleset targets main, forbids deletion and force pushes and requires a pull request', () => {
@@ -611,7 +647,7 @@ test('ci releases a push to develop once its checks passed, through the signed p
     release,
     /^ {4}if: github\.event_name == 'push' && github\.ref == 'refs\/heads\/develop'$/m,
   )
-  assert.deepEqual(needs(release).sort(), ['check', 'e2e', 'images', 'secrets'])
+  assert.deepEqual(needs(release).sort(), ['check', 'e2e', 'frontend', 'images', 'secrets'])
   assert.match(release, CALLS_THE_RELEASE)
   assert.doesNotMatch(release, /steps:|COOLIFY_/)
 })

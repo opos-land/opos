@@ -28,6 +28,7 @@
         "required_status_checks": [
           { "context": "check" },
           { "context": "e2e" },
+          { "context": "frontend" },
           { "context": "secrets" }
         ]
       }

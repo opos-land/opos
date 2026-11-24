@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>7. Panel: building the programme</title>
+    <link rel="stylesheet" href="wireframes.css" />
+  </head>
+  <body>
+    <header class="page">
+      <h1>7. Panel: building the programme</h1>
+      <p>
+        OPOS programme module: wireframes for discussion, sample data only. All people shown are
+        invented.
+      </p>
+    </header>
+    <nav class="pages">
+      <a href="index.html">Index</a
+      ><a href="01-portal-programme-nordcon-fantasmagoria-dni-fantastyki-pyrkon.html"
+        >1. Portal: programme (Nordcon · Fantasmagoria · Dni Fantastyki · Pyrkon)</a
+      ><a href="02-portal-programme-item-and-entry.html">2. Portal: programme item and entry</a
+      ><a href="03-portal-my-schedule-proposing-an-item-speaker-screen.html"
+        >3. Portal: my schedule, proposing an item, speaker screen</a
+      ><a href="04-at-the-room-door-volunteer-and-scanner.html"
+        >4. At the room door: volunteer and scanner</a
+      ><a href="05-panel-programme-settings-of-an-edition.html"
+        >5. Panel: programme settings of an edition</a
+      ><a href="06-panel-programme-dictionaries-and-the-item-form.html"
+        >6. Panel: programme dictionaries and the item form</a
+      ><a href="07-panel-building-the-programme.html">7. Panel: building the programme</a
+      ><a href="08-panel-changes-during-the-convention-and-entitlements.html"
+        >8. Panel: changes during the convention and entitlements</a
+      ><a href="09-worldcon-stress-test-of-the-model-not-for-delivery.html"
+        >9. Worldcon: stress test of the model (not for delivery)</a
+      ><a href="10-portal-programme-people-and-guests.html"
+        >10. Portal: programme people and guests</a
+      ><a href="11-portal-changes-now-and-next-rooms-reminders.html"
+        >11. Portal: changes, now and next, rooms, reminders</a
+      ><a href="12-portal-the-speaker-from-acceptance-to-the-day-of-the-item.html"
+        >12. Portal: the speaker from acceptance to the day of the item</a
+      ><a href="13-panel-programme-team-people-panels-and-the-programme-release.html"
+        >13. Panel: programme team, people, panels and the programme release</a
+      ><a href="14-panel-the-programme-during-the-convention.html"
+        >14. Panel: the programme during the convention</a
+      ><a href="15-panel-head-dictionaries-team-and-programme-status.html"
+        >15. Panel: head, dictionaries, team and programme status</a
+      ><a href="16-portal-sign-ups-lottery-declines-and-empty-states.html"
+        >16. Portal: sign-ups, lottery, declines and empty states</a
+      ><a href="17-panel-item-list-proposals-announcements-and-re-import.html"
+        >17. Panel: item list, proposals, announcements and re-import</a
+      >
+    </nav>
+    <nav class="pages">
+      <span>Role journeys:</span><a href="j01-anonymous-visitor-finding-the-programme.html">J01</a
+      ><a href="j02-signed-in-user-without-a-ticket-schedule-and-sign-ups.html">J02</a
+      ><a href="j03-attendee-with-a-ticket-tokens-lottery-the-door.html">J03</a
+      ><a href="j04-proposer-and-candidate-from-proposal-to-decision.html">J04</a
+      ><a href="j05-speaker-invitation-confirmation-the-day.html">J05</a
+      ><a href="j06-programme-person-without-an-account-claim-or-stay-a-name.html">J06</a
+      ><a href="j07-door-volunteer-gzdacz-what-the-door-can-check.html">J07</a
+      ><a href="j08-info-desk-volunteer-answering-from-the-portal.html">J08</a
+      ><a href="j09-org-with-programme-read-seeing-without-acting.html">J09</a
+      ><a href="j10-programme-lead-setting-up-the-edition.html">J10</a
+      ><a href="j11-programme-lead-building-and-publishing.html">J11</a
+      ><a href="j12-programme-lead-during-the-convention.html">J12</a
+      ><a href="j13-block-zone-and-track-coordinator-my-part-of-the-programme.html">J13</a
+      ><a href="j14-head-the-convention-s-owner.html">J14</a
+      ><a href="j15-tickets-org-where-tickets-touch-the-programme.html">J15</a
+      ><a href="j16-platform-admin-suspend-restore-delete.html">J16</a>
+    </nav>
+    <main class="boards">
+      <figure class="board" id="ab-medium-import">
+        <figcaption class="t" style="width: 840px">
+          Fantasmagoria: import from a sheet and export <code>ab-medium-import</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 870px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div style="display: flex; height: 100%">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 16px;
+                    width: 200px;
+                    border-right: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <strong>Fantasmagoria</strong><small>Edition 2026 ▾</small>
+                  <hr />
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">org · programme: write</small>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    padding: 20px;
+                    flex: 1;
+                    min-width: 0;
+                  "
+                >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <span class="wf-pill accent">Items</span><small>Grid</small
+                    ><small>Proposals</small><small>People</small><small>Changes</small
+                    ><small>Messages</small><small>Settings</small><small>Dictionaries</small
+                    ><small>Rooms</small><small>Publication</small>
+                  </div>
+                  <h1>Import the programme</h1>
+                  <div class="wf-card" style="display: flex; flex-direction: column; gap: 8px">
+                    <strong>File: Program_2026.xlsx · sheet „Program” · 150 rows</strong>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(4, minmax(0, 1fr));
+                        gap: 8px;
+                      "
+                    >
+                      <label>Day ←<input value="column A" /></label
+                      ><label>Start ←<input value="column B" /></label
+                      ><label>Room ←<input value="column C" /></label
+                      ><label>Title ←<input value="column D" /></label
+                      ><label>Host ←<input value="column E" /></label
+                      ><label>Description ←<input value="column F" /></label
+                      ><label>Building ←<input value="from the room: MOK, II LO" /></label
+                      ><label>End ←<input value="none, assume 50 min" /></label>
+                    </div>
+                  </div>
+                  <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <strong>Tags in titles</strong>
+                      <div style="flex: 1"></div>
+                      <label style="display: flex; gap: 6px"
+                        ><input type="checkbox" checked /> Remove the tag from the title</label
+                      >
+                    </div>
+                    <div style="display: grid; grid-template-columns: 2fr 2fr 1fr; gap: 6px 8px">
+                      <small>„– panel discussion”</small><small>→ Format: panel discussion</small
+                      ><small>9 items</small><small>„(workshop)”</small
+                      ><small>→ Format: workshop</small><small>14 items</small
+                      ><small>„(contest)”</small><small>→ Format: contest</small
+                      ><small>6 items</small><small>„(18+)”</small><small>→ Age rating: 18+</small
+                      ><small>5 items</small>
+                    </div>
+                  </div>
+                  <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                    <strong>Preview</strong>
+                    <div
+                      style="
+                        display: grid;
+                        grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr) auto;
+                        gap: 6px 8px;
+                        align-items: center;
+                      "
+                    >
+                      <small>On the borders of fantasy – panel discussion</small><small>→</small
+                      ><small>On the borders of fantasy</small
+                      ><span class="wf-pill">Panel discussion</span
+                      ><small
+                        >Isms and phobias: prejudice and hate in RPG and pop culture (18+)</small
+                      ><small>→</small
+                      ><small>Isms and phobias: prejudice and hate in RPG and pop culture</small
+                      ><span class="wf-pill">18+</span><small>Fantasy charades (contest)</small
+                      ><small>→</small><small>Fantasy charades</small
+                      ><span class="wf-pill">Contest</span>
+                    </div>
+                  </div>
+                  <div class="wf-card" style="display: flex; flex-direction: column; gap: 4px">
+                    <small
+                      >150 items as drafts · 25 rooms and zones from the list in 2 buildings ·
+                      „Pochodnia fandomu” as a host group</small
+                    ><small style="color: var(--wf-warn)"
+                      >3 people without an OPOS account become entries for the team · 2 overlaps in
+                      Sala Widowiskowa</small
+                    >
+                  </div>
+                  <div style="display: flex; gap: 8px">
+                    <div style="flex: 1"></div>
+                    <button>Cancel</button><button class="primary">Import as drafts</button>
+                  </div>
+                  <div class="wf-card" style="display: flex; align-items: center; gap: 8px">
+                    <strong>Export</strong
+                    ><small>CSV with item ids · sheet for the PDF · .ics calendar</small>
+                    <div style="flex: 1"></div>
+                    <button>Download</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>Import is Fantasmagoria’s way in</strong>The 2026 sheet of 1 June comes in with
+          column mapping and a preview: 150 items arrive as drafts with stable ids, and title tags
+          become format and age rating; 10 accepted proposals and 4 rows of the re-import make 164
+          by July. People without an account become entries the team sees until claimed. Importing
+          again matches rows to these items (Q7).
+        </div>
+      </figure>
+      <figure class="board" id="ab-dni-proposals">
+        <figcaption class="t" style="width: 840px">
+          Dni Fantastyki: proposals by block <code>ab-dni-proposals</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 720px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div style="display: flex; height: 100%">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 16px;
+                    width: 200px;
+                    border-right: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <strong>Dni Fantastyki</strong><small>Edition 2026 ▾</small>
+                  <hr />
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">org · programme: write</small>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    padding: 20px;
+                    flex: 1;
+                    min-width: 0;
+                  "
+                >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <small>Items</small><small>Grid</small
+                    ><span class="wf-pill accent">Proposals</span><small>People</small
+                    ><small>Changes</small><small>Messages</small><small>Settings</small
+                    ><small>Dictionaries</small><small>Rooms</small><small>Publication</small>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <h1>Proposals</h1>
+                    <div style="flex: 1"></div>
+                    <small>Call closed 30 June · decisions by 15 July</small>
+                  </div>
+                  <div style="display: flex; gap: 6px">
+                    <span class="wf-pill accent">Block: Pop culture ▾</span
+                    ><span class="wf-pill">All 27</span><span class="wf-pill">Accepted 14</span
+                    ><span class="wf-pill">Reserve 4</span><span class="wf-pill">Rejected 7</span
+                    ><span class="wf-pill">Undecided 2</span>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="
+                      display: grid;
+                      grid-template-columns: minmax(0, 1fr) 110px auto;
+                      gap: 12px 10px;
+                      align-items: center;
+                    "
+                  >
+                    <small><strong>Proposal</strong></small
+                    ><small><strong>Selection score</strong></small
+                    ><small><strong>Decision</strong></small>
+                    <div style="min-width: 0">
+                      <strong>Fandom in numbers: who comes to conventions</strong><br /><small
+                        >Ksenia Tarnina · talk 50 min · all ages</small
+                      >
+                    </div>
+                    <small>4.2 of 5 · 3 people</small><span class="wf-pill accent">Accepted</span>
+                    <div style="min-width: 0">
+                      <strong
+                        >Call for papers behind the scenes: how the programme team picks
+                        talks</strong
+                      ><br /><small
+                        >Michał Rydz + 2 · panel discussion 50 min · block coordinators in the
+                        cast</small
+                      >
+                    </div>
+                    <small>4.0 of 5 · 3 people</small><span class="wf-pill accent">Accepted</span>
+                    <div style="min-width: 0">
+                      <strong>Destiny in series: who writes the hero's fate</strong><br /><small
+                        >Natalia Wąs · talk 50 min · 12+ · fits the theme line</small
+                      >
+                    </div>
+                    <small>3.5 of 5 · 2 people</small><span class="wf-pill">Reserve</span>
+                    <div style="min-width: 0">
+                      <strong>Cosplay and copyright</strong><br /><small
+                        >Ida Rak · talk 50 min · no rating</small
+                      >
+                    </div>
+                    <small>2.3 of 5 · 3 people</small><span class="wf-pill">Rejected</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <small class="wf-muted"
+                      >Scores are seen by the programme team only. Decisions go out by email only
+                      after Send decisions.</small
+                    >
+                    <div style="flex: 1"></div>
+                    <button>Send decisions (25)…</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>Block coordinator</strong>The block filter orders seven coordinators’ work but
+          limits no permissions (Q11). The score is the team’s proposal selection, team only, never
+          an attendee review. Send decisions shows the outbox and asks in a modal before 25 emails
+          go.
+        </div>
+      </figure>
+      <figure class="board" id="ab-pyrkon-proposals">
+        <figcaption class="t" style="width: 840px">
+          Pyrkon: proposals in the zone <code>ab-pyrkon-proposals</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 640px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div style="display: flex; height: 100%">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 16px;
+                    width: 200px;
+                    border-right: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <strong>Pyrkon</strong><small>Edition 2027 ▾</small>
+                  <hr />
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">org · programme: write · 2 zones</small>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    padding: 20px;
+                    flex: 1;
+                    min-width: 0;
+                  "
+                >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <small>Items</small><small>Grid</small
+                    ><span class="wf-pill accent">Proposals</span><small>People</small
+                    ><small>Conflicts</small><small>Changes</small><small>Messages</small
+                    ><small>Settings</small><small>Dictionaries</small><small>Rooms</small
+                    ><small>Publication</small>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <h1>Programme proposals</h1>
+                    <div style="flex: 1"></div>
+                    <small>Call closed 10 April · decisions by 7 May</small>
+                  </div>
+                  <div style="display: flex; gap: 6px; white-space: nowrap; overflow: hidden">
+                    <span class="wf-pill accent">Zone: Gród Inicjatyw Fanowskich ▾</span
+                    ><span class="wf-pill">Undecided 14</span
+                    ><span class="wf-pill">Accepted 21</span><span class="wf-pill">Reserve 5</span
+                    ><span class="wf-pill">Rejected 26</span
+                    ><small style="margin-left: auto" class="wf-muted">Whole edition: 1,204</small>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="
+                      display: grid;
+                      grid-template-columns: minmax(0, 1fr) auto;
+                      gap: 12px 10px;
+                      align-items: center;
+                    "
+                  >
+                    <div style="min-width: 0">
+                      <strong>Volunteer, gżdacz, gopher: who really runs a convention</strong
+                      ><br /><small>Agata Żuraw + 3 · panel discussion 45 min · cast 4 of 4</small>
+                    </div>
+                    <div style="display: flex; gap: 6px">
+                      <button>Reserve</button><button>Reject</button
+                      ><button class="primary">Accept</button>
+                    </div>
+                    <div style="min-width: 0">
+                      <strong
+                        >An accessible convention: PJM, low stimulation and the ramp that isn't
+                        there</strong
+                      ><br /><small>Nina Krawiec · talk 45 min · asks for a PJM interpreter</small>
+                    </div>
+                    <span class="wf-pill accent">Accepted</span>
+                    <div style="min-width: 0">
+                      <strong>Idea: a chronicle of Polish conventions in photos</strong><br /><small
+                        >Bartosz Kmita · idea without a host</small
+                      >
+                    </div>
+                    <div style="display: flex; gap: 6px">
+                      <button>Reject</button><button class="primary">Accept as an idea</button>
+                    </div>
+                  </div>
+                  <div
+                    class="wf-card"
+                    style="
+                      display: grid;
+                      grid-template-columns: minmax(0, 1fr) auto;
+                      gap: 10px;
+                      align-items: center;
+                    "
+                  >
+                    <strong>Reserve list · 5</strong
+                    ><small class="wf-muted">takes the slot of a cancelled item</small>
+                    <div style="min-width: 0">
+                      <span>Fanzines in the Discord era</span><br /><small
+                        >Leszek Grot · talk 45 min</small
+                      >
+                    </div>
+                    <span class="wf-pill">Reserve 1</span>
+                    <div style="min-width: 0">
+                      <span>A convention in a small town: from zero to 300 people</span><br /><small
+                        >Stowarzyszenie Kraken · panel discussion 45 min</small
+                      >
+                    </div>
+                    <span class="wf-pill">Reserve 2</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>Zone coordinator</strong>Gród Inicjatyw Fanowskich is one of 22 zones; the edition
+          has 1,204 proposals. The team accepts an idea without a host and casts it itself; the
+          ordered reserve list waits for a cancelled item.
+        </div>
+      </figure>
+      <figure class="board" id="ab-dni-grid">
+        <figcaption class="t" style="width: 840px">
+          Dni Fantastyki: grid and conflicts <code>ab-dni-grid</code>
+        </figcaption>
+        <div class="screen desktop" style="width: 840px; height: 940px">
+          <div
+            class="plan-html-frame"
+            data-theme="light"
+            data-style="clean"
+            data-frame="show"
+            data-render-mode="wireframe"
+          >
+            <div class="plan-html-frame-content">
+              <div style="display: flex; height: 100%">
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 16px;
+                    width: 200px;
+                    border-right: 1.4px solid var(--wf-line);
+                  "
+                >
+                  <strong>Dni Fantastyki</strong><small>Edition 2026 ▾</small>
+                  <hr />
+                  <span>Dashboard</span><span class="wf-pill accent">Programme</span>
+                  <div style="flex: 1"></div>
+                  <small class="wf-muted">org · programme: write</small>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    padding: 20px;
+                    flex: 1;
+                    min-width: 0;
+                  "
+                >
+                  <div
+                    style="
+                      display: flex;
+                      gap: 4px 12px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                      border-bottom: 1.4px solid var(--wf-line);
+                      padding-bottom: 8px;
+                    "
+                  >
+                    <small>Items</small><span class="wf-pill accent">Grid</span
+                    ><small>Proposals</small><small>People</small><small>Changes</small
+                    ><small>Messages</small><small>Settings</small><small>Dictionaries</small
+                    ><small>Rooms</small><small>Publication</small>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <h1>Programme</h1>
+                    <div style="flex: 1"></div>
+                    <button>Import</button><button>Export to Konwencik</button
+                    ><button class="primary">Publish</button>
+                  </div>
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center">
+                    <span class="wf-pill">List</span><span class="wf-pill accent">Grid</span
+                    ><span class="wf-pill">Saturday ▾</span
+                    ><span class="wf-pill">Zamek w Leśnicy ▾</span
+                    ><small style="margin-left: auto; color: var(--wf-warn)"
+                      >2 warnings · 14 without a room</small
+                    >
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: 50px repeat(4, minmax(0, 1fr));
+                      gap: 6px;
+                    "
+                  >
+                    <small></small><small><strong>Sala Rycerska</strong></small
+                    ><small><strong>Sala Kominkowa</strong></small
+                    ><small><strong>Namiot 2</strong></small
+                    ><small><strong>Stół RPG 1</strong></small> <small>12:00</small
+                    ><small class="wf-box"
+                      ><strong>Destiny in fantasy sagas</strong><br />talk · Literature</small
+                    ><small class="wf-box"
+                      ><strong>Polish comics after 2020</strong><br />talk · Illustration and
+                      comics</small
+                    ><small class="wf-box"
+                      ><strong>Let's draw a dragon</strong><br />workshop · 7+</small
+                    ><small class="wf-box" style="grid-row: span 2"
+                      ><strong>Witcher RPG: a one-shot</strong><br />RPG session · 110 min ·
+                      16+</small
+                    >
+                    <small>13:00</small
+                    ><small class="wf-box"
+                      ><strong>Fantasy publishers: what next</strong><br />panel discussion ·
+                      Literature</small
+                    ><small class="wf-box"
+                      ><strong>The physics of propulsion in Dune</strong><br />talk · Science</small
+                    ><small class="wf-box"
+                      ><strong>Manga in Poland: 30 years of publishing</strong><br />talk · Manga
+                      and anime</small
+                    >
+                    <small>14:00</small
+                    ><small class="wf-box" style="border-color: var(--wf-warn)"
+                      ><strong>AI in organising conventions</strong><br />panel discussion · Pop
+                      culture</small
+                    ><small class="wf-box" style="border-color: var(--wf-warn)"
+                      ><strong>Tolkien and mythology</strong><br />talk · Literature</small
+                    ><small class="wf-box"
+                      ><strong>Indie games from Wrocław</strong><br />talk · Games and
+                      multimedia</small
+                    >
+                    <div></div>
+                    <small>15:00</small>
+                    <div></div>
+                    <small class="wf-box"
+                      ><strong>Maps of fantasy worlds</strong><br />workshop · 7+</small
+                    ><small class="wf-box"
+                      ><strong>Dragons for children</strong><br />talk · 20 min · 7+</small
+                    >
+                    <div></div>
+                    <small>16:00</small
+                    ><small class="wf-box"
+                      ><strong>Author meeting with the guest of honour</strong><br />author meeting
+                      · EN · Literature</small
+                    ><small class="wf-box" style="border-color: var(--wf-warn)"
+                      ><strong>Call for papers behind the scenes</strong><br />panel discussion ·
+                      Pop culture</small
+                    ><small class="wf-box"
+                      ><strong>Fantasy short films</strong><br />screening · 110 min · Film and
+                      series</small
+                    >
+                    <div></div>
+                  </div>
+                  <div class="wf-card" style="display: flex; flex-direction: column; gap: 6px">
+                    <strong>Warnings · 2</strong>
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <small style="flex: 1; color: var(--wf-warn)"
+                        >Ola Szpak: Sat 14:00 moderates „AI in organising conventions” in Sala
+                        Rycerska and co-hosts „Tolkien and mythology” in Sala Kominkowa</small
+                      ><a href="#">Show</a>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px">
+                      <small style="flex: 1; color: var(--wf-warn)"
+                        >Michał Rydz: „Call for papers behind the scenes” Sat 16:00, but their
+                        availability says Saturday until 15:00</small
+                      ><a href="#">Show</a>
+                    </div>
+                    <small class="wf-muted">Two items in one room: none</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note" style="width: 840px; box-sizing: border-box">
+          <strong>Grid in the panel</strong>The portal has one column at 360 px, so the grid serves
+          the team only. Warnings cover a person in two rooms, a time outside availability and two
+          items in one room; they never block. The Konwencik export carries stable item ids.
+        </div>
+      </figure>
+    </main>
+  </body>
+</html>

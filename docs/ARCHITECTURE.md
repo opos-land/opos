@@ -347,9 +347,13 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - Screens are built from shadcn/ui components on Base UI, which the CLI of each application adds to
   its `shared/ui` as it writes them, but for formatting, lint fixes and their own texts moved into
   Lingui macros; an application's own compositions of them sit beside them. They are styled only
-  through the tokens of `src/styles.css`, which carry shadcn/ui's names and its default theme until
-  the designer's ([0020](adr/0020-build-the-frontends-from-shadcn-ui-with-its-default-look.md));
-  `src/styles.test.ts` fails on a class Tailwind cannot build. No AI-generated graphics
+  through the tokens of `src/styles.css`, which carry shadcn/ui's names and tweakcn's Amber Minimal
+  theme until the designer's, departing from it where its text falls under 4.5:1; their fonts are
+  packages served from the application's own origin
+  ([0089](adr/0089-build-the-frontends-from-shadcn-ui-with-tweakcns-amber-minimal-theme-until-a-design-exists.md));
+  `src/styles.test.ts` fails on a class Tailwind cannot build, a font family a token names that the
+  stylesheet does not load with the Polish letters, and a text token under 4.5:1 against its surface
+  in either theme. No AI-generated graphics
   ([PRODUCT.md](PRODUCT.md#8-design-and-public-image)).
 - The portal is mobile-first: 360 px first, one column, no horizontal scrolling.
 - A picture someone uploaded comes from the API's own address, in a variant its kind declares, and

@@ -35,7 +35,7 @@ jobs:
         with:
           # turbo --affected diffs against main and needs the history
           fetch-depth: 0
-      - uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5
+      - uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5
       # Dependabot does not read mise.toml: the tools with a release past the release age of the
       # dependencies are named in one warning on the pull request. Failing to look warns and fails
       # nothing.
@@ -152,7 +152,7 @@ jobs:
         with:
           # turbo --affected diffs against the base branch and needs the history
           fetch-depth: 0
-      - uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5
+      - uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5
       - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: .turbo/cache
@@ -198,7 +198,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5
+      - uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5
       - run: pnpm install --frozen-lockfile
       # The applications' dev addresses
       - run: echo '127.0.0.1 api.opos.localhost panel.opos.localhost admin.opos.localhost opos.localhost' | sudo tee -a /etc/hosts
@@ -248,7 +248,7 @@ jobs:
         with:
           # gitleaks git walks every commit the checked commit carries
           fetch-depth: 0
-      - uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5
+      - uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5
       # gitleaks' default rules leave node_modules out of the tree scan
       - run: gitleaks dir . --redact --no-banner
       # The history of the checked commit alone: on a pull request the merge, so what it would bring

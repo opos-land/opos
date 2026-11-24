@@ -32,6 +32,7 @@
     "db:totp": "turbo run db:totp --",
     "format": "prettier --write . && node scripts/markdown-tables.mjs --write",
     "format:check": "prettier --check . && node scripts/markdown-tables.mjs",
+    "deps:licenses": "node scripts/deps-licenses.mjs",
     "deploy:login": "node scripts/deploy.mjs login",
     "deploy:bootstrap": "node scripts/deploy.mjs bootstrap",
     "deploy:access:grant": "node scripts/deploy.mjs access:grant",

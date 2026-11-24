@@ -130,7 +130,10 @@ push to `main` directly.
 dependencies and wires up the hooks. `mise tasks` lists the root commands with what each does; every
 one also runs as `pnpm <name>`, the form the documents use. Dependencies younger than 7 days are
 rejected by `minimumReleaseAge` — that is policy, not a failure
-([versions](docs/ARCHITECTURE.md#tooling-and-versions)). The API tests need
+([versions](docs/ARCHITECTURE.md#tooling-and-versions)). A dependency under a licence outside
+`ALLOWED` in [scripts/deps-licenses.mjs](scripts/deps-licenses.mjs) fails `pnpm deps:licenses`:
+choose another package or ask the user, never widen the list without a decision record
+([0088](docs/adr/0088-allow-dependencies-only-under-listed-licences.md)). The API tests need
 the database, the bucket and imgproxy: `pnpm stack:init` once in a new checkout, then
 `pnpm stack:up`. `pnpm test:e2e` also
 needs `pnpm db:migrate && pnpm db:seed` and Chromium (`pnpm --filter @opos/e2e exec playwright

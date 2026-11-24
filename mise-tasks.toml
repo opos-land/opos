@@ -119,6 +119,11 @@ description = "Check that every file is formatted with Prettier and every Markdo
 run = "pnpm format:check"
 raw = true
 
+["deps:licenses"]
+description = "Check that every installed dependency comes under an allowed licence"
+run = "pnpm deps:licenses"
+raw = true
+
 ["stack:init"]
 description = "Set up the local stack once per checkout: .env files, keys, containers and database roles"
 run = "pnpm stack:init"

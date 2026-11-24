@@ -61,6 +61,8 @@ jobs:
           key: turbo-${{ runner.os }}-${{ github.sha }}
           restore-keys: turbo-${{ runner.os }}-
       - run: pnpm install --frozen-lockfile
+      # Every dependency comes under an allowed licence (docs/ARCHITECTURE.md, Tooling and versions)
+      - run: pnpm deps:licenses
       - run: pnpm format:check
       - run: pnpm test:scripts
       - run: node .claude/skills/docs-sync/scripts/check-doc-links.mjs

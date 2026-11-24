@@ -67,7 +67,7 @@ describe('a write while the access of its actor ends', () => {
 
     const pending = races.send(s, build(s))
     // Read before the commit and asserted after it, so a failure leaves no transaction open.
-    const waited = await untilBlocked(holder.sql, pending)
+    const waited = await untilBlocked(holder.sql, pending, 'writeLock')
     await untilExpired(holder.sql, s.orgId)
     await holder.commit()
 
@@ -100,7 +100,7 @@ describe('a write while the access of its actor ends', () => {
 
     const pending = races.send(s, build(s, ends))
     // Read before the commit and asserted after it, so a failure leaves no transaction open.
-    const waited = await untilBlocked(holder.sql, pending)
+    const waited = await untilBlocked(holder.sql, pending, 'row')
     await untilExpired(holder.sql, s.orgId)
     await holder.commit()
 

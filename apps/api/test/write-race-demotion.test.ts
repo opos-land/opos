@@ -63,7 +63,7 @@ describe('a write while a demotion of its actor commits', () => {
 
       const pending = races.send(s, build(s))
       // Read before the commit and asserted after it, so a failure leaves no transaction open.
-      const waited = await untilBlocked(demotion.sql, pending)
+      const waited = await untilBlocked(demotion.sql, pending, 'writeLock')
       await demotion.commit()
 
       const res = await pending

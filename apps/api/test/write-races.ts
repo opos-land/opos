@@ -522,13 +522,22 @@ export function writeRaces(app: NestExpressApplication) {
 export const lockTenantWrites = (sql: Sql, t: Setup['t']) =>
   sql`select pg_advisory_xact_lock(${tenantWriteLockKey(t.id)}::bigint)`
 
+/** The kinds of lock in pg_locks that a wait for the tenant's write lock or for a row takes. */
+const LOCK_TYPES = { writeLock: ['advisory'], row: ['transactionid', 'tuple'] }
+
 /**
- * Whether `request` comes to wait for a lock `holder` holds, having passed the checks before it:
- * true once another connection waits for the holder, false once the request settles or ten
- * seconds pass first. Asked on the holder's own connection, since the helpers of tenants.ts share
- * the one the open transaction keeps; the caller commits after it either way.
+ * Whether `request` comes to wait for the lock of kind `on` that `holder` holds, having passed the
+ * checks before it: true once another connection waits for such a lock of the holder, false once
+ * the request settles or ten seconds pass first. A wait for another of the holder's locks, such as
+ * a row it changed, does not count. Asked on the holder's own connection, since the helpers of
+ * tenants.ts share the one the open transaction keeps; the caller commits after it either way.
  */
-export async function untilBlocked(holder: Sql, request: Promise<unknown>, timeoutMs = 10_000) {
+export async function untilBlocked(
+  holder: Sql,
+  request: Promise<unknown>,
+  on: keyof typeof LOCK_TYPES,
+  timeoutMs = 10_000,
+) {
   let settled = false
   request.then(
     () => (settled = true),
@@ -538,7 +547,10 @@ export async function untilBlocked(holder: Sql, request: Promise<unknown>, timeo
   for (;;) {
     const [row] = await holder<{ blocked: boolean }[]>`
       select exists (
-        select 1 from pg_stat_activity where pg_backend_pid() = any(pg_blocking_pids(pid))
+        select 1 from pg_locks
+        where not granted
+          and locktype = any(${LOCK_TYPES[on]})
+          and pg_backend_pid() = any(pg_blocking_pids(pid))
       ) as blocked
     `
     if (row!.blocked) return true

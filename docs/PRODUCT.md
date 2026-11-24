@@ -405,8 +405,7 @@ OPOS's public image matters as much as its features.
 - **No AI-generated graphics**: images, logos and icons come from a designer or a licensed icon set.
 - **No template look**: screens follow the designer's designs, not a component library's defaults.
 - **Honest placeholders**: until a design exists, the component library with a published theme,
-  tweakcn's Amber Minimal, its text kept readable, and real copy
-  ([0089](adr/0089-build-the-frontends-from-shadcn-ui-with-tweakcns-amber-minimal-theme-until-a-design-exists.md)).
+  tweakcn's Amber Minimal, its text kept readable, and real copy.
 - **Every screen names itself** in the browser tab: the screen, then its edition or convention.
 - **The shop is for everyone**: its pages and the buyer's pages meet WCAG 2.1 AA, and the whole
   checkout works on a screen 360 px wide

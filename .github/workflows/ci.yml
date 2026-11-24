@@ -36,6 +36,25 @@ jobs:
           # turbo --affected diffs against main and needs the history
           fetch-depth: 0
       - uses: jdx/mise-action@6612f0ef07ed2a736cd1e00a94a065522dd41195 # v5
+      # Dependabot does not read mise.toml: the tools with a release past the release age of the
+      # dependencies are named in one warning on the pull request. Failing to look warns and fails
+      # nothing.
+      - if: github.event_name == 'pull_request'
+        run: |
+          if ! outdated=$(mise outdated --bump --json) ||
+            ! newer=$(jq -r 'to_entries
+              | map(select(.value.bump != null and .value.bump != .value.requested))
+              | map("\(.key) \(.value.requested) → \(.value.bump)") | join(", ")' <<<"$outdated"); then
+            echo "::warning file=mise.toml,title=Tools not checked::mise could not read the releases of the tools"
+            exit 0
+          fi
+          if [ -n "$newer" ]; then
+            echo "::warning file=mise.toml,title=Newer tools past the release age::$newer"
+          fi
+        env:
+          MISE_MINIMUM_RELEASE_AGE: 7d
+          MISE_DISABLE_TOOLS: ''
+          GITHUB_TOKEN: ${{ github.token }}
       - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: .turbo/cache

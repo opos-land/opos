@@ -1,6 +1,7 @@
 # Version updates of what the repository pins, proposed once a week to develop
 # (docs/ARCHITECTURE.md, Tooling and versions). The tools of mise.toml and the base images of
-# infra/docker/Dockerfile, named through ARG, are outside Dependabot's sight and stay by hand.
+# infra/docker/Dockerfile, named through ARG, are outside Dependabot's sight and stay by hand; the
+# check job of ci.yml warns on a pull request of the tools with a newer release.
 #
 # Every update waits the 7 days of minimumReleaseAge in pnpm-workspace.yaml, and no group takes
 # every dependency: such a group opens its pull request once one member is past its cooldown,

@@ -528,7 +528,8 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   ecosystem waiting the same 7 days as `minimumReleaseAge`; a group gathers only packages that move
   together, never every dependency
   ([0087](adr/0087-propose-version-updates-through-dependabot-after-the-release-age.md)). The tools
-  of `mise.toml` and the Dockerfile's base images are moved by hand.
+  of `mise.toml` and the Dockerfile's base images are moved by hand; a pull request's `check` names
+  the tools with a release past the same 7 days in one warning, which fails nothing.
 - The shadcn/ui CLI and its agent skill run the version an application pins, as
   `pnpm --dir apps/<app> exec shadcn`, never `npx shadcn@latest` or `pnpm dlx`, which pass
   `minimumReleaseAge` by; the CLI's MCP server is not used

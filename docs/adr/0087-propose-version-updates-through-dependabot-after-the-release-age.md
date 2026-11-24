@@ -28,7 +28,10 @@ request once one member is past its cooldown, carrying along members that are no
 - Groups gather only packages released together or which require each other at one version; no
   group takes every dependency.
 - A commit message takes a type and a scope `commitlint.config.mjs` accepts.
-- `scripts/dependabot.test.mjs` keeps the four rules above.
+- Dependabot does not read `mise.toml`: on a pull request, the `check` job names every tool with a
+  release past the same 7 days in one warning annotation, and failing to look warns without failing
+  the job.
+- `scripts/dependabot.test.mjs` and `scripts/ci-shape.test.mjs` keep these rules.
 
 The rules are in [ARCHITECTURE.md, Tooling and versions](../ARCHITECTURE.md#tooling-and-versions).
 
@@ -37,6 +40,12 @@ The rules are in [ARCHITECTURE.md, Tooling and versions](../ARCHITECTURE.md#tool
 - **Renovate.** It reads `mise.toml` and the `ARG` of a Dockerfile, which Dependabot does not, but it
   is a GitHub App to install and configure outside the repository, and a further provider.
 - **Moving the pins by hand.** What runs today, and nothing tells when a pin falls behind.
+- **A weekly workflow that opens a pull request for the tools of `mise.toml`.** A pull request
+  opened with the workflow's own token starts no CI, so it needs a GitHub App or a token among the
+  secrets, and the workflow writes to the repository, which no workflow does.
+- **A weekly issue listing the outdated tools.** The team reads pull requests more than issues, and
+  the workflow would write issues.
+- **One annotation per tool.** A list of warnings nobody reads past the first; one names them all.
 - **One group for every dependency.** One pull request a week, but the cooldown stops holding for
   the members of the group.
 
@@ -48,8 +57,11 @@ The rules are in [ARCHITECTURE.md, Tooling and versions](../ARCHITECTURE.md#tool
   rebased with `@dependabot rebase`, never passed by `minimumReleaseAgeExclude`.
 - CI holds no OpenTofu: a provider update is checked with `mise run infra:check` before it is
   merged, and its lock files are rewritten with `pnpm infra:lock` when they lack a platform.
-- The tools of `mise.toml`, Node with them, and the base images of `infra/docker/Dockerfile`, named
-  through an `ARG`, stay outside Dependabot's sight and are moved by hand.
+- The tools of `mise.toml`, Node with them, are moved by hand, `mise lock` in the same commit;
+  the warning tells when. A warning leaves the check green and notifies nobody: it is seen only on
+  the pull request.
+- The base images of `infra/docker/Dockerfile`, named through an `ARG`, stay outside Dependabot's
+  sight and are moved by hand.
 - Security updates are a setting of the repository, off today; the cooldown does not hold for
   them, and they target the default branch, `develop`.
 

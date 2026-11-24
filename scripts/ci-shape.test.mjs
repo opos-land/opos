@@ -168,6 +168,25 @@ test('every job installs the tools from mise.lock alone', () => {
   assert.match(read('../mise.toml'), /^lockfile = true$/m)
 })
 
+test('a pull request warns once of the tools of mise.toml with a release past the release age', () => {
+  const step = ci.split(/\n(?= {6}- )/).find((chunk) => chunk.includes('mise outdated'))
+  assert.ok(step, 'check looks for newer tools')
+  assert.match(step, /^ {6}- if: github\.event_name == 'pull_request'$/m)
+  // The release age of the dependencies, the tools CI does not install too, and a token against
+  // the rate limit of GitHub's API, which mise reads the releases from
+  const minutes = Number(/^minimumReleaseAge: (\d+)$/m.exec(read('../pnpm-workspace.yaml'))?.[1])
+  assert.match(step, new RegExp(`^ {10}MISE_MINIMUM_RELEASE_AGE: ${minutes / 24 / 60}d$`, 'm'))
+  assert.match(step, /^ {10}MISE_DISABLE_TOOLS: ''$/m)
+  assert.match(step, /^ {10}GITHUB_TOKEN: \$\{\{ github\.token \}\}$/m)
+  // Every tool in one annotation, and a failure to look one warning that fails nothing
+  const [block] = runBlocks(step)
+  assert.match(block, /mise outdated --bump --json/)
+  assert.match(block, /join\(", "\)/)
+  assert.equal(block.match(/::warning /g)?.length, 2)
+  assert.doesNotMatch(block, /\b(for|while)\b/)
+  assert.match(block, /exit 0/)
+})
+
 test('mise.lock holds a checksum of every tool of mise.toml for every platform', () => {
   const toml = read('../mise.toml')
   const tools = toml.split('\n[tools]\n')[1].split(/\n\[/)[0]

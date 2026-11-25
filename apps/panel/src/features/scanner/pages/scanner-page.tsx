@@ -25,7 +25,8 @@ const refusalOf = (error: unknown): ScanRefusal | null => {
 
 /**
  * The scanner (`/scanner`), on a phone with no account signed in
- * (docs/specs/0007-scanner.md): opened with a pairing link it becomes a scanner; as one it reads
+ * (docs/specs/0007-scanner.md): opened with a pairing link it becomes that link's scanner,
+ * whatever scanner it was before (docs/PRODUCT.md, 7. Modules); as one it reads
  * a buyer's QR code, shows whom to let in and what to hand over, and marks what the org chose as
  * handed out. A scan marks nothing by itself.
  */
@@ -43,15 +44,18 @@ export function ScannerPage() {
       if (!code) return
       // The code leaves the address before it is spent: it stays in no history.
       window.history.replaceState(null, '', window.location.pathname)
-      // A phone that is a scanner already stays the one it is, and one code is spent at a time.
-      if (pairing.current || readDevice()) return
+      // One code is spent at a time.
+      if (pairing.current) return
       pairing.current = true
       setFailure(null)
+      // The phone that opens the link becomes its scanner, in place of any scanner it was; a
+      // code that is refused leaves it the scanner it was.
       pairScanner(code)
         .then(
           (paired) => {
             saveDevice(paired)
             setDevice(paired)
+            setEnded(false)
           },
           (error: unknown) => setFailure(error),
         )
@@ -75,7 +79,11 @@ export function ScannerPage() {
   return (
     <main className="mx-auto flex min-h-svh max-w-md flex-col gap-4 p-4">
       {device ? (
-        <Scanning device={device} onRevoked={revoked} />
+        <>
+          <ErrorMessage error={failure} />
+          {/* A phone paired anew starts as its new scanner: nothing the old one read stays. */}
+          <Scanning key={device.token} device={device} onRevoked={revoked} />
+        </>
       ) : (
         <>
           <h1 className="text-2xl font-semibold">

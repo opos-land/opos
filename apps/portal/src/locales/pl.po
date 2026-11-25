@@ -785,6 +785,10 @@ msgstr "Gadżety"
 msgid "Merch only"
 msgstr "Same gadżety"
 
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Merchandise cannot be ordered without a ticket now. <0>Choose a ticket type in the shop.</0>"
+msgstr "Gadżetów nie można teraz zamówić bez akredytacji. <0>Wybierz rodzaj akredytacji w sklepie.</0>"
+
 #: src/features/shop/components/summary-step.tsx
 msgid "Merchandise is picked up at the convention. It is not shipped."
 msgstr "Gadżety odbiera się na konwencie. Nie są wysyłane."
@@ -1275,6 +1279,10 @@ msgstr "Tabela rozmiarów: {0}"
 msgid "Sold out"
 msgstr "Wyprzedane"
 
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Something you chose is no longer available. Go back to its step and change it."
+msgstr "Coś z tego, co wybrano, nie jest już dostępne. Wróć do odpowiedniego kroku i zmień wybór."
+
 #: src/features/shop/pages/result-page.tsx
 msgid "Start a new order"
 msgstr "Złóż nowe zamówienie"
@@ -1400,6 +1408,10 @@ msgstr "Kod QR wyślemy na adres twojego konta: <0>{accountEmail}</0>"
 msgid "The rules of using OPOS. By creating an account you accept them."
 msgstr "Zasady korzystania z OPOS. Zakładając konto, akceptujesz je."
 
+#: src/features/shop/pages/checkout-page.tsx
+msgid "The shop no longer offers something you had chosen, so it was removed from your order. Check the order before you place it."
+msgstr "Sklep nie oferuje już czegoś, co było wybrane, więc usunęliśmy to z zamówienia. Sprawdź zamówienie, zanim je złożysz."
+
 #. placeholder {0}: item.name
 #. placeholder {1}: value.label
 #: src/features/shop/components/merch-step.tsx
@@ -1490,6 +1502,10 @@ msgstr "Ten profil jeszcze nic nie zawiera."
 #: src/features/shop/pages/checkout-page.tsx
 msgid "This ticket type does not offer what you had chosen, so it was removed: {0}."
 msgstr "Ten rodzaj akredytacji nie obejmuje tego, co było wybrane, więc usunęliśmy: {0}."
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "This ticket type is not on sale now. <0>Choose another one in the shop.</0>"
+msgstr "Ten rodzaj akredytacji nie jest teraz w sprzedaży. <0>Wybierz inny w sklepie.</0>"
 
 #: src/features/shop/components/holder-step.tsx
 msgid "This ticket type is not sold for this age band."

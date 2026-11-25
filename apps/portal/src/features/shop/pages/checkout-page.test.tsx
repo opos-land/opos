@@ -587,6 +587,117 @@ describe('CheckoutPage', () => {
     expect(api.leave).not.toHaveBeenCalled()
   })
 
+  // O5 for the ticket type itself: nothing is placed, and the checkout says what ran out and
+  // where another one is picked, instead of an empty order nothing can be done with.
+  it('says that the ticket type is not on sale once it ran out, and offers no order to place', async () => {
+    api.place.mockRejectedValue(
+      new ORPCError('order.unavailable', {
+        status: 409,
+        data: { kind: 'ticket-type', id: ids.standard },
+      }),
+    )
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({ step: 'summary', consentIds: [ids.terms], providerConsent: true }),
+    )
+    view()
+    await stepHeading('Summary')
+    const gone = offer()
+    gone.ticketTypes[0]!.state = 'sold-out'
+    api.offer.mockResolvedValue(gone)
+
+    press('Order and pay')
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toMatch(/This ticket type is not on sale now\./)
+    expect(
+      within(alert)
+        .getByRole('link', { name: 'Choose another one in the shop.' })
+        .getAttribute('href'),
+    ).toBe(shop)
+    // No total of nothing, and no button that would place it.
+    expect(screen.queryByRole('rowheader', { name: 'Total due' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Order/ })).toBeNull()
+    expect(screen.getByRole('heading', { name: 'Summary', level: 2 })).toBeDefined()
+  })
+
+  it('tells at the Summary that something chosen ran out, and marks it on its step', async () => {
+    const out = offer()
+    out.addOns[0]!.soldOut = true
+    api.offer.mockResolvedValue(out)
+    saveDraft('convention-a', '2027', kept({ step: 'summary', addOnIds: [ids.workshop] }))
+    view()
+    await stepHeading('Summary')
+
+    expect(screen.getByRole('alert').textContent).toMatch(
+      /Something you chose is no longer available\./,
+    )
+    expect(screen.queryByRole('button', { name: /^Order/ })).toBeNull()
+    press('Back')
+    await stepHeading('Merch')
+    press('Back')
+    await stepHeading('Add-ons')
+    expect(screen.getByText('It ran out while you were ordering.')).toBeDefined()
+    fireEvent.click(screen.getByRole('checkbox', { name: /Painting workshop/ }))
+    expect(screen.queryByText('It ran out while you were ordering.')).toBeNull()
+    expect(screen.getByText(/Total: .*120[.,]00/)).toBeDefined()
+  })
+
+  // The tab keeps a checkout for days, and the shop changes meanwhile: what it no longer
+  // offers is on no step, so the buyer could not take it out.
+  it('takes out of a kept checkout what the shop no longer offers, and says so', async () => {
+    const changed = offer({ addOns: offer().addOns.filter((addOn) => addOn.id !== ids.workshop) })
+    changed.ticketTypes[0]!.addOnIds = [ids.room]
+    api.offer.mockResolvedValue(changed)
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({ step: 'summary', addOnIds: [ids.workshop, ids.room], consentIds: ['gone'] }),
+    )
+    view()
+    await stepHeading('Summary')
+
+    expect(screen.getByText(/no longer offers something you had chosen/)).toBeDefined()
+    expect(screen.getByText(/Total: .*120[.,]00/)).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Order and pay' })).toBeDefined()
+    expect(loadDraft('convention-a', '2027')).toMatchObject({
+      addOnIds: [ids.room],
+      consentIds: [],
+    })
+  })
+
+  it('takes out what the shop stopped offering while the buyer was ordering', async () => {
+    api.place.mockRejectedValueOnce(
+      new ORPCError('order.unavailable', {
+        status: 409,
+        data: { kind: 'add-on', id: ids.workshop },
+      }),
+    )
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({
+        step: 'summary',
+        addOnIds: [ids.workshop],
+        consentIds: [ids.terms],
+        providerConsent: true,
+      }),
+    )
+    view()
+    await stepHeading('Summary')
+    expect(screen.getByText(/Total: .*160[.,]00/)).toBeDefined()
+    const changed = offer({ addOns: offer().addOns.filter((addOn) => addOn.id !== ids.workshop) })
+    changed.ticketTypes[0]!.addOnIds = [ids.room]
+    api.offer.mockResolvedValue(changed)
+
+    press('Order and pay')
+
+    expect(await screen.findByText(/no longer offers something you had chosen/)).toBeDefined()
+    expect(screen.getByText(/Total: .*120[.,]00/)).toBeDefined()
+    expect(loadDraft('convention-a', '2027')).toMatchObject({ addOnIds: [] })
+  })
+
   // A total never changes silently: the buyer is shown the new one and confirms it.
   it('shows a new total and places nothing until the buyer confirms it', async () => {
     api.place.mockRejectedValueOnce(

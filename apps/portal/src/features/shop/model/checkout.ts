@@ -185,6 +185,54 @@ export function resumeExtension(offer: Offer, kept: Draft, order: MyOrder): Draf
   return steps.includes(draft.step) ? draft : { ...draft, step: steps[0] ?? 'summary' }
 }
 
+/**
+ * The checkout as the offer now allows it. The tab keeps one for as long as it lives, and the shop
+ * changes meanwhile: an add-on, a variant or a supporter price the checkout is no longer offered
+ * leaves it, and `dropped` says that the order lost something. A consent and an answer the edition
+ * no longer asks for leave it too, with nothing to say. None of them is on a step any more, so the
+ * buyer could not take it out. What merely ran out stays, for its step to mark. A checkout whose
+ * ticket type is gone from the offer stays whole: the listing moves it to another one.
+ */
+export function fitToOffer(offer: Offer, draft: Draft): { draft: Draft; dropped: boolean } {
+  const type = ticketTypeOf(offer, draft)
+  if (!draft.extending && draft.ticketTypeId !== null && !type) return { draft, dropped: false }
+  const addOns = new Set(offeredAddOns(offer, draft).map((addOn) => addOn.id))
+  const variants = new Set(
+    offeredItems(offer, draft).flatMap((item) => item.variants.map((variant) => variant.id)),
+  )
+  const consents = new Set(offer.consents.map((consent) => consent.id))
+  const fields = new Set(offer.customFields.map((field) => field.id))
+
+  const chosen = draft.supporterPriceMinor
+  const supporterPriceMinor =
+    chosen !== null && type?.supporterPrices.includes(chosen) ? chosen : null
+  const addOnIds = draft.addOnIds.filter((id) => addOns.has(id))
+  const items = draft.items.filter((item) => variants.has(item.variantId))
+  const consentIds = draft.consentIds.filter((id) => consents.has(id))
+  const answers = Object.entries(draft.answers).filter(([fieldId]) => fields.has(fieldId))
+
+  const dropped =
+    supporterPriceMinor !== chosen ||
+    addOnIds.length !== draft.addOnIds.length ||
+    items.length !== draft.items.length
+  const same =
+    !dropped &&
+    consentIds.length === draft.consentIds.length &&
+    answers.length === Object.keys(draft.answers).length
+  if (same) return { draft, dropped }
+  return {
+    draft: {
+      ...draft,
+      supporterPriceMinor,
+      addOnIds,
+      items,
+      consentIds,
+      answers: Object.fromEntries(answers),
+    },
+    dropped,
+  }
+}
+
 /** What is wrong with a field of the first step. */
 export type FieldIssue = 'required' | 'invalid' | 'mismatch' | 'too-long' | 'not-allowed'
 

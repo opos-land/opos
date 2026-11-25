@@ -58,6 +58,7 @@ import {
   clearDraft,
   type Draft,
   extensionDraft,
+  fitToOffer,
   holderIssues,
   loadDraft,
   orderBody,
@@ -184,24 +185,36 @@ function Checkout({
   const signedIn = account !== null
 
   const [begun] = useState(() => {
-    if (extending) {
-      // "Buy more" has a checkout of its own, kept apart from the edition's.
-      const kept = loadDraft(tenantSlug, editionSlug, extending.id)
-      return {
-        draft: kept ? resumeExtension(offer, kept, extending) : extensionDraft(offer, extending),
-        removedAddOns: [],
-        ask: false,
-      }
-    }
-    return beginCheckout(
-      offer,
-      loadDraft(tenantSlug, editionSlug),
-      wanted,
-      // A signed-in buyer's name is filled in from the account.
-      account ? [account.firstName, account.lastName].filter(Boolean).join(' ') : '',
-    )
+    const kept = loadDraft(tenantSlug, editionSlug, extending?.id)
+    const start = extending
+      ? {
+          // "Buy more" has a checkout of its own, kept apart from the edition's.
+          draft: kept ? resumeExtension(offer, kept, extending) : extensionDraft(offer, extending),
+          removedAddOns: [],
+          ask: false,
+        }
+      : beginCheckout(
+          offer,
+          kept,
+          wanted,
+          // A signed-in buyer's name is filled in from the account.
+          account ? [account.firstName, account.lastName].filter(Boolean).join(' ') : '',
+        )
+    // The tab may have kept it for long: what the shop no longer offers leaves it.
+    const fitted = start.draft && fitToOffer(offer, start.draft)
+    return { ...start, draft: fitted ? fitted.draft : null, dropped: !!fitted?.dropped }
   })
   const [draft, setDraft] = useState(begun.draft)
+  /** Whether the checkout lost something the shop no longer offers: the buyer is told. */
+  const [dropped, setDropped] = useState(begun.dropped)
+  const [fittedTo, setFittedTo] = useState(offer)
+  // The offer was read again, as it is after the shop refused an order: the checkout follows it.
+  if (fittedTo !== offer) {
+    setFittedTo(offer)
+    const fitted = draft && fitToOffer(offer, draft)
+    if (fitted && fitted.draft !== draft) setDraft(fitted.draft)
+    if (fitted?.dropped) setDropped(true)
+  }
   /** Whether the buyer still has to say what becomes of the merchandise chosen before. */
   const [asking, setAsking] = useState(begun.ask)
   const [removed, setRemoved] = useState(begun.removedAddOns)
@@ -343,6 +356,11 @@ function Checkout({
   const quote = applied ? coded.data : local
   const lines = 'problem' in quote ? [] : quote.lines
   const totalMinor = 'problem' in quote ? 0 : quote.totalMinor
+  // What of the cart cannot be had as the offer now stands. A cart with nothing in it is not
+  // one of them: its step asks for something to order.
+  const problem = 'problem' in local && local.problem.kind !== 'empty' ? local.problem : null
+  /** What ran out since it was chosen, as the shop said on refusing the order or as the offer shows. */
+  const marked = ranOut ?? (problem && 'id' in problem ? problem.id : null)
   const refused = coded.isError && errorCode(coded.error) === 'discount-code.refused'
   const discount: DiscountState = {
     applied,
@@ -427,6 +445,24 @@ function Checkout({
           </Trans>
         </Notice>
       )}
+      {dropped && (
+        <Notice>
+          <Trans>
+            The shop no longer offers something you had chosen, so it was removed from your order.
+            Check the order before you place it.
+          </Trans>
+        </Notice>
+      )}
+      {problem?.kind === 'ticket-type' && (
+        <p className="text-destructive" role="alert">
+          <Trans>
+            This ticket type is not on sale now.{' '}
+            <Link to={shop} className={linkClass}>
+              Choose another one in the shop.
+            </Link>
+          </Trans>
+        </p>
+      )}
 
       <h2 ref={heading} tabIndex={-1} className="text-xl font-semibold outline-none">
         {i18n._(stepName(current, merchOnly))}
@@ -467,7 +503,7 @@ function Checkout({
               tenantSlug={tenantSlug}
               offer={offer}
               draft={draft}
-              ranOut={ranOut}
+              ranOut={marked}
               change={change}
             />
           )}
@@ -476,7 +512,7 @@ function Checkout({
               offer={offer}
               draft={draft}
               tenantSlug={tenantSlug}
-              ranOut={ranOut}
+              ranOut={marked}
               preorderDeadline={
                 offer.merchPreorderDeadline &&
                 formatDateTime(new Date(offer.merchPreorderDeadline), locale, timeZone, {
@@ -487,7 +523,26 @@ function Checkout({
               change={change}
             />
           )}
-          {current === 'summary' && (
+          {current === 'summary' && problem?.kind === 'merch-only' && (
+            <p className="text-destructive" role="alert">
+              <Trans>
+                Merchandise cannot be ordered without a ticket now.{' '}
+                <Link to={shop} className={linkClass}>
+                  Choose a ticket type in the shop.
+                </Link>
+              </Trans>
+            </p>
+          )}
+          {current === 'summary' &&
+            problem &&
+            !['ticket-type', 'merch-only'].includes(problem.kind) && (
+              <p className="text-destructive" role="alert">
+                <Trans>
+                  Something you chose is no longer available. Go back to its step and change it.
+                </Trans>
+              </p>
+            )}
+          {current === 'summary' && !problem && (
             <>
               {newTotal !== null && (
                 <Notice>
@@ -529,17 +584,20 @@ function Checkout({
             ) : (
               <span />
             )}
-            {current === 'summary' ? (
+            {current !== 'summary' ? (
+              <Button type="submit">
+                <Trans>Next</Trans>
+              </Button>
+            ) : problem ? (
+              // Nothing to place while a part of the order cannot be had: the page says which.
+              <span />
+            ) : (
               <Button type="submit" disabled={place.isPending || discount.pending}>
                 {totalMinor > 0 ? (
                   <Trans>Order and pay</Trans>
                 ) : (
                   <Trans context="the button that places an order with nothing to pay">Order</Trans>
                 )}
-              </Button>
-            ) : (
-              <Button type="submit">
-                <Trans>Next</Trans>
               </Button>
             )}
           </div>

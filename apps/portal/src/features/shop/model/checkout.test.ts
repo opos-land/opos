@@ -8,6 +8,7 @@ import {
   type Draft,
   emptyDraft,
   extensionDraft,
+  fitToOffer,
   forgetDraftsAtSignOut,
   holderIssues,
   loadDraft,
@@ -395,6 +396,123 @@ describe('the start of a checkout', () => {
       removedAddOns: [],
       ask: true,
     })
+  })
+})
+
+// The tab keeps a checkout for as long as it lives, and the offer changes meanwhile: what the
+// offer no longer holds is on no step, so the buyer could neither see it nor take it out.
+describe('a checkout whose offer changed since it was kept', () => {
+  const [first, second] = offer().ticketTypes
+
+  it('stays as it is while the offer holds all it chose', () => {
+    const draft = filled({
+      supporterPriceMinor: 20000,
+      addOnIds: [workshop!],
+      items: [{ variantId: small!, quantity: 2 }],
+      consentIds: [terms!, news!],
+      answers: { [city!]: 'Poznań', [fandom!]: 'Dune' },
+    })
+
+    const fitted = fitToOffer(offer(), draft)
+
+    expect(fitted.dropped).toBe(false)
+    expect(fitted.draft).toBe(draft)
+  })
+
+  it('loses the add-on, the variant and the supporter price no longer offered, and says so', () => {
+    const draft = filled({
+      supporterPriceMinor: 20000,
+      addOnIds: [workshop!, room!],
+      items: [
+        { variantId: small!, quantity: 2 },
+        { variantId: medium!, quantity: 1 },
+      ],
+    })
+    // The workshop is hidden, the pin is no longer sold with the ticket type, and the supporter
+    // price is gone.
+    const changed = offer({
+      ticketTypes: [
+        { ...first!, supporterPrices: [], addOnIds: [room!], merchandiseItemIds: [shirt!] },
+        second!,
+      ],
+      addOns: offer().addOns.filter((addOn) => addOn.id !== workshop),
+    })
+
+    const fitted = fitToOffer(changed, draft)
+
+    expect(fitted.dropped).toBe(true)
+    expect(fitted.draft).toEqual({
+      ...draft,
+      supporterPriceMinor: null,
+      addOnIds: [room],
+      items: [{ variantId: medium, quantity: 1 }],
+    })
+    expect(quoteOf(changed, fitted.draft)).toMatchObject({ totalMinor: 10000 + 8000 })
+  })
+
+  // What ran out is still offered: its step shows it, marked, and the buyer takes it out.
+  it('keeps what ran out and is still on its step', () => {
+    const draft = filled({ addOnIds: [workshop!], items: [{ variantId: medium!, quantity: 1 }] })
+    const [pinItem, shirtItem] = offer().items
+    const ranOut = offer({
+      addOns: offer().addOns.map((addOn) => ({ ...addOn, soldOut: addOn.id === workshop })),
+      items: [
+        pinItem!,
+        { ...shirtItem!, variants: [{ ...shirtItem!.variants[0]!, maxQuantity: 0 }] },
+      ],
+    })
+
+    expect(fitToOffer(ranOut, draft)).toEqual({ draft, dropped: false })
+  })
+
+  // A consent or a custom field the edition hid is on no screen: the order must not carry it.
+  it('loses a consent and an answer the edition no longer asks for, with nothing to say', () => {
+    const draft = filled({
+      consentIds: [terms!, news!],
+      answers: { [city!]: 'Poznań', [fandom!]: 'Dune' },
+    })
+    const changed = offer({
+      consents: offer().consents.filter((consent) => consent.id !== news),
+      customFields: offer().customFields.filter((field) => field.id !== fandom),
+    })
+
+    const fitted = fitToOffer(changed, draft)
+
+    expect(fitted.dropped).toBe(false)
+    expect(fitted.draft).toEqual({ ...draft, consentIds: [terms], answers: { [city!]: 'Poznań' } })
+    expect(orderBody(fitted.draft, 10000, 'token', false)).toMatchObject({
+      consentIds: [terms],
+      customFieldAnswers: [{ fieldId: city, answer: 'Poznań' }],
+    })
+  })
+
+  // The listing is where another ticket type is picked, and it carries over what was chosen.
+  it('keeps its add-ons and merchandise while its ticket type is gone from the offer', () => {
+    const draft = filled({ addOnIds: [room!], items: [{ variantId: small!, quantity: 1 }] })
+
+    expect(fitToOffer(offer({ ticketTypes: [second!] }), draft)).toEqual({ draft, dropped: false })
+  })
+
+  it('fits a "Buy more" checkout to what the ticket type of its order is offered', () => {
+    const more: Draft = {
+      ...emptyDraft(null),
+      extending: {
+        orderId: id(40),
+        number: 'ABCDEFGHJK',
+        holderName: 'Ada',
+        ticketTypeId: supporter!,
+        addOnIds: [],
+        itemIds: [],
+      },
+      addOnIds: [workshop!, room!],
+      items: [{ variantId: small!, quantity: 1 }],
+      step: 'summary',
+    }
+
+    const fitted = fitToOffer(offer(), more)
+
+    expect(fitted.dropped).toBe(true)
+    expect(fitted.draft).toMatchObject({ addOnIds: [room], items: [] })
   })
 })
 

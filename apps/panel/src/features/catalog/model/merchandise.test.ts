@@ -4,6 +4,7 @@ import { parseMoney } from '@opos/i18n'
 import {
   axesBody,
   axesFields,
+  axesKey,
   EMPTY_ITEM,
   imageProblem,
   itemBody,
@@ -11,6 +12,7 @@ import {
   reshapes,
   stockWrites,
   variantRows,
+  variantsKey,
   variantsPlan,
 } from './merchandise'
 
@@ -285,6 +287,54 @@ describe('the axes of an item, as their editor holds them', () => {
     ).toBe(true)
     // An axis that goes takes its values, and their size charts.
     expect(reshapes(item, [size!])).toBe(true)
+  })
+})
+
+describe('what fills an editor of an item anew', () => {
+  const item = shirt([variant('v1', ['w', 's'], 12)])
+  const charted: MerchandiseItem = {
+    ...item,
+    axes: [
+      {
+        ...item.axes[0]!,
+        values: [
+          { ...value('w', "Women's"), sizeChart: { fileId: 'chart-w', width: 400, height: 300 } },
+          value('m', "Men's"),
+        ],
+      },
+      item.axes[1]!,
+    ],
+  }
+  const renamed: MerchandiseItem = {
+    ...item,
+    axes: [item.axes[0]!, { ...item.axes[1]!, values: [value('s', 'Small'), value('l', 'L')] }],
+  }
+
+  it('is not a size chart set or removed, which neither editor holds', () => {
+    expect(axesKey(charted)).toBe(axesKey(item))
+    expect(variantsKey(charted)).toBe(variantsKey(item))
+  })
+
+  it('is, for the axes, a name, a label or a value of theirs, and no variant', () => {
+    expect(axesKey(renamed)).not.toBe(axesKey(item))
+    expect(axesKey({ ...item, axes: [item.axes[0]!] })).not.toBe(axesKey(item))
+    expect(axesKey(shirt([variant('v1', ['w', 's'], 30), variant('v2', ['m', 'l'])]))).toBe(
+      axesKey(item),
+    )
+  })
+
+  it('is, for the variants, which exist, their stock, whether they are hidden and their names', () => {
+    expect(variantsKey(shirt([variant('v1', ['w', 's'], 30)]))).not.toBe(variantsKey(item))
+    expect(variantsKey(shirt([variant('v1', ['w', 's'], 12, true)]))).not.toBe(variantsKey(item))
+    expect(variantsKey(shirt())).not.toBe(variantsKey(item))
+    expect(variantsKey(renamed)).not.toBe(variantsKey(item))
+  })
+
+  it('is another item', () => {
+    const mug = { ...shirt([variant('only', [], 40)]), axes: [] }
+
+    expect(axesKey({ ...mug, id: 'cup' })).not.toBe(axesKey(mug))
+    expect(variantsKey({ ...mug, id: 'cup' })).not.toBe(variantsKey(mug))
   })
 })
 

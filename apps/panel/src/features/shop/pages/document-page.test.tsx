@@ -222,6 +222,34 @@ describe('the page of a document', () => {
     })
   })
 
+  it('leaves a title typed and not saved when a version is published', async () => {
+    state.tickets = 'write'
+    view()
+    const title = await screen.findByLabelText<HTMLInputElement>('Title')
+    fireEvent.change(title, { target: { value: 'Terms of the shop' } })
+    readDocuments.mockResolvedValue([
+      {
+        ...terms,
+        versions: [
+          ...terms.versions,
+          {
+            id: '9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a',
+            number: 2,
+            publishedAt: '2027-05-02T08:00:00.000Z',
+            file: { name: 'terms-v2.pdf', size: 5 },
+          },
+        ],
+      },
+      rules,
+    ])
+
+    fireEvent.change(screen.getByLabelText('New version'), { target: { files: [pdf()] } })
+    fireEvent.click(screen.getByRole('button', { name: 'Publish the version' }))
+
+    expect(await screen.findByRole('link', { name: 'Version 2' })).toBeDefined()
+    expect(screen.getByLabelText<HTMLInputElement>('Title').value).toBe('Terms of the shop')
+  })
+
   it('refuses a file that is no PDF beside its field, and sends nothing', async () => {
     state.tickets = 'write'
     view()

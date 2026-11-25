@@ -115,6 +115,20 @@ export const axesFields = (item: MerchandiseItem): AxisFields[] =>
     values: axis.values.map(({ id, label }) => ({ id, label })),
   }))
 
+/**
+ * What fills the editor of the axes anew once it changes: the item and the axes as the editor
+ * holds them. A size chart or a variant, which another editor saves, is no part of it, so saving
+ * there leaves what is typed here and not saved yet.
+ */
+export const axesKey = (item: MerchandiseItem) => JSON.stringify([item.id, axesFields(item)])
+
+/**
+ * What fills the editor of the variants anew once it changes: the item and its rows, which hold
+ * the values of the axes, the variants that exist, their stock and whether each is hidden. A size
+ * chart is no part of it.
+ */
+export const variantsKey = (item: MerchandiseItem) => JSON.stringify([item.id, variantRows(item)])
+
 const distinct = (texts: readonly string[]) =>
   new Set(texts.map((text) => text.toLowerCase())).size === texts.length
 

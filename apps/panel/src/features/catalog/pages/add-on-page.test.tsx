@@ -208,6 +208,22 @@ describe('the page of an add-on', () => {
       })
     })
 
+    it('leaves what the form of the add-on holds unsaved when it is set', async () => {
+      readAddOns.mockResolvedValue([addOn(1, { name: 'Sleeping room' })])
+      readFile.mockResolvedValue({ headers: {}, body: new Blob(['x']) })
+      putPicture.mockResolvedValue({})
+      view()
+      const picture = await section()
+      fireEvent.change(field('Name'), { target: { value: 'Sleeping hall' } })
+      readAddOns.mockResolvedValue([addOn(1, { name: 'Sleeping room', picture: PICTURE })])
+
+      fireEvent.change(picture.getByLabelText('New picture'), { target: { files: [png()] } })
+      fireEvent.click(picture.getByRole('button', { name: 'Set the picture' }))
+
+      expect(await picture.findByRole('img', { name: 'Picture of Sleeping room' })).toBeDefined()
+      expect(field('Name').value).toBe('Sleeping hall')
+    })
+
     it('is shown once it is there, and replaced by another image', async () => {
       readAddOns.mockResolvedValue([addOn(1, { name: 'Sleeping room', picture: PICTURE })])
       readFile.mockResolvedValue({ headers: {}, body: new Blob(['x']) })

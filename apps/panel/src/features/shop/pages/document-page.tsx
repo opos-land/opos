@@ -73,8 +73,12 @@ export function DocumentPage() {
       </p>
       <Versions document={document} />
       {atLeast(level, 'write') && (
-        // The saved document fills its forms anew.
-        <Changes key={JSON.stringify(document)} document={document} list={list} />
+        // The saved title fills its form anew; a version published beside it does not.
+        <Changes
+          key={JSON.stringify([document.id, document.title])}
+          document={document}
+          list={list}
+        />
       )}
     </>
   )

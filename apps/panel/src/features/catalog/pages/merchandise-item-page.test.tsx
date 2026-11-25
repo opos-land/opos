@@ -525,6 +525,40 @@ describe('the size charts of an item', () => {
     })
   })
 
+  it('leave what the other editors hold unsaved when one is set', async () => {
+    view('shirt')
+    await waitFor(() => expect(field("Women's · S: stock").value).toBe('12'))
+    type("Women's · S: stock", '99')
+    press('Add a value to axis 2')
+    type('Value 3 of axis 2', 'XL')
+    readItems.mockResolvedValue([
+      mug,
+      {
+        ...shirt,
+        axes: [
+          {
+            ...shirt.axes[0]!,
+            values: [
+              shirt.axes[0]!.values[0]!,
+              value('m', "Men's", { fileId: 'chart-m', width: 400, height: 300 }),
+            ],
+          },
+          shirt.axes[1]!,
+        ],
+      },
+    ])
+
+    const mens = within(screen.getByRole('region', { name: "Cut: Men's" }))
+    fireEvent.change(mens.getByLabelText("New size chart of Cut: Men's"), {
+      target: { files: [png('chart.png')] },
+    })
+    fireEvent.click(mens.getByRole('button', { name: 'Set the size chart' }))
+
+    expect(await screen.findByRole('img', { name: "Size chart of Cut: Men's" })).toBeDefined()
+    expect(field("Women's · S: stock").value).toBe('99')
+    expect(field('Value 3 of axis 2').value).toBe('XL')
+  })
+
   it('are removed only once the modal is confirmed', async () => {
     view('shirt')
     const womens = within(await screen.findByRole('region', { name: "Cut: Women's" }))

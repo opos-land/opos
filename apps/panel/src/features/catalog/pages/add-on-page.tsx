@@ -73,8 +73,8 @@ export function AddOnPage() {
       </p>
       <Section title={<Trans>Add-on data</Trans>}>
         <AddOnForm
-          // The saved add-on fills the form anew.
-          key={JSON.stringify(addOn)}
+          // The saved add-on fills the form anew; its picture, saved beside the form, does not.
+          key={JSON.stringify([addOn.id, addOnFields(addOn, money.toInput)])}
           initial={addOnFields(addOn, money.toInput)}
           pending={update.isPending}
           submitLabel={<Trans>Save the add-on</Trans>}

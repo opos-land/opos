@@ -730,8 +730,10 @@ steps of [adding a feature](#adding-a-feature).
   is queued in the transaction of its cause and sent by the outbox
   ([0049](adr/0049-send-the-emails-of-an-order-from-an-outbox-in-the-database.md)). A provider
   account stays as it is while a payment is under way, which is while an order awaits payment
-  and for 24 hours from the end of the hold of an expired order that has a payment attempt
-  nobody confirmed: it is not disconnected, and it gives way to new credentials only when they name the same
+  and, for 24 hours from the end of its hold at most, while an expired order has a payment
+  attempt its provider may still confirm: one nobody confirmed, which the provider neither
+  refused to register nor answered about as not paid once the order had expired. The account is
+  not disconnected, and it gives way to new credentials only when they name the same
   account, as its provider's module tells, when the stored ones no longer open, or when the
   provider, asked before the route's transaction, refuses the stored ones
   ([0093](adr/0093-change-a-provider-account-under-a-payment-only-where-the-payment-loses-nothing.md)).

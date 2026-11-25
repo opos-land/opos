@@ -501,6 +501,25 @@ describe('payment_attempts', () => {
     expect(row!.rechecked_at).toBeInstanceOf(Date)
   })
 
+  // A provider that refused to register an attempt gave its last word of it at once: the mark
+  // waits for no expiry, and is written as the attempt ends.
+  it('is marked while its order awaits payment when its provider refused to register it', async () => {
+    const at = await place()
+    const id = await attempt(at, await order(at))
+
+    await inTenant(
+      at.tenant,
+      (sql) =>
+        sql`update payment_attempts set status = 'ended', rechecked_at = now() where id = ${id}`,
+    )
+
+    const [row] = await migrator<{ status: string; rechecked_at: Date | null }[]>`
+      select status, rechecked_at from payment_attempts where id = ${id}
+    `
+    expect(row!.status).toBe('ended')
+    expect(row!.rechecked_at).toBeInstanceOf(Date)
+  })
+
   // The job that asks again finds its attempts across tenants, by identifiers and the moments
   // that say whether one is still to ask: nothing a provider said of a payment.
   it('is found across tenants while nobody confirmed it or asked again, by identifiers alone', async () => {

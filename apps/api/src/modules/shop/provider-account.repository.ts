@@ -64,17 +64,19 @@ export class ProviderAccountRepository {
   /**
    * Whether a payment of the convention is under way: an order awaits payment, or one expired
    * whose hold ended within the last LATE_CONFIRMATION_HOURS and which has a payment attempt
-   * nobody confirmed, since a payment made counts whenever its confirmation comes. The lock on
-   * the tenant's provider account is taken first, alone, and an order with something to pay
-   * shares it while it is placed: one being placed is waited for and counted, and one placed
-   * after waits for the change of the credentials.
+   * its provider may still confirm, since a payment made counts whenever its confirmation comes.
+   * That is an attempt nobody confirmed and whose provider has not given its last word that
+   * nobody paid it: refusing to register it, or asked about it once more after the order
+   * expired. The lock on the tenant's provider account is taken first, alone, and an order with
+   * something to pay shares it while it is placed: one being placed is waited for and counted,
+   * and one placed after waits for the change of the credentials.
    */
   async paymentsUnderWay(now = new Date()): Promise<boolean> {
     const tx = this.context.tx()
     const tenantId = this.context.tenant().id
     await tx.execute(sql`select pg_advisory_xact_lock(${providerAccountLockKey(tenantId)}::bigint)`)
     const since = new Date(now.getTime() - LATE_CONFIRMATION_HOURS * 3_600_000)
-    const unconfirmed = tx
+    const confirmable = tx
       .select({ id: paymentAttempts.id })
       .from(paymentAttempts)
       .where(
@@ -82,6 +84,7 @@ export class ProviderAccountRepository {
           eq(paymentAttempts.tenantId, tenantId),
           eq(paymentAttempts.orderId, orders.id),
           isNull(paymentAttempts.confirmedAt),
+          isNull(paymentAttempts.recheckedAt),
         ),
       )
     const [order] = await tx
@@ -92,7 +95,7 @@ export class ProviderAccountRepository {
           eq(orders.tenantId, tenantId),
           or(
             eq(orders.status, 'awaiting-payment'),
-            and(eq(orders.status, 'expired'), gt(orders.holdEndsAt, since), exists(unconfirmed)),
+            and(eq(orders.status, 'expired'), gt(orders.holdEndsAt, since), exists(confirmable)),
           ),
         ),
       )

@@ -632,8 +632,11 @@ describe('what else an order keeps in place', () => {
   // day longer.
   describe('once it expired with a payment attempt nobody confirmed', () => {
     const HOUR = 3_600_000
-    /** An order whose hold ended so long ago, expired, with an attempt of the status given. */
-    async function expired(endedAgo: number, attempt?: 'ended' | 'failed') {
+    /**
+     * An order whose hold ended so long ago, expired, with an attempt of the status given;
+     * `answered` when its provider gave its last word that nobody paid it.
+     */
+    async function expired(endedAgo: number, attempt?: 'ended' | 'failed', answered = false) {
       const c = await convention()
       await makeShopReady(c.t.id, c.edition)
       await connectFake(c.t.id)
@@ -642,7 +645,12 @@ describe('what else an order keeps in place', () => {
         holds: false,
         holdEndsAt: new Date(Date.now() - endedAgo).toISOString(),
       })
-      if (attempt) await addPaymentAttempt(c.t.id, c.edition, order.id, { status: attempt })
+      if (attempt) {
+        await addPaymentAttempt(c.t.id, c.edition, order.id, {
+          status: attempt,
+          recheckedAt: answered ? new Date().toISOString() : null,
+        })
+      }
       return c
     }
     const disconnect = (c: Awaited<ReturnType<typeof convention>>) =>
@@ -681,6 +689,25 @@ describe('what else an order keeps in place', () => {
 
       const disconnected = await expired(within)
       expect((await disconnect(disconnected)).status).toBe(204)
+    })
+
+    // The provider answered that nobody paid the attempt: asked about it once more after the
+    // order expired, or refusing to register it at all. It confirms nothing of it any more.
+    it('lets the account change at once when the provider answered that nobody paid its attempts', async () => {
+      const replaced = await expired(within, 'ended', true)
+      expect((await connect(replaced, { account: 'another' })).status).toBe(200)
+
+      const disconnected = await expired(within, 'failed', true)
+      expect((await disconnect(disconnected)).status).toBe(204)
+    })
+
+    it('keeps the account while one of its attempts may still be confirmed', async () => {
+      const c = await expired(within, 'ended', true)
+      const [order] = await storedRows('orders', c.t.id)
+      await addPaymentAttempt(c.t.id, c.edition, String(order!.id), { status: 'ended' })
+
+      expect((await connect(c, { account: 'another' })).status).toBe(409)
+      expect((await disconnect(c)).status).toBe(409)
     })
 
     // Only an attempt nobody confirmed may still be confirmed.

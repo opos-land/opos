@@ -244,8 +244,24 @@ describe('a payment attempt', () => {
     const res = await s.start(placed).expect(503)
 
     expect(res.body).toMatchObject({ code: 'provider.unavailable' })
-    // The attempt is kept as one that ended with no payment.
-    expect(await s.attempts()).toMatchObject([{ status: 'ended' }])
+    // The attempt is kept as one that ended with no payment. The provider did not answer, so it
+    // may know the attempt after all: it is still one to ask about.
+    expect(await s.attempts()).toMatchObject([{ status: 'ended', rechecked_at: null }])
+    expect(await s.order(placed.orderId)).toMatchObject({ status: 'awaiting-payment', holds: true })
+  })
+
+  // The provider answered, and registered nothing: it will never confirm a payment of the
+  // attempt, so its last word is in before the order ever expires.
+  it('marks an attempt the provider refused to register as one nobody is asked about again', async () => {
+    const s = await shop(FAKE_ACCOUNT.startRefused)
+    const placed = await s.place()
+
+    const res = await s.start(placed).expect(503)
+
+    expect(res.body).toMatchObject({ code: 'provider.unavailable' })
+    const [attempt] = await s.attempts()
+    expect(attempt).toMatchObject({ status: 'ended', confirmed_at: null })
+    expect(attempt!.rechecked_at).not.toBeNull()
     expect(await s.order(placed.orderId)).toMatchObject({ status: 'awaiting-payment', holds: true })
   })
 

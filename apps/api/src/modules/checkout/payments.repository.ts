@@ -56,8 +56,9 @@ export type Gone =
   { kind: 'ticket-type' | 'add-on' | 'variant'; id: string } | { kind: 'discount-code' }
 
 /**
- * What a provider's module said of an attempt, as the attempt keeps it, and when the provider was
- * asked about it again after its order expired.
+ * What a provider's module said of an attempt, as the attempt keeps it, and when the provider
+ * gave its last word that nobody paid it: asked about it again after its order expired, or
+ * refusing to register it at all.
  */
 export type AttemptChanges = Partial<
   Pick<

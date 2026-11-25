@@ -482,8 +482,9 @@ export const paymentAttempts = pgTable(
     failureMessage: text(),
     information: jsonb().$type<Record<string, string>>(),
     /**
-     * When the provider was asked about it once more after its order expired: an attempt nobody
-     * confirmed is asked about once, and this says it was.
+     * When its provider gave its last word that nobody paid it: asked about it once more after
+     * its order expired, which an attempt nobody confirmed is once, or refusing to register it
+     * at all. Nobody asks about it from then on.
      */
     recheckedAt: timestamp({ withTimezone: true }),
     ...timestamps,

@@ -45,8 +45,9 @@ export const PROVIDERS: Record<
   przelewy24: {
     name: msg`Przelewy24`,
     needsAddress: true,
-    // Its access test takes the point of sale's identifier and the API key alone.
-    readyNote: msg`The CRC key and the merchant ID are confirmed only by the first payment a buyer starts. You can correct the credentials of this same account at any time.`,
+    // Its access test takes the point of sale's identifier and the API key alone. The merchant
+    // and the point of sale are the account: other ones wait until no payment is under way.
+    readyNote: msg`The CRC key and the merchant ID are confirmed only by the first payment a buyer starts. You can correct the API key and the CRC key of this account at any time. A different merchant ID or point of sale ID is a different account: like any other account, you can give it only when no payment is under way.`,
     fields: [
       {
         name: 'merchantId',

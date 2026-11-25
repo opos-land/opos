@@ -35,8 +35,14 @@ module: its domain owner confirms it.
 ## Decision
 
 - A payment is under way while an order of the convention awaits payment, and for 24 hours from
-  the end of the hold of an expired order that has a payment attempt nobody confirmed: its late
-  confirmation still needs the account.
+  the end of the hold of an expired order at most, while the order has a payment attempt its
+  provider may still confirm: its late confirmation still needs the account.
+- An attempt may still be confirmed while nobody confirmed it and its provider has not given its
+  last word that nobody paid it. The provider gives that word when it answers the start of the
+  attempt by refusing to register it, and when it answers the question asked once more after
+  the order expired
+  ([0104](0104-ask-the-provider-once-more-about-each-payment-attempt-of-an-expired-order.md)). A
+  provider that did not answer said nothing: its attempt counts on, for the 24 hours.
 - While a payment is under way the provider account is not disconnected, and new credentials are
   refused, but for three accounts that lose nothing by giving way:
   - **The same account given again.** The provider's module tells whether two sets of credentials
@@ -75,6 +81,12 @@ module: its domain owner confirms it.
 - **Keep the account for as long as each provider repeats a notification.** Przelewy24 repeats
   one for hours, another provider will for another time; one day covers them and is a time an
   org can be told.
+- **Keep the account the whole day for every attempt nobody confirmed.** An attempt its provider
+  refused to register is never confirmed, and it is what a mistyped merchant identifier leaves
+  at every buyer. The one repair, the right identifier, names another account, so it would wait
+  a day after the last of those buyers, with the shop selling nothing meanwhile.
+- **Take a corrected merchant or point of sale identifier as the same account.** Nothing tells a
+  mistyped identifier from a move to another account, which loses the payments under way.
 
 ## Consequences
 
@@ -90,15 +102,24 @@ module: its domain owner confirms it.
   credentials and about the stored ones. Both count as one of the convention's 20 checks an hour.
 - A provider's module answers one more question, with no call: whether two sets of credentials
   name one account.
-- A convention that moves to another account, or disconnects its own, waits a day after the last
-  order that expired with a payment attempt nobody confirmed. An attempt its provider never
-  registered counts too: the attempt does not tell it from one the expiry ended.
+- A convention that moves to another account, or disconnects its own, waits for the hold of its
+  last order awaiting payment, and then for the provider's last word of each attempt of an order
+  that expired: a little over an hour where the provider answers the question asked once more,
+  a day where it does not.
+- A mistyped merchant or point of sale identifier names another account. Przelewy24's check of
+  credentials reads the point of sale and the API key alone, so an account with a wrong
+  merchant identifier connects as ready and every payment fails at its registration. Such an
+  attempt keeps nothing in place: the identifier is corrected once the orders placed meanwhile
+  have expired, and the panel says beside a ready account what is corrected when.
+- That Przelewy24 registered nothing is read from an answer that puts the request at fault. Any
+  other answer, and no answer, leave the attempt one that may still be confirmed.
 - Rules P5 and P6 of the shop's setup hold as changed here; 0044 and 0081 stand.
 
 ## Sources
 
 - The review of the shop's code of 2026-11-25, findings on a dead end between the expiry job and
-  the refusal of new credentials, and on a late confirmation that finds its account gone.
+  the refusal of new credentials, on a late confirmation that finds its account gone, and on a
+  mistyped merchant identifier that could not be corrected for a day.
 - [Shop setup](../specs/0002-shop-setup.md), P5 and P6;
   [checkout and orders](../specs/0004-checkout-and-orders.md), Y6;
   [Przelewy24](../specs/0005-przelewy24.md).

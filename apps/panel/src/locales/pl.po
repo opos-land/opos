@@ -3406,8 +3406,8 @@ msgid "The convention’s payment provider account is connected and ready to sel
 msgstr "Konto konwentu u dostawcy płatności jest podłączone i gotowe do sprzedaży."
 
 #: src/features/shop/model/providers.ts
-msgid "The CRC key and the merchant ID are confirmed only by the first payment a buyer starts. You can correct the credentials of this same account at any time."
-msgstr "Klucz CRC i ID sprzedawcy potwierdza dopiero pierwsza płatność rozpoczęta przez kupującego. Dane dostępowe tego samego konta możesz poprawić w każdej chwili."
+msgid "The CRC key and the merchant ID are confirmed only by the first payment a buyer starts. You can correct the API key and the CRC key of this account at any time. A different merchant ID or point of sale ID is a different account: like any other account, you can give it only when no payment is under way."
+msgstr "Klucz CRC i ID sprzedawcy potwierdza dopiero pierwsza płatność rozpoczęta przez kupującego. Klucz API i klucz CRC tego konta możesz poprawić w każdej chwili. Inne ID sprzedawcy albo ID sklepu to już inne konto: tak jak każde inne konto podasz je dopiero wtedy, gdy żadna płatność nie jest w toku."
 
 #: src/features/shop/components/provider-account-section.tsx
 msgid "The credentials are checked with the provider, stored encrypted and never shown again."

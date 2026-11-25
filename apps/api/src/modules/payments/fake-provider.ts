@@ -27,6 +27,8 @@ export const FAKE_ACCOUNT = {
   unavailable: 'unavailable',
   /** Starting an attempt finds the provider out of reach. */
   startUnavailable: 'start-unavailable',
+  /** Starting an attempt is refused: the provider answers, and knows no such attempt. */
+  startRefused: 'start-refused',
   /** Asking for the state of an attempt does not answer. */
   stateUnavailable: 'state-unavailable',
   /** Settling a payment does not answer. */
@@ -145,6 +147,9 @@ export class FakeProvider implements PaymentProviderModule {
   start(credentials: Credentials, request: StartRequest): Promise<StartAnswer> {
     if (credentials.account === FAKE_ACCOUNT.startUnavailable) {
       return Promise.resolve({ outcome: 'unavailable', reason: 'the fake provider is asked to be' })
+    }
+    if (credentials.account === FAKE_ACCOUNT.startRefused) {
+      return Promise.resolve({ outcome: 'refused', reason: 'the fake provider is asked to refuse' })
     }
     this.attempts.set(request.id, { request, credentials })
     return Promise.resolve({

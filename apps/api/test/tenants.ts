@@ -785,6 +785,8 @@ export async function addPaymentAttempt(
     moneyWith?: 'convention' | 'buyer' | null
     providerReference?: string | null
     information?: Record<string, string> | null
+    /** When its provider gave its last word that nobody paid it. */
+    recheckedAt?: string | null
   } = {},
 ) {
   const status = values.status ?? 'paid'
@@ -793,12 +795,13 @@ export async function addPaymentAttempt(
     values.paidAt === undefined ? (settled ? '2027-05-01T10:05:00Z' : null) : values.paidAt
   const [row] = await db.execute<{ id: string }>(sql`
     insert into payment_attempts (tenant_id, edition_id, order_id, provider, status, amount_minor,
-      paid_amount_minor, paid_at, confirmed_at, money_with, provider_reference, information)
+      paid_amount_minor, paid_at, confirmed_at, money_with, provider_reference, rechecked_at,
+      information)
     values (${tenantId}, ${editionId}, ${orderId}, 'fake', ${status}, ${values.amountMinor ?? 10000},
       ${values.paidAmountMinor === undefined ? (settled ? (values.amountMinor ?? 10000) : null) : values.paidAmountMinor},
       ${paidAt}, ${paidAt},
       ${values.moneyWith === undefined ? (status === 'paid' ? 'convention' : status === 'refused' ? 'buyer' : null) : values.moneyWith},
-      ${values.providerReference ?? null},
+      ${values.providerReference ?? null}, ${values.recheckedAt ?? null},
       ${values.information === undefined || values.information === null ? null : sql`${JSON.stringify(values.information)}::jsonb`})
     returning id
   `)

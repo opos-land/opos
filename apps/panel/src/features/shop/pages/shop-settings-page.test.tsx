@@ -252,12 +252,14 @@ describe('ShopSettingsPage', () => {
     ).toBeDefined()
   })
 
-  // Przelewy24's access test checks the point of sale and the API key alone.
-  it('says of a ready Przelewy24 account what only the first payment confirms', async () => {
+  // Przelewy24's access test checks the point of sale and the API key alone. The keys of the
+  // account are corrected at any time; another merchant or point of sale is another account,
+  // which the API takes only while no payment is under way.
+  it('says of a ready Przelewy24 account what only the first payment confirms, and what is corrected when', async () => {
     state.shop = 'read'
     const p24 = { ...account, provider: 'przelewy24' }
     const note =
-      'The CRC key and the merchant ID are confirmed only by the first payment a buyer starts. You can correct the credentials of this same account at any time.'
+      'The CRC key and the merchant ID are confirmed only by the first payment a buyer starts. You can correct the API key and the CRC key of this account at any time. A different merchant ID or point of sale ID is a different account: like any other account, you can give it only when no payment is under way.'
     readAccount.mockResolvedValue({ account: p24, providers: ['przelewy24'], callsFrom: null })
     const { unmount } = view()
 

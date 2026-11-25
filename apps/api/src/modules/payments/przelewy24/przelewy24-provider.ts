@@ -144,6 +144,11 @@ export class Przelewy24Provider implements PaymentProviderModule {
       ),
     })
     const token = dataOf(answer.body)?.token
+    // An answer that the request is at fault, such as a merchant or a signature that does not
+    // match: no transaction was registered. Any other answer does not say whether one was.
+    if (answer.status >= 400 && answer.status < 500) {
+      return { outcome: 'refused', reason: `Przelewy24 answered ${answer.status}` }
+    }
     if (answer.status !== 200 || typeof token !== 'string' || token === '') {
       return { outcome: 'unavailable', reason: `Przelewy24 answered ${answer.status}` }
     }

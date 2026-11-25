@@ -112,9 +112,15 @@ export class PaymentAttempts {
       additionalNotificationUrl: `${this.apiUrl}/payments/${first.provider}/notifications/${attemptId}/additional`,
     })
     if (answer.outcome !== 'started') {
-      // Kept as an attempt that ended with no payment: the provider never knew it.
+      // Kept as an attempt that ended with no payment. A provider that answered it registered
+      // nothing gave its last word of the attempt: marked, it is not asked about again and keeps
+      // no account in place once its order expires. One that did not answer may know it.
+      const refused = answer.outcome === 'refused'
       await this.context.withTenant(tenant.id, () =>
-        this.payments.changeAttempt(attemptId, { status: 'ended' }),
+        this.payments.changeAttempt(attemptId, {
+          status: 'ended',
+          ...(refused && { recheckedAt: new Date() }),
+        }),
       )
       throw providerUnavailable(answer.reason)
     }

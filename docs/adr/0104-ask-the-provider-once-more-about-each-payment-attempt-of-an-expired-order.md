@@ -51,6 +51,8 @@ tickets module: its domain owner confirms it.
 - A provider out of reach, or a payment found that could not be settled, leaves the attempt for
   the next run, for no longer than 24 hours from the end of the hold. An attempt whose provider
   the convention no longer holds an account of has nobody to ask, and is marked.
+- An attempt its provider refused to register carries the mark from its start: the provider
+  answered then that it knows no such attempt, and is not asked about it.
 - The attempts are found across tenants by identifiers alone, of tenants not suspended, and each
   is judged again in its own tenant's transaction.
 
@@ -80,12 +82,13 @@ tickets module: its domain owner confirms it.
   nothing a provider said of a payment; the application role writes the mark. A cross-tenant
   query joins the documented ones
   ([ARCHITECTURE.md, Tenant isolation](../ARCHITECTURE.md#tenant-isolation)).
-- Every attempt of an expired order costs its provider one more question, and nearly all are
-  answered as not paid.
+- Every attempt of an expired order that its provider did not refuse to register costs the
+  provider one more question, and nearly all are answered as not paid.
 - With several API processes, two that find the same attempt at the same moment may each ask.
   The payment is taken once: the order's lock lets one of them write it.
-- A provider account is kept for 24 hours from the end of the hold of an expired order with an
-  attempt nobody confirmed (0093), which is the time this question may be asked in.
+- A provider account is kept while an attempt of an expired order may still be confirmed (0093):
+  until the attempt carries the mark, and for the 24 hours this question may be asked in at
+  most.
 - What stays open: a payment made later than an hour after the hold whose settlement answer is
   lost, an attempt of an order the expiry left waiting for more than 24 hours past its hold, and
   the other attempts of an order a payment already paid or sent to review, which is expired no

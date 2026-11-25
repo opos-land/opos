@@ -61,7 +61,15 @@ export interface StartRequest extends AttemptOf {
 
 export type StartAnswer =
   | { outcome: 'started'; redirectUrl: string }
-  /** Out of reach; `reason` goes to the log alone. */
+  /**
+   * The provider answered, and registered nothing: it knows no such attempt and will never
+   * confirm a payment of it. `reason` goes to the log alone.
+   */
+  | { outcome: 'refused'; reason: string }
+  /**
+   * Out of reach, or an answer that does not say: the provider may know the attempt after all.
+   * `reason` goes to the log alone.
+   */
   | { outcome: 'unavailable'; reason: string }
 
 /** A payment a provider reports of an attempt. */

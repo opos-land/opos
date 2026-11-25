@@ -83,6 +83,14 @@ describe('a payment at the fake provider', () => {
     expect(provider.started('a1')).toBeUndefined()
   })
 
+  // Out of reach, a provider may know the attempt after all; one that refused never will.
+  it('refuses to start for the account that stands for that, and knows no such attempt', async () => {
+    const { provider, answer } = await started({ account: FAKE_ACCOUNT.startRefused })
+
+    expect(answer).toMatchObject({ outcome: 'refused' })
+    expect(provider.started('a1')).toBeUndefined()
+  })
+
   it('reports a payment in a notification the module reads back', async () => {
     const { provider } = await started()
     const at = new Date('2026-05-01T10:00:00Z')

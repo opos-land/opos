@@ -46,6 +46,42 @@ describe('searchOf', () => {
     }
   })
 
+  // A code is 32 characters drawn from capitals and the digits 2 to 7: about one in 750 holds
+  // no digit. Typed in groups of one length it is still a code, where words differ in length.
+  it('sends the hash of a QR code with no digit typed in groups, never the code', async () => {
+    const hashed = await searchOf('ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF')
+
+    expect(hashed).toHaveProperty('qrCodeHash')
+    expect(await searchOf('ABCD EFGH IJKL MNOP QRST UVWX YZAB CDEF')).toEqual(hashed)
+    expect(await searchOf('abcdefgh-ijklmnop-qrstuvwx-yzabcdef')).toEqual(hashed)
+    expect(await searchOf('ABCDEFGHIJKLMNOP QRSTUVWXYZABCDEF')).toEqual(hashed)
+  })
+
+  // A character slips out of any group or into it, not of the last alone.
+  it('sends nothing of a QR code typed in groups with a character slipped in the middle', async () => {
+    for (const text of [
+      'ABCD EFG IJKL MNOP QRST UVWX YZ23 4567',
+      'ABCD EFGHH IJKL MNOP QRST UVWX YZ23 4567',
+      'abcd-efgh-ijkl-mno-qrst-uvwx-yz23-4567',
+    ]) {
+      expect(await searchOf(text)).toEqual({ refused: 'qr-code' })
+    }
+  })
+
+  // Words differ in length as the groups of a code do not: a name with a number in it, or beside
+  // an order's number, is searched by, whatever its letters and digits add up to.
+  it('sends several words with a digit among them as they are typed: words are no groups', async () => {
+    for (const text of [
+      // 32 characters a code could hold, once its spaces are gone.
+      'Klub Fantastyki Druga Era 2 Bydgoszcz',
+      'Klub Fantastyki Trzecia Era 3 Bydgoszcz',
+      'Aleksandra Kowalska 7KQ2M9XPBC',
+      'Stowarzyszenie Graczy 42 z Krakowa',
+    ]) {
+      expect(await searchOf(text)).toEqual({ q: text })
+    }
+  })
+
   it('sends a name of several words as it is typed, however long: a name has no digit', async () => {
     for (const name of [
       'Hubert Blaine Wolfeschlegelsteinhausenbergerdorff',

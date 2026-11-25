@@ -368,6 +368,23 @@ export class OrdersRepository {
   }
 
   /**
+   * Locks the row of the order a "Buy more" order adds to; any other order locks nothing. It
+   * comes right after the lock of the order's own row and before any limit, as placing a "Buy
+   * more" order takes them: what then makes the order paid joins the QR code under that lock,
+   * and never waits for it while it holds a limit.
+   */
+  async lockExtended(order: { tenantId: string; orderId: string }) {
+    const first = alias(orders, 'first')
+    await this.context
+      .tx()
+      .select({ id: first.id })
+      .from(orders)
+      .innerJoin(first, eq(first.id, orders.extendsOrderId))
+      .where(and(eq(orders.tenantId, order.tenantId), eq(orders.id, order.orderId)))
+      .for('update', { of: first })
+  }
+
+  /**
    * The QR code a "Buy more" order joins once it is paid: the one the order it extends carries,
    * while that order is paid, is under the same email and its code was not replaced. Undefined
    * for any other order, which gets a code of its own: an order whose email an org changed has

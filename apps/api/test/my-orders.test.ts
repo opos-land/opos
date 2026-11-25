@@ -26,9 +26,11 @@ import {
   member,
   type Member,
   offerWith,
+  openTransaction,
   setCatalogSettings,
   setColumn,
   setPublished,
+  sleep,
   storedRows,
 } from './tenants'
 
@@ -487,5 +489,52 @@ describe('"Buy more"', () => {
 
     const refused = await scan().expect(409)
     expect(refused.body).toMatchObject({ code: 'scan.not-valid', params: { reason: 'canceled' } })
+  })
+
+  // Paid, it joins the QR code of the order it adds to under the lock of that order's row. That
+  // row is locked before any limit, as placing a "Buy more" order locks it: two that take them
+  // the other way round would wait for each other.
+  it.each([
+    ['an org marks it paid', 'marked'],
+    ['a payment after its hold pays it', 'late'],
+  ] as const)('locks the order it adds to before its limits when %s', async (_, how) => {
+    const { d, pin } = await deskWithExtras()
+    const buyer = await member()
+    const first = await bought(d, buyer)
+    const added = (
+      await more(d, buyer, first, { items: [{ variantId: pin.variantId, quantity: 1 }] }, 5000)
+    ).body as PlacedOrder
+    const attemptId = await d.start(added)
+    await setColumn('orders', added.orderId, 'holds', false)
+    await setColumn('orders', added.orderId, 'status', how === 'late' ? 'expired' : 'needs-review')
+
+    // The variant is another transaction's for now: the request waits at its limits, and that
+    // transaction then asks for the row of the first order without waiting.
+    const other = await openTransaction()
+    let firstIsLocked = false
+    let settled: Promise<number>
+    try {
+      await other.sql`select id from merchandise_variants where id = ${pin.variantId} for update`
+      settled =
+        how === 'late'
+          ? d.confirm(attemptId).then(() => 200)
+          : Promise.resolve(d.head('post', `/orders/${added.orderId}/mark-paid`)).then(
+              (res) => res.status,
+            )
+      await sleep(300)
+      await other.sql`select id from orders where id = ${first.orderId} for update nowait`.catch(
+        (error: { code?: string }) => {
+          firstIsLocked = error.code === '55P03'
+        },
+      )
+    } finally {
+      await other.rollback()
+    }
+
+    expect(await settled).toBe(200)
+    expect(firstIsLocked).toBe(true)
+    expect(await d.order(added.orderId)).toMatchObject({ status: 'paid', holds: true })
+    const carried = await storedRows('order_qr_code_orders', d.t.id)
+    expect(new Set(carried.map((row) => row.qr_code_id)).size).toBe(1)
   })
 })

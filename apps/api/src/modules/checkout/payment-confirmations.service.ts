@@ -138,6 +138,8 @@ export class PaymentConfirmations {
     const attempt = await this.payments.attempt(attemptId)
     if (!attempt) return undefined
     const order = await this.payments.order(tenantId, attempt.orderId, true)
+    // The order a "Buy more" order adds to, before any limit: a payment joins its QR code.
+    if (order) await this.orders.lockExtended({ tenantId, orderId: order.id })
     const account = await this.payments.providerAccount(tenantId)
     if (!order || account?.provider !== attempt.provider) return undefined
     // Read again under the order's lock: another request may have confirmed it meanwhile.

@@ -49,6 +49,8 @@ export class OrderSettling {
   async markPaid(editionId: string, orderId: string, at = new Date()) {
     const order = await this.managed.locked(editionId, orderId)
     if (order.status !== 'needs-review') throw notInReview()
+    // The order a "Buy more" order adds to, before any limit: paid, it joins that order's QR code.
+    await this.orders.lockExtended({ tenantId: order.tenantId, orderId: order.id })
     const cart = await this.lockLimits(order)
     if (!order.holds) {
       const gone = await this.payments.gone(order.editionId, cart, order.discountCodeId)

@@ -773,8 +773,9 @@ steps of [adding a feature](#adding-a-feature).
   has left its address. The routes of an account's own orders are tenant routes that ask for no
   membership: their reads filter on the tenant and on the session's account, and another
   account's order is not there. A "Buy more" order names the account's own paid order of the
-  same edition, whose row is locked before any limit; it is priced by the contract's one
-  function against what that order's ticket type offers and what was bought on its QR code, and
+  same edition, whose row is locked before any limit, when the order is placed and when a
+  payment or an org makes it paid; it is priced by the contract's one function against what that
+  order's ticket type offers and what was bought on its QR code, and
   once paid joins the QR code that order then carries, while the two are under one email: an
   order an org moved to another address is added to no longer, and shares its code with nothing
   its old address bought

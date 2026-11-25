@@ -107,7 +107,12 @@ export class OrderExpiry implements OnApplicationBootstrap, OnApplicationShutdow
 
     for (const attempt of open) {
       // An attempt whose provider cannot be asked may have been paid: the order waits.
-      if (account?.provider !== attempt.provider) return 'waiting'
+      if (!account) return 'waiting'
+      // The account the attempt started with gave way to one of another provider, which it does
+      // under a payment only once nothing is confirmed with it again (docs/ARCHITECTURE.md,
+      // Modules waiting for their domain owner): nobody is left to ask, as when the new account
+      // of the same provider knows no such payment.
+      if (account.provider !== attempt.provider) continue
       let credentials: Credentials
       try {
         credentials = this.vault.open({ tenantId, provider: account.provider }, account.credentials)

@@ -1,7 +1,8 @@
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import { type MerchandiseItem } from '@opos/contract'
 import request from 'supertest'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { FAKE_ACCOUNT, FakeProvider } from '../src/modules/payments/fake-provider'
 import { providerAccountLockKey } from '../src/modules/shop/provider-account-lock'
 import { createApp } from './app'
 import { deleteCreatedAccounts, session } from './auth'
@@ -15,6 +16,7 @@ import {
   addOrder,
   addTicketType,
   closeTenantDb,
+  connectFake,
   deleteCreatedTenants,
   makeShopReady,
   type Member,
@@ -415,32 +417,96 @@ describe('what else an order keeps in place', () => {
     await call(c.t.head, 'delete', `/editions/${empty}`, undefined, c.t.slug).expect(204)
   })
 
+  /** Gives the credentials of a fake account, as an org with shop write access does. */
+  const connect = (c: Awaited<ReturnType<typeof convention>>, credentials: object) =>
+    call(c.t.head, 'put', '/shop/provider-account', { provider: 'fake', credentials }, c.t.slug)
+  const storedAccount = async (c: Awaited<ReturnType<typeof convention>>) =>
+    (await storedRows('payment_provider_accounts', c.t.id))[0]
+
   it('keeps the credentials its payment started with while it awaits payment', async () => {
     const c = await convention()
     await makeShopReady(c.t.id, c.edition)
+    await connectFake(c.t.id)
+    const before = await storedAccount(c)
     const order = await addOrder(c.t.id, c.edition)
-    const connect = () =>
-      call(
-        c.t.head,
-        'put',
-        '/shop/provider-account',
-        { provider: 'fake', credentials: { account: 'another' } },
-        c.t.slug,
-      )
 
-    const res = await connect()
+    const res = await connect(c, { account: 'another' })
     expect(res.status).toBe(409)
     expect(res.body).toMatchObject({ code: 'shop.payments-under-way' })
-    expect(await storedRows('payment_provider_accounts', c.t.id)).toMatchObject([
-      { credentials: 'sealed' },
-    ])
+    expect(await storedAccount(c)).toEqual(before)
 
     // Once no order of the convention awaits payment, the credentials are given again.
     await openTransaction().then(async ({ sql, commit }) => {
       await sql`update orders set status = 'expired', holds = false where id = ${order.id}`
       await commit()
     })
-    expect((await connect()).status).toBe(200)
+    expect((await connect(c, { account: 'another' })).status).toBe(200)
+  })
+
+  // A payment under way is confirmed with the account it started with, whatever its keys are
+  // now: giving the credentials of that account again takes nothing from it.
+  it('takes credentials of the same account again while it awaits payment', async () => {
+    const c = await convention()
+    await makeShopReady(c.t.id, c.edition)
+    await connectFake(c.t.id)
+    const before = await storedAccount(c)
+    await addOrder(c.t.id, c.edition)
+
+    const res = await connect(c, { account: 'demo', secret: 'corrected' })
+
+    expect(res.status).toBe(200)
+    expect((await storedAccount(c))!.credentials).not.toBe(before!.credentials)
+  })
+
+  it('lets credentials that no longer open be replaced while it awaits payment', async () => {
+    const c = await convention()
+    // Sealed with a key this API does not hold, as after the key was replaced.
+    await makeShopReady(c.t.id, c.edition)
+    await addOrder(c.t.id, c.edition)
+
+    expect((await connect(c, { account: 'another' })).status).toBe(200)
+    expect((await storedAccount(c))!.credentials).not.toBe('sealed')
+  })
+
+  it('lets credentials the provider refuses be replaced while it awaits payment, and not ones it cannot be asked about', async () => {
+    const c = await convention()
+    await makeShopReady(c.t.id, c.edition)
+    await addOrder(c.t.id, c.edition)
+
+    // Out of reach is no refusal: the payment may still be confirmed with them.
+    await connectFake(c.t.id, FAKE_ACCOUNT.unavailable)
+    const kept = await connect(c, { account: 'another' })
+    expect(kept.status).toBe(409)
+    expect(kept.body).toMatchObject({ code: 'shop.payments-under-way' })
+
+    await connectFake(c.t.id, FAKE_ACCOUNT.refused)
+    expect((await connect(c, { account: 'another' })).status).toBe(200)
+  })
+
+  // The provider is asked before the route's transaction: what it said holds only of the
+  // credentials it was asked about.
+  it('keeps credentials stored after the provider refused the ones before them', async () => {
+    const c = await convention()
+    await makeShopReady(c.t.id, c.edition)
+    await connectFake(c.t.id, FAKE_ACCOUNT.refused)
+    await addOrder(c.t.id, c.edition)
+    const asked = vi
+      .spyOn(FakeProvider.prototype, 'connect')
+      .mockImplementation(async (credentials) => {
+        if (credentials.account !== FAKE_ACCOUNT.refused) return { outcome: 'accepted' }
+        // Another org connects an account the provider accepts, while this one is asked.
+        await connectFake(c.t.id, 'meanwhile')
+        return { outcome: 'refused' }
+      })
+
+    try {
+      const res = await connect(c, { account: 'another' })
+
+      expect(res.status).toBe(409)
+      expect(res.body).toMatchObject({ code: 'shop.payments-under-way' })
+    } finally {
+      asked.mockRestore()
+    }
   })
 
   it('keeps those credentials from being disconnected while it awaits payment', async () => {
@@ -460,6 +526,7 @@ describe('what else an order keeps in place', () => {
   it('makes a change of the credentials wait for an order being placed', async () => {
     const c = await convention()
     await makeShopReady(c.t.id, c.edition)
+    await connectFake(c.t.id)
     const change = await whilePlacing(
       (sql) => sql`select pg_advisory_xact_lock_shared(${providerAccountLockKey(c.t.id)}::bigint)`,
       () =>

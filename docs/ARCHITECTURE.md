@@ -697,9 +697,15 @@ steps of [adding a feature](#adding-a-feature).
   that passes on production
   ([0052](adr/0052-stand-in-for-the-bot-check-until-the-portal-has-one.md)). An email of an order
   is queued in the transaction of its cause and sent by the outbox
-  ([0049](adr/0049-send-the-emails-of-an-order-from-an-outbox-in-the-database.md)). The
-  credentials of a provider account stay as they are while an order awaits payment: an order
-  being placed and a change of them share one lock of the tenant's account. The orders awaiting
+  ([0049](adr/0049-send-the-emails-of-an-order-from-an-outbox-in-the-database.md)). A provider
+  account stays as it is while a payment is under way, which is while an order awaits payment:
+  it is not disconnected, and it gives way to new credentials only when they name the same
+  account, as its provider's module tells, when the stored ones no longer open, or when the
+  provider, asked before the route's transaction, refuses the stored ones
+  ([0093](adr/0093-change-a-provider-account-under-a-payment-only-where-the-payment-loses-nothing.md)).
+  An order being placed and a change of the account share one lock of the tenant's account. The
+  expiry of orders asks the account the convention holds now, and expires an order whose attempt
+  that account does not know. The orders awaiting
   payment of an email in an edition are counted under a lock of that email in the edition, which
   an order takes after the locks of invariant 9. `opos_app` never updates an order's number, its
   prices or what a line sells, but for a merchandise line's variant

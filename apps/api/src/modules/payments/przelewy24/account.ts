@@ -52,6 +52,23 @@ export function accountOf(credentials: Credentials): Przelewy24Account | undefin
 }
 
 /**
+ * Whether two sets of credentials name one account: the same merchant and point of sale, in the
+ * same environment, since the sandbox knows no transaction of production. The keys and the org's
+ * answers are not the account: a transaction registered with the one is read and verified with
+ * the other.
+ */
+export function sameAccount(one: Credentials, other: Credentials): boolean {
+  const [first, second] = [accountOf(one), accountOf(other)]
+  return (
+    first !== undefined &&
+    second !== undefined &&
+    first.merchantId === second.merchantId &&
+    first.posId === second.posId &&
+    first.sandbox === second.sandbox
+  )
+}
+
+/**
  * The codes of Przelewy24 the shop reads a reason from, by the general list of its
  * documentation. Which codes a refused card carries the documentation does not say: any other
  * code is the general failure, and the provider's own code and message stay on the attempt.

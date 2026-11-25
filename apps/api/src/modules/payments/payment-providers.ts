@@ -221,6 +221,14 @@ export class PaymentProviders {
   missing(provider: PaymentProvider, credentials: Credentials): string[] {
     return this.modules.get(provider)?.missing(credentials) ?? ['provider.not-loaded']
   }
+
+  /**
+   * Whether two sets of credentials name one account at the provider, with no call; never for a
+   * provider with no module here, which nothing can be confirmed with.
+   */
+  sameAccount(provider: PaymentProvider, one: Credentials, other: Credentials): boolean {
+    return this.modules.get(provider)?.sameAccount(one, other) ?? false
+  }
 }
 
 /** The account credentials are sealed for: a tenant's, with one provider. */

@@ -14,7 +14,7 @@ import {
   type StartRequest,
   type StateAnswer,
 } from '../provider'
-import { accountOf, type Przelewy24Account, providerDate, reasonOf } from './account'
+import { accountOf, type Przelewy24Account, providerDate, reasonOf, sameAccount } from './account'
 import { Przelewy24Client } from './client'
 import {
   cardFailureSignature,
@@ -94,6 +94,10 @@ export class Przelewy24Provider implements PaymentProviderModule {
     const account = accountOf(credentials)
     if (!account) return [MISSING.credentials]
     return account.abandonedPaymentEmailOff ? [] : [MISSING.abandonedPaymentEmail]
+  }
+
+  sameAccount(one: Credentials, other: Credentials): boolean {
+    return sameAccount(one, other)
   }
 
   /** The consent to Przelewy24's terms is asked on its own page: the shop shows none. */

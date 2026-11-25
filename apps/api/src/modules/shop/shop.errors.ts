@@ -10,8 +10,9 @@ import { ApiError } from '../../common/errors/api-error'
 export const shopOpen = () => new ApiError(409, 'shop.open', 'A shop of the convention is open')
 
 /**
- * An order of the convention awaits payment: a payment under way is confirmed with the
- * credentials it started with, so they stay as they are until it is paid or expires.
+ * An order of the convention awaits payment: a payment under way is confirmed with the account
+ * it started with, which is not disconnected until it is paid or expires, and gives way to new
+ * credentials only where the payment loses nothing by it.
  */
 export const paymentsUnderWay = () =>
   new ApiError(409, 'shop.payments-under-way', 'An order of the convention awaits payment')

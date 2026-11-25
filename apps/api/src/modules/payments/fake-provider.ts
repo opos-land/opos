@@ -110,6 +110,11 @@ export class FakeProvider implements PaymentProviderModule {
     return credentials.account === FAKE_ACCOUNT.notReady ? ['fake.not-ready'] : []
   }
 
+  /** Its `account` is the account: whatever else the credentials carry may change. */
+  sameAccount(one: Credentials, other: Credentials): boolean {
+    return one.account !== undefined && one.account === other.account
+  }
+
   /**
    * A consent of its own that "Select all required" may not tick, and an email no longer than a
    * real provider takes: what the shop's pages do with either has a test and a demo.

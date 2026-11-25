@@ -114,6 +114,12 @@ export interface PaymentProviderModule {
    * with no call; none means the account is ready to sell.
    */
   missing(credentials: Credentials): string[]
+  /**
+   * Whether two sets of credentials name one account at the provider, read from them alone with
+   * no call: a payment started with the one is found and confirmed with the other, once it is
+   * right. Credentials that name no account are the same as none.
+   */
+  sameAccount(one: Credentials, other: Credentials): boolean
   /** What it requires of the shop's pages, with no call. */
   requirements(): ProviderRequirements
   /** The payment methods the shop names: a fixed list a provider. */

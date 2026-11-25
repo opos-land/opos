@@ -303,8 +303,6 @@ export function priceCart(
     return { problem: { kind: 'add-on', id: cart.addOnIds[0]! } }
   } else if (cart.items.length === 0) {
     return { problem: { kind: 'empty' } }
-  } else if (!offer.merchOnly) {
-    return { problem: { kind: 'merch-only' } }
   }
 
   const wanted = new Set<string>()
@@ -358,6 +356,9 @@ export function priceCart(
     quantities.set(variantId, quantity)
     taken.set(item.id, ofItem)
   }
+  // Merchandise alone while merch-only orders are off. The offer says they are off also once no
+  // variant is left to sell, so a variant that cannot be had is named first.
+  if (!extending && !cart.ticket && !offer.merchOnly) return { problem: { kind: 'merch-only' } }
   for (const item of offered) {
     for (const variant of item.variants) {
       const quantity = quantities.get(variant.id)

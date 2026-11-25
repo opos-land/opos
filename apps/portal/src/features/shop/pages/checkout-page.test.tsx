@@ -481,6 +481,62 @@ describe('CheckoutPage', () => {
     expect(order.disabled).toBe(true)
   })
 
+  // The answer to a placed order may never arrive: the buyer is told of a failure and presses
+  // again. The checkout is sent with the key it was sent with before, by which the shop finds
+  // the order it placed and places no second one.
+  it('sends the same placement key when the buyer tries again after a failure', async () => {
+    const lost = new TypeError('Failed to fetch')
+    api.place.mockRejectedValueOnce(lost)
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({ step: 'summary', consents: [termsAccepted], providerConsent: true }),
+    )
+    view()
+    await stepHeading('Summary')
+
+    press('Order and pay')
+    await waitFor(() => expect(api.notify).toHaveBeenCalledWith(lost))
+    const held = loadDraft('convention-a', '2027')?.placementKey
+    press('Order and pay')
+    await waitFor(() => expect(api.leave).toHaveBeenCalled())
+
+    const sent = api.place.mock.calls.map(
+      (call) => (call[1] as { placementKey?: string }).placementKey,
+    )
+    expect(sent[0]).toMatch(/^[0-9a-f-]{36}$/)
+    expect(sent).toEqual([held, held])
+  })
+
+  // A key the shop refuses answers no try of this checkout any more, as when the buyer changed
+  // the email address since the order it placed: the next try is sent with a new one.
+  it('draws another placement key once the shop refuses the one it sent', async () => {
+    const refused = new ORPCError('request.invalid', {
+      status: 400,
+      data: { field: 'placementKey' },
+    })
+    api.place.mockRejectedValueOnce(refused)
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({ step: 'summary', consents: [termsAccepted], providerConsent: true }),
+    )
+    view()
+    await stepHeading('Summary')
+
+    press('Order and pay')
+    await waitFor(() => expect(api.notify).toHaveBeenCalledWith(refused))
+    expect(screen.getByRole('heading', { name: 'Summary', level: 2 })).toBeDefined()
+    press('Order and pay')
+    await waitFor(() => expect(api.leave).toHaveBeenCalled())
+
+    const [first, second] = api.place.mock.calls.map(
+      (call) => (call[1] as { placementKey?: string }).placementKey,
+    )
+    expect(second).toMatch(/^[0-9a-f-]{36}$/)
+    expect(second).not.toBe(first)
+  })
+
   // Back from the provider's page, a browser may show the checkout again out of its memory, as
   // it was left: its order is placed and its button stays off, so the order's result takes over.
   it('opens the result of the placed order once the browser brings the page back', async () => {

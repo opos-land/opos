@@ -732,6 +732,16 @@ steps of [adding a feature](#adding-a-feature).
   lock of that account or that email in the edition, which an order takes after the locks of
   invariant 9
   ([0099](adr/0099-count-an-accounts-unpaid-orders-apart-from-a-visitors-under-its-email.md)).
+  A request that places an order may carry a placement key, which the portal draws with a
+  checkout and sends with every try to place it. The key is a secret of the buyer's: the order
+  keeps its hash, unique in the edition and made with the account that places, so an account's
+  key finds that account's order alone. A try whose key placed an order under the same email
+  address places nothing and takes nothing again: it is answered with that order and a new
+  result token in place of the one before. A key whose order is under another address, was
+  placed at another total or neither awaits payment nor is paid is refused as an invalid field,
+  with nothing told of the order. The key is looked up under a lock of its own in the edition,
+  the first lock a placing takes, so tries sent together place one order
+  ([0102](adr/0102-place-one-order-for-a-checkout-however-often-it-is-sent.md)).
   `opos_app` never updates an order's number, its
   prices or what a line sells, but for a merchandise line's variant
   ([0058](adr/0058-let-the-api-change-the-variant-an-order-line-names.md)).

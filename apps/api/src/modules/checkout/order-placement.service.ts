@@ -28,7 +28,8 @@ import { type StoredDiscount } from './discounts.repository'
 import { Discounts } from './discounts.service'
 import { OfferService } from './offer.service'
 import { OrderSettlement } from './order-settlement.service'
-import { type OwnOrder, OrdersRepository } from './orders.repository'
+import { type OwnOrder, OrdersRepository, type PlacedBefore } from './orders.repository'
+import { placementKeyHash } from './placement-key-lock'
 
 const MINUTE = 60_000
 
@@ -61,6 +62,15 @@ export class OrderPlacement {
     at = new Date(),
   ): Promise<PlacedOrder> {
     const email = buyer.email.trim().toLowerCase()
+    // A checkout sent again places nothing: it is answered with the order its key placed. The
+    // key is looked up first, before any lock of a row and any limit, so what the order itself
+    // took, of a capacity, a discount code or the buyer's unpaid orders, refuses nothing here.
+    const keyHash =
+      input.placementKey === undefined ? null : placementKeyHash(input.placementKey, buyer)
+    if (keyHash !== null) {
+      const before = await this.orders.placedWith(tenantId, editionId, keyHash)
+      if (before) return this.again(tenantId, before, email, input.expectedTotalMinor)
+    }
     // "Buy more": the row of the order added to is locked before any limit.
     const more =
       input.extendsOrderId === undefined
@@ -125,6 +135,7 @@ export class OrderPlacement {
         guardianConsentAcknowledgedAt: input.ageBand === 'teen' ? at : null,
         providerConsentAcceptedAt: !paid && offer.provider?.consent ? at : null,
         resultTokenHash: hashOf(resultToken),
+        placementKeyHash: keyHash,
         discountCodeId: discount?.id ?? null,
         extendsOrderId: first?.id ?? null,
       },
@@ -146,6 +157,39 @@ export class OrderPlacement {
       number: placed.number,
       status: paid ? 'paid' : 'awaiting-payment',
       totalMinor,
+      resultToken,
+    }
+  }
+
+  /**
+   * The answer to a checkout whose key placed an order before: that order as it was answered
+   * first, with a new result token in place of the one whose answer never arrived. Knowing the
+   * key shows the same buyer asks, while the order is under the address it was placed under. A
+   * key is refused, with nothing told of its order, where the answer of a placed order would not
+   * be true of it: the order is under another address, the checkout comes to another total than
+   * the order was placed at, which its buyer has not seen, or the order neither awaits payment
+   * nor is paid any more.
+   */
+  private async again(
+    tenantId: string,
+    before: PlacedBefore,
+    email: string,
+    expectedTotalMinor: number,
+  ): Promise<PlacedOrder> {
+    if (
+      before.email !== email ||
+      before.totalMinor !== expectedTotalMinor ||
+      (before.status !== 'awaiting-payment' && before.status !== 'paid')
+    ) {
+      throw invalidOrder('placementKey', 'The placement key is not one this order can be sent with')
+    }
+    const resultToken = secretToken()
+    await this.orders.renewResultToken({ tenantId, orderId: before.id }, hashOf(resultToken))
+    return {
+      orderId: before.id,
+      number: before.number,
+      status: before.status,
+      totalMinor: before.totalMinor,
       resultToken,
     }
   }

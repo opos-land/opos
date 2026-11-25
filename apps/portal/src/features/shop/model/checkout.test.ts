@@ -374,12 +374,14 @@ describe('the age band of another ticket type', () => {
 
 describe('the start of a checkout', () => {
   it('is empty for the ticket type asked for, with the account\u2019s name filled in and the adult age band chosen', () => {
+    // Each checkout that starts draws a placement key of its own.
+    const key = { placementKey: expect.any(String) as string }
     expect(beginCheckout(offer(), null, standard, 'Jan Kowal')).toEqual({
-      draft: { ...emptyDraft(standard!), holderName: 'Jan Kowal', ageBand: 'adult' },
+      draft: { ...emptyDraft(standard!), ...key, holderName: 'Jan Kowal', ageBand: 'adult' },
       removedAddOns: [],
       ask: false,
     })
-    expect(beginCheckout(offer(), null, null, '').draft).toEqual(emptyDraft(null))
+    expect(beginCheckout(offer(), null, null, '').draft).toEqual({ ...emptyDraft(null), ...key })
     // Nothing asked for and nothing kept: there is no checkout to show.
     expect(beginCheckout(offer(), null, undefined, '').draft).toBeNull()
   })
@@ -602,6 +604,7 @@ describe('the order a checkout places', () => {
       guardianConsentAcknowledged: false,
       expectedTotalMinor: 10000,
       botCheckToken: 'token',
+      placementKey: draft.placementKey,
       email: 'ada@example.test',
       emailConfirmation: 'ada@example.test',
     })
@@ -728,6 +731,7 @@ describe('a checkout that adds to a paid order', () => {
       guardianConsentAcknowledged: false,
       expectedTotalMinor: 1500,
       botCheckToken: 'token',
+      placementKey: draft.placementKey,
       extendsOrderId: id(40),
     })
     expect(orderBody(filled(), 10000, 'token', true)).not.toHaveProperty('extendsOrderId')
@@ -780,6 +784,40 @@ describe('an unfinished checkout', () => {
     expect(window.localStorage.length).toBe(0)
   })
 
+  // The key its order is placed with: every try to place the checkout sends it, so a try whose
+  // answer never came places no second order.
+  it('draws a placement key of its own when it starts, and keeps it for as long as it lives', () => {
+    const [first, second] = [emptyDraft(standard!), emptyDraft(standard!)]
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+
+    expect(first.placementKey).toMatch(uuid)
+    expect(second.placementKey).toMatch(uuid)
+    expect(second.placementKey).not.toBe(first.placementKey)
+    // Another step, another ticket type and a reload are the same checkout.
+    saveDraft('convention-a', '2026', { ...first, step: 'summary' })
+    expect(loadDraft('convention-a', '2026')?.placementKey).toBe(first.placementKey)
+    expect(withTicketType(offer(), first, supporter!, true).draft.placementKey).toBe(
+      first.placementKey,
+    )
+    expect(orderBody(first, 10000, 'token', false)).toMatchObject({
+      placementKey: first.placementKey,
+    })
+    expect(orderBody(first, 10000, 'token', true)).toMatchObject({
+      placementKey: first.placementKey,
+    })
+  })
+
+  it('reads a checkout kept before it had a placement key as one with a key of its own', () => {
+    const older: Partial<Draft> = filled({ step: 'summary' })
+    delete older.placementKey
+    window.sessionStorage.setItem('opos-checkout:convention-a:2026', JSON.stringify(older))
+
+    const read = loadDraft('convention-a', '2026')
+
+    expect(read).toMatchObject({ step: 'summary' })
+    expect(read?.placementKey).toMatch(/^[0-9a-f-]{36}$/)
+  })
+
   it('is forgotten once its order is placed, and all of them at a sign-out', () => {
     saveDraft('convention-a', '2026', filled())
     saveDraft('convention-b', '2027', filled())
@@ -820,34 +858,32 @@ describe('an unfinished checkout', () => {
   // its session ended reads nothing of the account it showed. A visitor's goes on under the
   // account that signs in.
   it('is its account’s alone, while a visitor’s goes on under the account that signs in', () => {
-    saveDraft('convention-a', '2026', filled({ step: 'summary' }), 'account-a')
+    const [own, visitors] = [filled({ step: 'summary' }), filled({ step: 'merch' })]
+    saveDraft('convention-a', '2026', own, 'account-a')
 
-    expect(loadDraft('convention-a', '2026', undefined, 'account-a')).toEqual(
-      filled({ step: 'summary' }),
-    )
+    expect(loadDraft('convention-a', '2026', undefined, 'account-a')).toEqual(own)
     expect(loadDraft('convention-a', '2026')).toBeNull()
     expect(loadDraft('convention-a', '2026', undefined, 'account-b')).toBeNull()
 
-    saveDraft('convention-a', '2026', filled({ step: 'merch' }))
-    expect(loadDraft('convention-a', '2026', undefined, 'account-a')).toEqual(
-      filled({ step: 'merch' }),
-    )
+    saveDraft('convention-a', '2026', visitors)
+    expect(loadDraft('convention-a', '2026', undefined, 'account-a')).toEqual(visitors)
   })
 
   // A checkout kept before a consent came with the version of its document says nothing of
   // what was shown: it goes on with no consent accepted, and the buyer accepts them as shown now.
   it('goes on with no consent accepted when it kept consents with no version', () => {
+    const kept = filled({ step: 'summary' })
     window.sessionStorage.setItem(
       'opos-checkout:convention-a:2026',
       JSON.stringify({
-        ...filled({ step: 'summary' }),
+        ...kept,
         consents: undefined,
         consentIds: [terms],
         accountId: null,
       }),
     )
 
-    expect(loadDraft('convention-a', '2026')).toEqual(filled({ step: 'summary', consents: [] }))
+    expect(loadDraft('convention-a', '2026')).toEqual({ ...kept, consents: [] })
   })
 
   it('keeps each consent with the version of its document it was accepted with', () => {

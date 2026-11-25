@@ -62,6 +62,7 @@ import {
   fitToOffer,
   holderIssues,
   loadDraft,
+  newPlacementKey,
   orderBody,
   quoteOf,
   resumeExtension,
@@ -309,6 +310,7 @@ function Checkout({
         id?: unknown
         totalMinor?: unknown
         consent?: unknown
+        field?: unknown
       }
       // What the shop offers changed: it is read again, and the buyer sees it as it is now.
       void queryClient.invalidateQueries({ queryKey: offerKey(tenantSlug, editionSlug) })
@@ -332,6 +334,12 @@ function Checkout({
         return setNewTotal(named.totalMinor)
       }
       if (code === 'order.email-refused') change({ step: 'holder' })
+      if (code === 'request.invalid' && named.field === 'placementKey') {
+        // The key placed an order this checkout is no longer answered with, as when its email
+        // address or its total changed since: the next try is sent with a new key, and places
+        // the order as the Summary shows it.
+        change({ placementKey: newPlacementKey() })
+      }
       if (code === 'order.consent-changed' && typeof named.consent === 'string') {
         // The document of a consent changed since the buyer accepted it. The consent is
         // accepted no longer and says so on its step, the Summary, where the offer read again

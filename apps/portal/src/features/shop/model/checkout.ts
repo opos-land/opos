@@ -64,10 +64,34 @@ const draftSchema = z.object({
     })
     .nullable()
     .default(null),
+  /**
+   * The key the checkout's order is placed with, drawn when the checkout starts and sent with
+   * every try to place it: a try whose answer never came is sent again with the same key, and
+   * the shop answers with the order it placed then. A checkout kept without one draws its own.
+   */
+  placementKey: z.uuid().default(() => newPlacementKey()),
   step: z.enum(STEPS),
 })
 
 export type Draft = z.infer<typeof draftSchema>
+
+/**
+ * A placement key: a random UUID nobody can guess, from the browser's own source of randomness,
+ * which a page has also where it is served without TLS.
+ */
+export function newPlacementKey(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16))
+  bytes[6] = (bytes[6]! & 0x0f) | 0x40
+  bytes[8] = (bytes[8]! & 0x3f) | 0x80
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20),
+  ].join('-')
+}
 
 export const emptyDraft = (ticketTypeId: string | null): Draft => ({
   ticketTypeId,
@@ -85,6 +109,7 @@ export const emptyDraft = (ticketTypeId: string | null): Draft => ({
   asVisitor: false,
   discountCode: '',
   extending: null,
+  placementKey: newPlacementKey(),
   step: 'holder',
 })
 
@@ -440,6 +465,7 @@ export function orderBody(
     guardianConsentAcknowledged: draft.guardianAcknowledged,
     expectedTotalMinor,
     botCheckToken,
+    placementKey: draft.placementKey,
     ...(discountApplied &&
       draft.discountCode.trim() !== '' && { discountCode: draft.discountCode.trim() }),
     ...(draft.extending && { extendsOrderId: draft.extending.orderId }),

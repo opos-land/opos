@@ -512,6 +512,20 @@
       "when": 1795641753907,
       "tag": "0072_scanner_follows_edition",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1795645361326,
+      "tag": "0073_order_placement_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1795645365844,
+      "tag": "0074_order_placement_key_privileges",
+      "breakpoints": true
     }
   ]
 }

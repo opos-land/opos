@@ -379,6 +379,7 @@ const appUpdates = [
   'orders.holds',
   'orders.hold_ends_at',
   'orders.paid_at',
+  'orders.result_token_hash',
   'orders.holder_name',
   'orders.email',
   'orders.review_cause',

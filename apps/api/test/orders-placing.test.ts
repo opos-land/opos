@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import {
   MAX_AMOUNT_MINOR,
@@ -7,6 +7,7 @@ import {
   type Offer,
   ORDER_NUMBER_ALPHABET,
   type PlacedOrder,
+  RESULT_TOKEN_HEADER,
 } from '@opos/contract'
 import { open, orderQrCodeOf, sealingKey } from '@opos/db/sealed'
 import request from 'supertest'
@@ -19,6 +20,7 @@ import {
   addAddOn,
   addConsent,
   addCustomField,
+  addDiscountCode,
   addDocumentVersion,
   addEdition,
   addMerchandiseItem,
@@ -724,6 +726,173 @@ describe('the limits of what is sold', () => {
   })
 })
 
+// A buyer's browser draws a key with its checkout and sends it with every try to place it. The
+// answer to a try may never arrive: the same checkout sent again places no second order.
+describe('a checkout sent again with its placement key', () => {
+  const hashed = (secret: string) => createHash('sha256').update(secret).digest('hex')
+  const result = (s: Shop, orderId: string, token: string) =>
+    request(app.getHttpServer())
+      .get(`/public/tenants/${s.t.slug}/orders/${orderId}/result`)
+      .set(RESULT_TOKEN_HEADER, token)
+
+  it('with nothing to pay leaves one paid order, one QR code and one confirmation', async () => {
+    const s = await shop({ amountMinor: 0 })
+    const free = { expectedTotalMinor: 0, placementKey: randomUUID() }
+
+    const first = placed(await s.place(free).expect(201))
+    const again = placed(await s.place(free).expect(201))
+
+    expect(again).toEqual({ ...first, resultToken: expect.any(String) as string })
+    expect(again).toMatchObject({ status: 'paid', totalMinor: 0 })
+    expect(await s.orders()).toHaveLength(1)
+    expect(await storedRows('order_qr_codes', s.t.id)).toHaveLength(1)
+    expect(await storedRows('order_emails', s.t.id)).toHaveLength(1)
+  })
+
+  it('answers with the order it placed and a new result token in place of the first', async () => {
+    const s = await shop()
+    const placementKey = randomUUID()
+
+    const first = placed(await s.place({ placementKey }).expect(201))
+    const again = placed(await s.place({ placementKey }).expect(201))
+
+    expect(again).toMatchObject({
+      orderId: first.orderId,
+      number: first.number,
+      status: 'awaiting-payment',
+      totalMinor: 10000,
+    })
+    expect(again.resultToken).not.toBe(first.resultToken)
+    // The key is the buyer's secret, as the token is: neither is stored as it is.
+    const [order] = await s.orders()
+    expect(order).toMatchObject({ result_token_hash: hashed(again.resultToken) })
+    expect(String(order!.placement_key_hash)).toMatch(/^[0-9a-f]{64}$/)
+    expect(JSON.stringify(order)).not.toContain(placementKey)
+    await result(s, first.orderId, first.resultToken).expect(404)
+    await result(s, first.orderId, again.resultToken).expect(200)
+    expect(await s.orders()).toHaveLength(1)
+  })
+
+  it('spends no second use of its discount code and none of the three orders awaiting payment', async () => {
+    const s = await shop()
+    const { code } = await addDiscountCode(s.t.id, s.edition, {
+      usageLimit: 1,
+      ticketTypeIds: [s.standard],
+    })
+    const coded = { discountCode: code, expectedTotalMinor: 9000, placementKey: randomUUID() }
+    const first = placed(await s.place(coded).expect(201))
+    // The code is used up, and the address holds as many orders awaiting payment as it may.
+    for (let n = 1; n < MAX_UNPAID_ORDERS; n += 1) await s.place().expect(201)
+    await s.place({ ...coded, placementKey: randomUUID() }).expect(409)
+
+    const again = placed(await s.place(coded).expect(201))
+
+    expect(again.orderId).toBe(first.orderId)
+    expect(await s.orders()).toHaveLength(MAX_UNPAID_ORDERS)
+  })
+
+  // The first to come places the order; the others wait for it and answer with it, whatever the
+  // order took: the last place of the ticket type is not sold out to them.
+  it('places one order when it is sent several times at the same moment', async () => {
+    const s = await shop({ amountMinor: 0, capacity: 1 })
+    const free = { expectedTotalMinor: 0, placementKey: randomUUID() }
+
+    const answers = await Promise.all([s.place(free), s.place(free), s.place(free)])
+
+    expect(answers.map((res) => res.status)).toEqual([201, 201, 201])
+    expect(new Set(answers.map((res) => placed(res).orderId)).size).toBe(1)
+    expect(await s.orders()).toHaveLength(1)
+    expect(await storedRows('order_qr_codes', s.t.id)).toHaveLength(1)
+    expect(await storedRows('order_emails', s.t.id)).toHaveLength(1)
+  })
+
+  it('is refused under another address than its order is under, and told nothing of that order', async () => {
+    const s = await shop()
+    const placementKey = randomUUID()
+    await s.place({ placementKey }).expect(201)
+
+    const res = await s
+      .place({ placementKey, email: 'b@example.test', emailConfirmation: 'b@example.test' })
+      .expect(400)
+
+    expect(res.body).toEqual({
+      code: 'request.invalid',
+      message: expect.any(String) as string,
+      params: { field: 'placementKey' },
+    })
+    expect(await s.orders()).toHaveLength(1)
+  })
+
+  // An order is placed at the total its buyer saw: a key never answers a checkout that came to
+  // another total since with the order it placed before.
+  it('is refused once the checkout comes to another total than its order was placed at', async () => {
+    const s = await shop({ supporterPrices: [25000] })
+    const placementKey = randomUUID()
+    await s.place({ placementKey }).expect(201)
+
+    const res = await s
+      .place({
+        placementKey,
+        cart: { ticket: { ticketTypeId: s.standard, supporterPriceMinor: 25000 } },
+        expectedTotalMinor: 25000,
+      })
+      .expect(400)
+
+    expect(res.body).toMatchObject({ code: 'request.invalid', params: { field: 'placementKey' } })
+    expect(await s.orders()).toHaveLength(1)
+  })
+
+  it.each(['expired', 'canceled', 'declined', 'needs-review'])(
+    'is refused once its order is %s: the answer of a placed order is not that order’s any more',
+    async (status) => {
+      const s = await shop()
+      const placementKey = randomUUID()
+      const first = placed(await s.place({ placementKey }).expect(201))
+      await setColumn('orders', first.orderId, 'status', status)
+
+      const res = await s.place({ placementKey }).expect(400)
+
+      expect(res.body).toMatchObject({ code: 'request.invalid', params: { field: 'placementKey' } })
+      expect(await s.orders()).toHaveLength(1)
+    },
+  )
+
+  it('answers with its order paid since as a paid one', async () => {
+    const s = await shop()
+    const placementKey = randomUUID()
+    const first = placed(await s.place({ placementKey }).expect(201))
+    await setColumn('orders', first.orderId, 'status', 'paid')
+
+    const again = placed(await s.place({ placementKey }).expect(201))
+
+    expect(again).toMatchObject({ orderId: first.orderId, status: 'paid' })
+  })
+
+  it('places an order of its own with another key, with none, and in another edition', async () => {
+    const [s, other] = [await shop(), await shop()]
+    const placementKey = randomUUID()
+    await s.place({ placementKey }).expect(201)
+
+    await s.place({ placementKey: randomUUID() }).expect(201)
+    await s.place().expect(201)
+    await other
+      .place({ placementKey, cart: { ticket: { ticketTypeId: other.standard } } })
+      .expect(201)
+
+    expect(await s.orders()).toHaveLength(3)
+    expect(await other.orders()).toHaveLength(1)
+  })
+
+  it('takes no key that is not a random identifier', async () => {
+    const s = await shop()
+
+    await s.place({ placementKey: 'again' }).expect(400)
+    await s.place({ placementKey: '' }).expect(400)
+
+    expect(await s.orders()).toEqual([])
+  })
+})
+
 describe('an order placed by an account', () => {
   const asAccount = (s: Shop, who: Member, body: Row, edition = s.edition, slug = s.t.slug) =>
     request(app.getHttpServer())
@@ -837,6 +1006,60 @@ describe('an order placed by an account', () => {
     const fourth = await s.place(theirs).expect(409)
     expect(fourth.body).toMatchObject({ code: 'order.too-many-unpaid', params: { limit: 3 } })
     expect(await storedRows('order_accounts', s.t.id)).toHaveLength(MAX_UNPAID_ORDERS)
+  })
+
+  it('is answered again to the account that placed it, with the key of its checkout', async () => {
+    const s = await shop()
+    const buyer = await member()
+    const placementKey = randomUUID()
+
+    const first = placed(await asAccount(s, buyer, body(s, { placementKey })).expect(201))
+    const again = placed(await asAccount(s, buyer, body(s, { placementKey })).expect(201))
+
+    expect(again).toMatchObject({ orderId: first.orderId, number: first.number })
+    expect(again.resultToken).not.toBe(first.resultToken)
+    expect(await s.orders()).toHaveLength(1)
+    expect(await storedRows('order_accounts', s.t.id)).toHaveLength(1)
+  })
+
+  // A key is its buyer's: the one an account placed an order with answers that account alone.
+  // Anyone else who sends it places an order of their own, and learns nothing of the account's.
+  it('is answered to nobody else who sends its key: a visitor under its email, another account', async () => {
+    const s = await shop()
+    const [buyer, other] = [await member(), await member()]
+    const placementKey = randomUUID()
+    const first = placed(await asAccount(s, buyer, body(s, { placementKey })).expect(201))
+
+    const visitor = placed(
+      await s
+        .place({ placementKey, email: buyer.email, emailConfirmation: buyer.email })
+        .expect(201),
+    )
+    const theirs = placed(await asAccount(s, other, body(s, { placementKey })).expect(201))
+
+    expect(new Set([first.orderId, visitor.orderId, theirs.orderId]).size).toBe(3)
+    // And each of the three is answered again to the one who placed it.
+    const again = placed(
+      await s
+        .place({ placementKey, email: buyer.email, emailConfirmation: buyer.email })
+        .expect(201),
+    )
+    expect(again.orderId).toBe(visitor.orderId)
+    expect(await s.orders()).toHaveLength(3)
+  })
+
+  // An order an org moved to another address has passed to another person.
+  it('is not answered again once it is under another address than the account’s', async () => {
+    const s = await shop()
+    const buyer = await member()
+    const placementKey = randomUUID()
+    const first = placed(await asAccount(s, buyer, body(s, { placementKey })).expect(201))
+    await setColumn('orders', first.orderId, 'email', 'other@example.test')
+
+    const res = await asAccount(s, buyer, body(s, { placementKey })).expect(400)
+
+    expect(res.body).toMatchObject({ code: 'request.invalid', params: { field: 'placementKey' } })
+    expect(await s.orders()).toHaveLength(1)
   })
 
   // Carts that share no ticket type wait for nothing of each other's stock or capacity.

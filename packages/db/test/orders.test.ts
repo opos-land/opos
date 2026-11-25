@@ -139,6 +139,22 @@ describe('orders', () => {
     await order(b, { number: taken })
   })
 
+  // A checkout sent again finds the order it placed by the hash of its key: one order of an
+  // edition carries it, and an order placed with no key carries none.
+  it('carries the hash of its placement key alone in its edition, and none where it had no key', async () => {
+    const [a, b] = await Promise.all([place(), place()])
+    const taken = 'd'.repeat(64)
+    await order(a, { placement_key_hash: taken })
+
+    await expect(order(a, { placement_key_hash: taken })).rejects.toThrow(
+      /orders_placement_key_unique/,
+    )
+    await order(await sibling(a), { placement_key_hash: taken })
+    await order(b, { placement_key_hash: taken })
+    await order(a, { placement_key_hash: null })
+    await order(a, { placement_key_hash: null })
+  })
+
   it.each([
     ['a status OPOS does not know', { status: 'refunded' }, /order_status/],
     ['a number that is not ten characters', { number: 'SHORT' }, /orders_number/],
@@ -564,7 +580,8 @@ describe('what the application role changes of an order', () => {
       `update orders set manual_reason = 'desk'`,
       `update orders set note = 'changed'`,
       `update orders set placed_at = now()`,
-      `update orders set result_token_hash = '${HASH}'`,
+      // The key an order was placed with is written once, with the order.
+      `update orders set placement_key_hash = '${HASH}'`,
       `update order_lines set amount_minor = 1`,
       `update order_lines set unit_amount_minor = 1`,
       `update order_lines set quantity = 5`,
@@ -594,6 +611,23 @@ describe('what the application role changes of an order', () => {
       await sql`update orders set status = 'paid', paid_at = now(), holds = true, hold_ends_at = null`
       await sql`update payment_attempts set status = 'paid', paid_amount_minor = 10000, paid_at = now()`
     })
+  })
+
+  // A checkout sent again is answered with its order and a new result token, which takes the
+  // place of the one whose answer never arrived.
+  it('gives an order another result token', async () => {
+    const at = await place()
+    const mine = await order(at)
+
+    await inTenant(
+      at.tenant,
+      (sql) => sql`update orders set result_token_hash = ${'b'.repeat(64)} where id = ${mine}`,
+    )
+
+    const [row] = await migrator<{ hash: string }[]>`
+      select result_token_hash as hash from orders where id = ${mine}
+    `
+    expect(row!.hash).toBe('b'.repeat(64))
   })
 
   // Order management (docs/specs/0006-order-management.md): what an org corrects, cancels,

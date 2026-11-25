@@ -510,6 +510,15 @@ const placeOrderFields = {
   /** The total the buyer saw: an order is never placed at another. */
   expectedTotalMinor: z.number().int().min(0),
   botCheckToken: z.string().min(1).max(4000),
+  /**
+   * A random identifier the buyer's browser draws with its checkout and sends with every try to
+   * place it: a secret of the buyer's, as a result token is. A try whose key already placed an
+   * order of the edition for the same buyer places nothing: it is answered with that order and a
+   * new result token, which takes the place of the one before. A key that cannot answer so, as
+   * one whose order is under another address, is refused as an invalid field. An order sent
+   * with no key is placed each time it is sent.
+   */
+  placementKey: z.uuid().optional(),
 }
 
 /** An order placed by an account: under the account's own email, which no body names. */

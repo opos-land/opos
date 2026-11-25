@@ -614,6 +614,30 @@ describe('the outbox', () => {
     expect(await mailTo(to)).toHaveLength(1)
   })
 
+  // A run takes its emails one after another: the last of a long one is claimed minutes after
+  // the run began, and is this process's alone from then, not from the run's beginning.
+  it('keeps an email claimed late in a long run from a run that begins meanwhile', async () => {
+    const s = await shop('en')
+    const to = buyer()
+    await s.pay(await s.place(to))
+    const [queued] = await s.emails()
+    const began = new Date(Date.now() - 6 * MINUTE)
+    await setColumn('order_emails', String(queued!.id), 'next_attempt_at', began.toISOString())
+    const mail = app.get(MailService)
+    const sendOrderEmail = mail.sendOrderEmail.bind(mail)
+    let meanwhile: { sent: number; failed: number } | undefined
+    // While the email is being sent, another process begins a run of its own.
+    vi.spyOn(mail, 'sendOrderEmail').mockImplementationOnce(async (composed) => {
+      meanwhile = await send(s)
+      return sendOrderEmail(composed)
+    })
+
+    expect(await send(s, began)).toMatchObject({ sent: 1, failed: 0 })
+
+    expect(meanwhile).toEqual({ sent: 0, failed: 0 })
+    expect(await mailTo(to)).toHaveLength(1)
+  })
+
   it('passes by the emails of a suspended convention, and sends them once it is restored', async () => {
     const s = await shop('en')
     const to = buyer()

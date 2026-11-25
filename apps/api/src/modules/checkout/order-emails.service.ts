@@ -169,7 +169,9 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
     // noted as it is made, so that nothing of it is kept with what the email said.
     const handedOver: string[] = []
     const claimed = await this.context.withTenant(tenantId, async () => {
-      const email = await this.emails.claim(emailId, now, new Date(now.getTime() + LEASE_MS))
+      // The lease runs from the claim, not from `now`: a long run claims its last emails minutes
+      // after it began.
+      const email = await this.emails.claim(emailId, now, new Date(Date.now() + LEASE_MS))
       if (!email) return undefined
       // An email that cannot be written is tried again later, as one that could not be sent.
       const composed = await this.compose(email, now, handedOver).catch((error: unknown) => {

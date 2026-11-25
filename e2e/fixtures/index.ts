@@ -1,5 +1,10 @@
 import { type Database, grantAdmin, migrationDb } from '@opos/db'
-import { expect, test as base } from '@playwright/test'
+import {
+  type BrowserContext,
+  type BrowserContextOptions,
+  expect,
+  test as base,
+} from '@playwright/test'
 import { type Account, createAuthUser, deleteAuthUser, freshEmail } from './auth-admin'
 import { type PageRequest, requestsOutside } from './boundary'
 import { deleteMail } from './mailpit'
@@ -9,7 +14,10 @@ import { turnOnTwoFactor } from './two-factor'
 
 /** Accounts made for one scenario and the addresses it used, all removed after it. */
 export interface Accounts {
-  /** An account made through the admin API, confirmed unless told otherwise. */
+  /**
+   * An account made through the admin API, confirmed unless told otherwise, in English unless
+   * its metadata names another language (an empty `locale` for none).
+   */
   create(options?: Parameters<typeof createAuthUser>[0]): Promise<Account>
   /** A fresh address for a sign-up through the UI; its account goes after the scenario too. */
   freshEmail(prefix?: string): string
@@ -28,7 +36,47 @@ export interface Admins {
   grant(email: string): Promise<void>
 }
 
+/** A language of the interface, as the applications keep it. */
+export type InterfaceLocale = 'en' | 'pl'
+
+// Where each application keeps the language a visitor chose (`LOCALE_STORAGE_KEY` of its
+// `shared/lib/i18n.ts`); each origin reads only its own.
+const VISITOR_LOCALE_KEYS = ['opos-panel-locale', 'opos-portal-locale', 'opos-admin-locale']
+
+interface ScenarioOptions {
+  /**
+   * The language a visitor chose in every application before the scenario, `en` unless a file
+   * sets another with `test.use`; `null` leaves the choice to the scenario, and the interface in
+   * Polish until it makes one. The scenarios are written in the English source messages.
+   */
+  visitorLocale: InterfaceLocale | null
+}
+
+/** Chooses `locale` in every page of `context` that has no choice of its own yet. */
+async function chooseVisitorLocale(context: BrowserContext, locale: InterfaceLocale | null) {
+  if (!locale) return
+  await context.addInitScript(
+    ({ keys, locale }) => {
+      try {
+        for (const key of keys) {
+          if (window.localStorage.getItem(key) === null) window.localStorage.setItem(key, locale)
+        }
+      } catch {
+        // A page with no storage of its own, such as about:blank.
+      }
+    },
+    { keys: VISITOR_LOCALE_KEYS, locale },
+  )
+}
+
 interface ScenarioFixtures {
+  /** Chooses `visitorLocale` in every page of the scenario that has no choice of its own yet. */
+  visitorLanguage: void
+  /**
+   * Another browser of the scenario, such as a visitor's or a phone's, with `visitorLocale`
+   * chosen as in the first one; `browser.newContext()` would leave it in Polish.
+   */
+  newContext: (options?: BrowserContextOptions) => Promise<BrowserContext>
   accounts: Accounts
   admins: Admins
   tenants: TenantFactory
@@ -42,7 +90,28 @@ interface WorkerFixtures {
 
 // Scenarios share no data: each one makes its own accounts and tenants, and
 // leaves nothing behind in the database or in Mailpit.
-export const test = base.extend<ScenarioFixtures, WorkerFixtures>({
+export const test = base.extend<ScenarioOptions & ScenarioFixtures, WorkerFixtures>({
+  visitorLocale: ['en', { option: true }],
+
+  visitorLanguage: [
+    async ({ context, visitorLocale }, use) => {
+      await chooseVisitorLocale(context, visitorLocale)
+      await use()
+    },
+    { auto: true },
+  ],
+
+  newContext: async ({ browser, visitorLocale }, use) => {
+    const opened: BrowserContext[] = []
+    await use(async (options) => {
+      const context = await browser.newContext(options)
+      opened.push(context)
+      await chooseVisitorLocale(context, visitorLocale)
+      return context
+    })
+    await Promise.all(opened.map((context) => context.close()))
+  },
+
   // The BFF boundary: the browser talks to the panel, the portal, the admin application and the
   // API alone. A request to Supabase or to anything else, from any page of the scenario, fails
   // it; so does a page of one application requesting another, unless it is a navigation.
@@ -92,7 +161,12 @@ export const test = base.extend<ScenarioFixtures, WorkerFixtures>({
     const emails: string[] = []
     await use({
       async create(options = {}) {
-        const account = await createAuthUser({ email: freshEmail(), ...options })
+        // In English, as the scenarios are, unless the scenario names the account's language.
+        const account = await createAuthUser({
+          email: freshEmail(),
+          ...options,
+          metadata: { locale: 'en', ...options.metadata },
+        })
         ids.push(account.id)
         emails.push(account.email)
         return account

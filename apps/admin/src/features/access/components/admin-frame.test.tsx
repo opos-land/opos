@@ -9,8 +9,9 @@ import { useSession } from '../../../shared/lib/session'
 import { signOut } from '../../auth'
 import { AdminFrame, AdminNavigation } from './admin-frame'
 
-// The theme toggle has tests of its own.
+// The theme toggle and the language switcher have tests of their own.
 vi.mock('../../theme', () => ({ ThemeToggle: () => null }))
+vi.mock('../../language', () => ({ LanguageSwitcher: () => <select aria-label="Language" /> }))
 vi.mock('../../auth', () => ({ signOut: vi.fn() }))
 
 const account = {
@@ -55,6 +56,7 @@ describe('AdminFrame', () => {
     expect(screen.getByText('OPOS administration')).toBeTruthy()
     expect(screen.getByText('ada@example.test')).toBeTruthy()
     expect(screen.getByText('a screen')).toBeTruthy()
+    expect(screen.getByRole('combobox', { name: 'Language' })).toBeTruthy()
   })
 
   it('signs out on request', async () => {

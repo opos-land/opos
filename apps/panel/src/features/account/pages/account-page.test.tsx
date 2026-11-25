@@ -54,11 +54,13 @@ describe('AccountPage', () => {
     expect(await screen.findByText('a@x.test')).toBeTruthy()
   })
 
-  it('offers the interface language, the browser’s by default', async () => {
+  it('offers the interface languages, Polish for an account with no choice', async () => {
     renderPage()
 
     const select = await screen.findByLabelText<HTMLSelectElement>('Interface language')
-    expect(select.value).toBe('browser')
+    await waitFor(() => expect(select.disabled).toBe(false))
+    expect(select.value).toBe('pl')
+    expect([...select.options].map((option) => option.value)).toEqual(['en', 'pl'])
   })
 
   it('offers the interface theme, the system’s by default', async () => {

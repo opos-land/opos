@@ -17,6 +17,10 @@ vi.mock('../features/theme', () => ({
   AccountTheme: () => null,
   ThemeToggle: () => <button type="button">Dark theme</button>,
 }))
+// The language switcher has tests of its own.
+vi.mock('../features/language', () => ({
+  LanguageSwitcher: () => <select aria-label="Language" />,
+}))
 
 const account = {
   id: 'a',
@@ -50,19 +54,22 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('Layout', () => {
-  it('offers the theme toggle in the header, signed in or not', () => {
+  it('offers the theme toggle and the language switcher in the header, signed in or not', () => {
     view()
     expect(screen.getByRole('button', { name: 'Dark theme' })).toBeDefined()
+    expect(screen.getByRole('combobox', { name: 'Language' })).toBeDefined()
 
     cleanup()
     useSession.setState({ status: 'ready', account })
     view()
     expect(screen.getByRole('button', { name: 'Dark theme' })).toBeDefined()
+    expect(screen.getByRole('combobox', { name: 'Language' })).toBeDefined()
 
     cleanup()
     useSession.setState({ status: 'loading', account: null })
     view()
     expect(screen.getByRole('button', { name: 'Dark theme' })).toBeDefined()
+    expect(screen.getByRole('combobox', { name: 'Language' })).toBeDefined()
   })
 
   it('asks for consent on every screen, and keeps its settings in the footer', () => {

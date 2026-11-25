@@ -151,7 +151,7 @@ test(
 test(
   'a signed-in account buys a T-shirt with "Buy more", and the scanner shows both orders on one code',
   { tag: '@mobile' },
-  async ({ page, browser, accounts, tenants }) => {
+  async ({ page, newContext, accounts, tenants }) => {
     test.slow()
     const s = await selling(tenants, accounts)
     const buyer = await accounts.create()
@@ -194,14 +194,14 @@ test(
     const code = /The QR code of the order \S+: ([A-Z2-7]{32})/.exec(mail.Text)![1]!
 
     // At the gate, a scanner that reads the code shows both orders.
-    const desk = await browser.newContext()
+    const desk = await newContext()
     const panel = await desk.newPage()
     await signInToPanel(panel, s.head.email, s.head.password)
     await panel.goto(panelUrl(`/${s.tenant.slug}/editions/${s.edition.slug}/scanners/new`))
     await panel.getByLabel('Name of the scanner').fill('Main gate')
     await panel.getByRole('button', { name: 'Enable the scanner' }).click()
     const link = await panel.getByText(/\/scanner#[A-Za-z0-9_-]{43}$/).textContent()
-    const gate = await browser.newContext({ viewport: { width: 360, height: 800 } })
+    const gate = await newContext({ viewport: { width: 360, height: 800 } })
     const phone = await gate.newPage()
     await phone.goto(link!)
     await expect(phone.getByRole('heading', { name: 'Main gate', level: 1 })).toBeVisible()

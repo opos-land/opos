@@ -436,6 +436,10 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - Lingui, English source messages as their own identifiers; `en` and `pl`, `pl` the default, English
   the fallback; a new locale needs no migration
   ([0011](adr/0011-localize-with-lingui-and-return-codes-from-the-api.md)).
+- The interface language is the signed-in account's, else the one the visitor chose in the
+  browser, else `pl`; no frontend reads the browser's languages. Each frontend sends the language
+  on screen to the API as `Accept-Language`
+  ([0092](adr/0092-show-polish-until-a-language-is-chosen.md)).
 - Every user-facing string sits in a macro, plurals in `plural`, its `pl` translation in the same
   commit; `pnpm i18n:check` fails on drift or a missing one.
 - Every [glossary](PRODUCT.md#3-glossary) term has one rendering per locale:

@@ -1726,6 +1726,10 @@ msgctxt "a document"
 msgid "Kind"
 msgstr "Rodzaj"
 
+#: src/features/language/components/language-switcher.tsx
+msgid "Language"
+msgstr "Język"
+
 #: src/features/scanner/pages/edition-scanner-page.tsx
 msgid "Last hand-out"
 msgstr "Ostatnie wydanie"
@@ -3292,10 +3296,6 @@ msgstr "Zapłacona kwota różni się od kwoty zamówienia."
 msgid "The axes are saved."
 msgstr "Osie zostały zapisane."
 
-#: src/features/account/pages/account-page.tsx
-msgid "The browser's language"
-msgstr "Język przeglądarki"
-
 #: src/features/scanner/components/qr-reader.tsx
 msgid "The camera is not available on this phone. Type the code instead."
 msgstr "Aparat nie jest dostępny na tym telefonie. Wpisz kod ręcznie."
@@ -3532,6 +3532,7 @@ msgid "The image is over 5 MB. Choose a smaller one."
 msgstr "Obraz ma ponad 5 MB. Wybierz mniejszy."
 
 #: src/features/account/pages/account-page.tsx
+#: src/features/language/components/language-switcher.tsx
 msgid "The interface language is saved."
 msgstr "Język interfejsu został zapisany."
 

@@ -2,11 +2,17 @@ import { i18n } from '@lingui/core'
 import { type QueryClient, useQueryClient } from '@tanstack/react-query'
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { loadLocale, LOCALE_STORAGE_KEY } from '../shared/lib/i18n'
 import { startSession, useSession } from '../shared/lib/session'
 import { toast } from '../shared/ui'
 import { setMemberships } from '../features/tenants'
 import { usePermissionStore } from '../features/tenants/model/permissions'
-import { AccountChangeCleanup, Providers } from './providers'
+import { AccountChangeCleanup, Providers, SignedOutLocale } from './providers'
+
+vi.mock('../shared/lib/i18n', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  loadLocale: vi.fn(() => Promise.resolve()),
+}))
 
 const accountOf = (id: string) => ({
   id,
@@ -140,5 +146,47 @@ describe('AccountChangeCleanup', () => {
     await vi.waitFor(() => expect(useSession.getState().account?.id).toBe('b'))
     expect(queryClient.getQueryData(['tenant', 'con-a'])).toBeUndefined()
     expect(usePermissionStore.getState().memberships).toBeNull()
+  })
+})
+
+describe('SignedOutLocale', () => {
+  beforeEach(() => {
+    // A browser asking for English, which the signed-out screens never follow by themselves.
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['en-US', 'en'])
+    vi.mocked(loadLocale).mockClear()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    window.localStorage.clear()
+  })
+
+  it('switches back to Polish when the session ends', () => {
+    useSession.setState({ account: accountOf('a') })
+    render(<SignedOutLocale />)
+
+    act(() => useSession.setState({ account: null }))
+
+    expect(loadLocale).toHaveBeenCalledExactlyOnceWith('pl')
+  })
+
+  it('switches back to the language chosen in this browser when the session ends', () => {
+    window.localStorage.setItem(LOCALE_STORAGE_KEY, 'en')
+    useSession.setState({ account: accountOf('a') })
+    render(<SignedOutLocale />)
+
+    act(() => useSession.setState({ account: null }))
+
+    expect(loadLocale).toHaveBeenCalledExactlyOnceWith('en')
+  })
+
+  it('leaves the language to the account while there is a session', () => {
+    useSession.setState({ account: null })
+    render(<SignedOutLocale />)
+
+    act(() => useSession.setState({ account: accountOf('a') }))
+    act(() => useSession.setState({ account: accountOf('b') }))
+
+    expect(loadLocale).not.toHaveBeenCalled()
   })
 })

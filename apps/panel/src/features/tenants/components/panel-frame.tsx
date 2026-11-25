@@ -13,6 +13,7 @@ import {
   useSidebar,
 } from '../../../shared/ui'
 import { NavUser } from '../../account'
+import { LanguageSwitcher } from '../../language'
 import { ThemeToggle } from '../../theme'
 
 /**
@@ -57,7 +58,8 @@ export function PanelFrame({
             />
             <PageBreadcrumb />
           </div>
-          <div className="ml-auto px-4">
+          <div className="ml-auto flex items-center gap-2 px-4">
+            <LanguageSwitcher />
             <ThemeToggle />
           </div>
         </header>

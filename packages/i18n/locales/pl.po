@@ -1096,8 +1096,8 @@ msgid "The two-factor authentication of this account has changed since the admin
 msgstr "Uwierzytelnianie dwuskładnikowe tego konta zmieniło się od nadania roli administratora. Poproś o ponowne nadanie roli."
 
 #: src/errors.ts
-msgid "The variants of this merchandise item have changed since this page read them. Check them as they are now and save your changes again."
-msgstr "Warianty tego gadżetu zmieniły się, odkąd ta strona je wczytała. Sprawdź, jak wyglądają teraz, i zapisz swoje zmiany ponownie."
+msgid "The variants of this merchandise item have changed since this page read them. The form shows them as they are now: make your changes again and save."
+msgstr "Warianty tego gadżetu zmieniły się, odkąd ta strona je wczytała. Formularz pokazuje je teraz w obecnej postaci: wprowadź swoje zmiany ponownie i zapisz."
 
 #: src/errors.ts
 msgid "There is no room for more files. Remove the ones you no longer need."

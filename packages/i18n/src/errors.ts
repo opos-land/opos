@@ -67,7 +67,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'ticket-type.tiers-overlap': msg`Two price tiers cover the same time. A ticket type has one price at a time: change the dates so that the tiers do not overlap.`,
   'catalog.in-use': msg`This change would delete something an order holds. Hide it instead: it leaves the offer and stays on its orders.`,
   'catalog.below-held': msg`Orders already hold more than this limit: {held}. Set the limit to at least that number.`,
-  'catalog.variants-changed': msg`The variants of this merchandise item have changed since this page read them. Check them as they are now and save your changes again.`,
+  'catalog.variants-changed': msg`The variants of this merchandise item have changed since this page read them. The form shows them as they are now: make your changes again and save.`,
   'consent.in-use': msg`An order has already accepted this, so it cannot be deleted. Hide it instead: it leaves the shop and stays on its orders.`,
   'consent.accepted': msg`An order has already accepted this consent, so its sentence cannot be changed. Hide it and add a new consent with the new sentence.`,
   'shop.payments-under-way': msg`A payment for an order of this convention may still be confirmed with this account: the order is waiting for payment, or it expired within the last 24 hours with a payment started. Until then you can only correct the credentials of the same account.`,

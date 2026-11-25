@@ -184,7 +184,7 @@ describe('errorMessage', () => {
 
     expect(errorMessage('catalog.variants-changed')).not.toBe(unknownError)
     expect(i18n._(errorMessage('catalog.variants-changed'))).toBe(
-      'Warianty tego gadżetu zmieniły się, odkąd ta strona je wczytała. Sprawdź, jak wyglądają teraz, i zapisz swoje zmiany ponownie.',
+      'Warianty tego gadżetu zmieniły się, odkąd ta strona je wczytała. Formularz pokazuje je teraz w obecnej postaci: wprowadź swoje zmiany ponownie i zapisz.',
     )
   })
 

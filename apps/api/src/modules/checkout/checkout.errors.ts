@@ -56,7 +56,10 @@ export const consentChanged = (consent: string) =>
 export const emailRefused = () =>
   new ApiError(422, 'order.email-refused', 'The payment provider cannot take the email')
 
-/** The email holds the most orders awaiting payment it may in the edition. */
+/**
+ * The buyer holds the most orders awaiting payment one may in the edition: an account its own,
+ * a visitor those under the email that are on no account.
+ */
 export const tooManyUnpaid = (limit: number) =>
   new ApiError(409, 'order.too-many-unpaid', 'Too many orders await payment', { limit })
 

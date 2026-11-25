@@ -723,8 +723,13 @@ steps of [adding a feature](#adding-a-feature).
   An order being placed and a change of the account share one lock of the tenant's account. The
   expiry of orders asks the account the convention holds now, and expires an order whose attempt
   that account does not know. The orders awaiting
-  payment of an email in an edition are counted under a lock of that email in the edition, which
-  an order takes after the locks of invariant 9. `opos_app` never updates an order's number, its
+  payment in an edition are counted for the buyer the request proves: those on the account that
+  places the order, or for a visitor those under the email that are on no account, so that an
+  order anyone places under an email never counts against its account. Each count runs under a
+  lock of that account or that email in the edition, which an order takes after the locks of
+  invariant 9
+  ([0099](adr/0099-count-an-accounts-unpaid-orders-apart-from-a-visitors-under-its-email.md)).
+  `opos_app` never updates an order's number, its
   prices or what a line sells, but for a merchandise line's variant
   ([0058](adr/0058-let-the-api-change-the-variant-an-order-line-names.md)).
 - **Order management.** Every change an org makes of an order runs under the tenant's write lock

@@ -769,4 +769,59 @@ describe('an order placed by an account', () => {
     // Not attached yet: an unpaid order under an email proves nothing of who placed it.
     expect(await storedRows('order_accounts', s.t.id)).toEqual([])
   })
+
+  // Whoever knows an address places a visitor's orders under it. They fill the three of a
+  // visitor under that address, and never those of the account whose address it is.
+  it('holds three orders awaiting payment of its own, whatever visitors placed under its email', async () => {
+    const s = await shop()
+    const [known, other] = [await member(), await member()]
+    const theirs = { email: known.email, emailConfirmation: known.email }
+    for (let n = 0; n < MAX_UNPAID_ORDERS; n += 1) await s.place(theirs).expect(201)
+    const visitor = await s.place(theirs).expect(409)
+    expect(visitor.body).toMatchObject({ code: 'order.too-many-unpaid' })
+
+    for (let n = 0; n < MAX_UNPAID_ORDERS; n += 1) await asAccount(s, known, body(s)).expect(201)
+
+    const fourth = await asAccount(s, known, body(s)).expect(409)
+    expect(fourth.body).toMatchObject({ code: 'order.too-many-unpaid', params: { limit: 3 } })
+    // Another account places its own, and so does the first once one of its orders is paid.
+    await asAccount(s, other, body(s)).expect(201)
+    const attached = await storedRows('order_accounts', s.t.id)
+    const own = attached.find((row) => row.account_id === known.id)!
+    await setColumn('orders', String(own.order_id), 'status', 'paid')
+    await asAccount(s, known, body(s)).expect(201)
+  })
+
+  it('leaves a visitor under its email the three orders of the address', async () => {
+    const s = await shop()
+    const known = await member()
+    for (let n = 0; n < MAX_UNPAID_ORDERS; n += 1) await asAccount(s, known, body(s)).expect(201)
+    const theirs = { email: known.email, emailConfirmation: known.email }
+
+    for (let n = 0; n < MAX_UNPAID_ORDERS; n += 1) await s.place(theirs).expect(201)
+
+    // Answered as for any address: nothing tells that this one has an account.
+    const fourth = await s.place(theirs).expect(409)
+    expect(fourth.body).toMatchObject({ code: 'order.too-many-unpaid', params: { limit: 3 } })
+    expect(await storedRows('order_accounts', s.t.id)).toHaveLength(MAX_UNPAID_ORDERS)
+  })
+
+  // Carts that share no ticket type wait for nothing of each other's stock or capacity.
+  it('holds no fourth order awaiting payment placed at the same moment', async () => {
+    const s = await shop()
+    const buyer = await member()
+    const types = [s.standard]
+    for (const name of ['Second', 'Third', 'Fourth', 'Fifth', 'Sixth']) {
+      types.push(await addTicketType(s.t.id, s.edition, { name }))
+    }
+
+    const answers = await Promise.all(
+      types.map((ticketTypeId) =>
+        asAccount(s, buyer, body(s, { cart: { ticket: { ticketTypeId } } })),
+      ),
+    )
+
+    expect(answers.map((res) => res.status).sort()).toEqual([201, 201, 201, 409, 409, 409])
+    expect(await s.orders()).toHaveLength(MAX_UNPAID_ORDERS)
+  })
 })

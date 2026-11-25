@@ -22,13 +22,24 @@ import {
   orders,
   ticketTypes,
 } from '@opos/db'
-import { and, asc, count, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  count,
+  eq,
+  exists,
+  inArray,
+  isNotNull,
+  isNull,
+  notExists,
+  sql,
+} from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { isUuid } from '../../common/uuid'
 import { providerAccountLockKey } from '../shop/provider-account-lock'
 import { orderNumber } from './codes'
-import { unpaidOrdersLockKey } from './unpaid-orders-lock'
+import { type UnpaidOrdersOf, unpaidOrdersLockKey } from './unpaid-orders-lock'
 
 /** An order as it is written when it is placed. */
 export interface NewOrder {
@@ -154,24 +165,38 @@ export class OrdersRepository {
   }
 
   /**
-   * How many orders of the edition await payment under the email. The count is taken under a
-   * lock of the email in the edition, held until the order is written: another order of the same
-   * email waits here, whatever its cart, and then counts this one. It comes after the order's
-   * other locks, so no order waits for it while it holds a row another needs.
+   * How many orders of the edition await payment for the buyer: those on the account, or for a
+   * visitor those under the email that are on no account. Anyone places a visitor's order under
+   * any email, so such orders never count against the account whose email it is. The count is
+   * taken under a lock of the account or the email in the edition, held until the order is
+   * written: another order of the same buyer waits here, whatever its cart, and then counts
+   * this one. It comes after the order's other locks, so no order waits for it while it holds a
+   * row another needs.
    */
-  async unpaid(editionId: string, email: string): Promise<number> {
+  async unpaid(editionId: string, buyer: UnpaidOrdersOf): Promise<number> {
     const tx = this.context.tx()
     await tx.execute(
-      sql`select pg_advisory_xact_lock(${unpaidOrdersLockKey(editionId, email)}::bigint)`,
+      sql`select pg_advisory_xact_lock(${unpaidOrdersLockKey(editionId, buyer)}::bigint)`,
     )
+    const attached = tx
+      .select({ orderId: orderAccounts.orderId })
+      .from(orderAccounts)
+      .where(
+        and(
+          eq(orderAccounts.orderId, orders.id),
+          'accountId' in buyer ? eq(orderAccounts.accountId, buyer.accountId) : undefined,
+        ),
+      )
     const [row] = await tx
       .select({ unpaid: count() })
       .from(orders)
       .where(
         and(
           eq(orders.editionId, editionId),
-          eq(orders.email, email),
           eq(orders.status, 'awaiting-payment'),
+          'accountId' in buyer
+            ? exists(attached)
+            : and(eq(orders.email, buyer.email), notExists(attached)),
         ),
       )
     return row!.unpaid

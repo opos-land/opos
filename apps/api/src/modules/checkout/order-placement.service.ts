@@ -98,7 +98,10 @@ export class OrderPlacement {
     if (totalMinor > 0 && !offer.provider) {
       throw providerUnavailable('no module of the provider is loaded in this environment')
     }
-    if ((await this.orders.unpaid(editionId, email)) >= MAX_UNPAID_ORDERS) {
+    // An account holds its own orders awaiting payment, a visitor those of the email on no
+    // account: what anyone places under an email never stands in the way of its account.
+    const counted = buyer.accountId ? { accountId: buyer.accountId } : { email }
+    if ((await this.orders.unpaid(editionId, counted)) >= MAX_UNPAID_ORDERS) {
       throw tooManyUnpaid(MAX_UNPAID_ORDERS)
     }
 

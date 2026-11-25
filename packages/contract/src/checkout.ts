@@ -438,7 +438,10 @@ export function discountOf(
 export const HOLD_MINUTES = 30
 export const PRICE_GRACE_MINUTES = 30
 
-/** The most orders awaiting payment one email holds in an edition. */
+/**
+ * The most orders awaiting payment a buyer holds in an edition: an account those on it, a
+ * visitor those under the email that are on no account.
+ */
 export const MAX_UNPAID_ORDERS = 3
 
 /** How long the token of a placed order opens its result page. */

@@ -5,11 +5,12 @@ import { useSession } from '../../../shared/lib/session'
 import { Button, ErrorMessage } from '../../../shared/ui'
 import { cn } from '../../../shared/lib/utils'
 import { signOut } from '../../auth'
+import { LanguageSwitcher } from '../../language'
 import { ThemeToggle } from '../../theme'
 
 /**
  * The frame of every screen behind sign-in: the application's name, the signed-in account, the
- * theme toggle and the sign-out, which an account with no access needs as much as an admin.
+ * language switcher, the theme toggle and the sign-out, which an account with no access needs as much as an admin.
  */
 export function AdminFrame({ children }: { children: ReactNode }) {
   const account = useSession((state) => state.account)
@@ -32,6 +33,7 @@ export function AdminFrame({ children }: { children: ReactNode }) {
         </p>
         <div className="flex items-center gap-2">
           {account && <span className="text-muted-foreground text-sm">{account.email}</span>}
+          <LanguageSwitcher />
           <ThemeToggle />
           <Button variant="outline" disabled={leaving} onClick={() => void leave()}>
             <Trans>Sign out</Trans>

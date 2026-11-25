@@ -2,7 +2,7 @@ import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { SUPPORTED_LOCALES, isLocale } from '@opos/i18n'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { languageName, loadLocale, pickLocale } from '../../../shared/lib/i18n'
+import { accountLocale, languageName, loadLocale } from '../../../shared/lib/i18n'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import { isTheme } from '../../../shared/lib/theme'
 import {
@@ -17,7 +17,6 @@ import { accountOptions, mergeSavedAccount, updateAccountOptions } from '../api/
 import { TwoFactorCard } from '../components/two-factor-card'
 import { signInMethods } from '../model/sign-in-methods'
 
-const BROWSER = 'browser'
 const SYSTEM = 'system'
 
 /**
@@ -34,7 +33,7 @@ export function AccountPage() {
     meta: { success: msg`The interface language is saved.` },
     onSuccess: async (saved) => {
       mergeSavedAccount(queryClient, saved)
-      await loadLocale(pickLocale(saved.locale))
+      await loadLocale(accountLocale(saved.locale))
     },
   })
 
@@ -45,8 +44,9 @@ export function AccountPage() {
     onSuccess: (saved) => mergeSavedAccount(queryClient, saved),
   })
 
-  const changeLanguage = (value: string) =>
-    update.mutate({ body: { locale: isLocale(value) ? value : null } })
+  const changeLanguage = (value: string) => {
+    if (isLocale(value)) update.mutate({ body: { locale: value } })
+  }
 
   const changeTheme = (value: string) =>
     saveTheme.mutate({ body: { theme: isTheme(value) ? value : null } })
@@ -60,11 +60,10 @@ export function AccountPage() {
           {(control) => (
             <NativeSelect
               {...control}
-              value={account.data?.locale ?? BROWSER}
+              value={accountLocale(account.data?.locale)}
               disabled={!account.data || update.isPending}
               onChange={(event) => changeLanguage(event.target.value)}
             >
-              <NativeSelectOption value={BROWSER}>{t`The browser's language`}</NativeSelectOption>
               {SUPPORTED_LOCALES.map((locale) => (
                 <NativeSelectOption key={locale} value={locale} lang={locale}>
                   {languageName(locale)}

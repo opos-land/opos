@@ -297,6 +297,10 @@ msgstr "Interests"
 msgid "It goes into the email as you write it."
 msgstr "It goes into the email as you write it."
 
+#: src/features/language/components/language-switcher.tsx
+msgid "Language"
+msgstr "Language"
+
 #: src/features/profiles/pages/profile-page.tsx
 msgid "Links"
 msgstr "Links"
@@ -661,6 +665,10 @@ msgstr "The email to the account names the rule of the terms behind it."
 #: src/features/profiles/components/clear-name.tsx
 msgid "The first name, the nickname and the last name of the account go, and everyone sees it as “Anon”, in the programme too. The account gets an email that says why, and may enter a name again."
 msgstr "The first name, the nickname and the last name of the account go, and everyone sees it as “Anon”, in the programme too. The account gets an email that says why, and may enter a name again."
+
+#: src/features/language/components/language-switcher.tsx
+msgid "The interface language is saved."
+msgstr "The interface language is saved."
 
 #: src/features/theme/components/theme-toggle.tsx
 msgid "The interface theme is saved."

@@ -2,7 +2,7 @@ import { i18n } from '@lingui/core'
 import { type QueryClient, useQueryClient } from '@tanstack/react-query'
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { loadLocale } from '../shared/lib/i18n'
+import { loadLocale, LOCALE_STORAGE_KEY } from '../shared/lib/i18n'
 import { startSession, useSession } from '../shared/lib/session'
 import { toast } from '../shared/ui'
 import { AccountChangeCleanup, Providers, SignedOutLocale } from './providers'
@@ -148,20 +148,32 @@ describe('AccountChangeCleanup', () => {
 
 describe('SignedOutLocale', () => {
   beforeEach(() => {
-    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['pl-PL', 'en'])
+    // A browser asking for English, which the signed-out portal never follows by itself.
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['en-US', 'en'])
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
+    window.localStorage.clear()
   })
 
-  it("switches back to the browser's language when the session ends", () => {
+  it('switches back to Polish when the session ends', () => {
     useSession.setState({ account: accountOf('a') })
     render(<SignedOutLocale />)
 
     act(() => useSession.setState({ account: null }))
 
     expect(loadLocale).toHaveBeenCalledExactlyOnceWith('pl')
+  })
+
+  it('switches back to the language chosen in this browser when the session ends', () => {
+    window.localStorage.setItem(LOCALE_STORAGE_KEY, 'en')
+    useSession.setState({ account: accountOf('a') })
+    render(<SignedOutLocale />)
+
+    act(() => useSession.setState({ account: null }))
+
+    expect(loadLocale).toHaveBeenCalledExactlyOnceWith('en')
   })
 
   it('leaves the language to the account while there is a session', () => {

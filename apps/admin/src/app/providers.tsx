@@ -2,6 +2,7 @@ import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { type ReactNode, useEffect, useState } from 'react'
+import { loadLocale, signedOutLocale } from '../shared/lib/i18n'
 import { useSession } from '../shared/lib/session'
 import { toast, Toaster } from '../shared/ui'
 import { createQueryClient } from './query-client'
@@ -22,6 +23,22 @@ export function AccountChangeCleanup({ onChange }: { onChange: () => void }) {
   return null
 }
 
+/**
+ * A session that ends — sign-out, a failed refresh, the end announced by another tab — takes the
+ * account's language with it: the signed-out admin application shows the language chosen in this browser
+ * again, else Polish.
+ */
+export function SignedOutLocale() {
+  useEffect(
+    () =>
+      useSession.subscribe((state, previous) => {
+        if (previous.account && !state.account) void loadLocale(signedOutLocale())
+      }),
+    [],
+  )
+  return null
+}
+
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(createQueryClient)
   const [onAccountChange] = useState(() => () => {
@@ -35,6 +52,7 @@ export function Providers({ children }: { children: ReactNode }) {
       <Toaster>
         <QueryClientProvider client={queryClient}>
           <AccountChangeCleanup onChange={onAccountChange} />
+          <SignedOutLocale />
           {children}
         </QueryClientProvider>
       </Toaster>

@@ -28,7 +28,7 @@ export const accountSchema = z.object({
   lastName: z.string().nullable(),
   nickname: z.string().nullable(),
   nameOrder: nameOrderSchema,
-  /** The account's interface language; `null` means detect it from Accept-Language. */
+  /** The account's interface language; `null` means none chosen, and the interface shows Polish. */
   locale: z.enum(SUPPORTED_LOCALES).nullable(),
   /** The account's interface theme; `null` means follow the system's. */
   theme: themeSchema.nullable(),

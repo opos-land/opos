@@ -1726,6 +1726,10 @@ msgctxt "a document"
 msgid "Kind"
 msgstr "Kind"
 
+#: src/features/language/components/language-switcher.tsx
+msgid "Language"
+msgstr "Language"
+
 #: src/features/scanner/pages/edition-scanner-page.tsx
 msgid "Last hand-out"
 msgstr "Last hand-out"
@@ -3292,10 +3296,6 @@ msgstr "The amount paid differs from the total of the order."
 msgid "The axes are saved."
 msgstr "The axes are saved."
 
-#: src/features/account/pages/account-page.tsx
-msgid "The browser's language"
-msgstr "The browser's language"
-
 #: src/features/scanner/components/qr-reader.tsx
 msgid "The camera is not available on this phone. Type the code instead."
 msgstr "The camera is not available on this phone. Type the code instead."
@@ -3532,6 +3532,7 @@ msgid "The image is over 5 MB. Choose a smaller one."
 msgstr "The image is over 5 MB. Choose a smaller one."
 
 #: src/features/account/pages/account-page.tsx
+#: src/features/language/components/language-switcher.tsx
 msgid "The interface language is saved."
 msgstr "The interface language is saved."
 

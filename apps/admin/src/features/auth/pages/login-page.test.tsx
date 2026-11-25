@@ -6,8 +6,9 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { useSession } from '../../../shared/lib/session'
 import { LoginPage } from './login-page'
 
-// The theme toggle has tests of its own.
+// The theme toggle and the language switcher have tests of their own.
 vi.mock('../../theme', () => ({ ThemeToggle: () => null }))
+vi.mock('../../language', () => ({ LanguageSwitcher: () => null }))
 
 const renderLogin = (search = '') =>
   render(

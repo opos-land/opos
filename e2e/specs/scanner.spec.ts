@@ -25,7 +25,7 @@ async function read(phone: Page, code: string) {
 test(
   'an org enables a scanner, a phone pairs with its code, reads a QR code and hands out',
   { tag: '@mobile' },
-  async ({ page, browser, request, accounts, tenants }) => {
+  async ({ page, newContext, request, accounts, tenants }) => {
     test.slow()
     const s = await selling(tenants, accounts)
     const [buyer, other] = [accounts.freshEmail('buyer'), accounts.freshEmail('other')]
@@ -55,14 +55,14 @@ test(
     )
 
     // A phone with no account signed in opens the link and becomes the scanner.
-    const context = await browser.newContext({ viewport: { width: 360, height: 800 } })
+    const context = await newContext({ viewport: { width: 360, height: 800 } })
     const phone = await context.newPage()
     await phone.goto(link!)
     await expect(phone.getByRole('heading', { name: 'Main gate', level: 1 })).toBeVisible()
     await expect(phone.getByText(`Scanner of ${s.edition.name}`)).toBeVisible()
     expect(new URL(phone.url()).hash).toBe('')
     // The code is spent: a second phone that opens the link is none.
-    const another = await browser.newContext({ viewport: { width: 360, height: 800 } })
+    const another = await newContext({ viewport: { width: 360, height: 800 } })
     const second = await another.newPage()
     await second.goto(link!)
     await expect(second.getByText(/pairing code does not work/)).toBeVisible()

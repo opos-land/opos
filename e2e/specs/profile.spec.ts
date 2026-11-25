@@ -58,7 +58,7 @@ test.describe('the public profile', () => {
   test(
     'a new account sets a nickname, fills its profile in, uploads an avatar and publishes; a visitor reads it until it is withdrawn',
     { tag: '@mobile' },
-    async ({ page, browser, accounts }) => {
+    async ({ page, newContext, accounts }) => {
       const email = accounts.freshEmail('profile')
 
       // The terms are accepted by registering, linked beside the privacy policy.
@@ -107,7 +107,7 @@ test.describe('the public profile', () => {
       expect(address).toMatch(/\/profiles\/[A-Za-z0-9_-]{16,}$/)
 
       // Anyone reads it, with no session.
-      const outside = await browser.newContext()
+      const outside = await newContext()
       const visitor = await outside.newPage()
       await visitor.goto(address)
       await expect(
@@ -139,7 +139,7 @@ test.describe('the public profile', () => {
 
   test('the programme names a speaker by the public name, leads to a published profile and shows a speaker with no name as Anon', async ({
     page,
-    browser,
+    newContext,
     accounts,
     tenants,
   }) => {
@@ -158,7 +158,7 @@ test.describe('the public profile', () => {
     await tenants.addSpeaker(tenant.id, item, nameless.id)
     const itemPage = portalUrl(`/conventions/${tenant.slug}/${edition.slug}/program/${item}`)
 
-    const outside = await browser.newContext()
+    const outside = await newContext()
     const visitor = await outside.newPage()
     await visitor.goto(itemPage)
     // No profile is published yet: both are named, neither is a link.
@@ -188,7 +188,7 @@ test.describe('the public profile', () => {
   test('a visitor reports a profile, an admin takes it down with a reason, the account asks for a review and publishes again once restored', async ({
     page,
     context,
-    browser,
+    newContext,
     accounts,
     admins,
   }) => {
@@ -204,7 +204,7 @@ test.describe('the public profile', () => {
     await uploadAvatar(page)
     const address = await publish(page)
 
-    const outside = await browser.newContext()
+    const outside = await newContext()
     const visitor = await outside.newPage()
     await report(visitor, address, {
       reason: 'Spam or advertising',
@@ -292,7 +292,7 @@ test.describe('the public profile', () => {
 
   test('an admin closes a report that changes nothing, finds an account by its email address and clears its name; the programme shows Anon', async ({
     page,
-    browser,
+    newContext,
     db,
     accounts,
     admins,
@@ -315,7 +315,7 @@ test.describe('the public profile', () => {
     const itemPage = portalUrl(`/conventions/${tenant.slug}/${edition.slug}/program/${item}`)
     const address = portalUrl(`/profiles/${await publishProfile(db, speaker.id)}`)
 
-    const outside = await browser.newContext()
+    const outside = await newContext()
     const visitor = await outside.newPage()
     await report(visitor, address, { reason: 'Another reason' })
 

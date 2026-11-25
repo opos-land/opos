@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router'
 import { AccountLocale } from '../features/account'
 import { MFA_PATH, MfaGate, mfaPath, mfaReturnFor } from '../features/auth'
 import { ConsentBanner, ConsentSettingsLink } from '../features/consent'
+import { LanguageSwitcher } from '../features/language'
 import { AccountTheme, ThemeToggle } from '../features/theme'
 import { PRIVACY_PATH, TERMS_PATH } from '../shared/config/routes'
 import { useSession } from '../shared/lib/session'
@@ -12,7 +13,7 @@ const holdsToken = (search: string) => new URLSearchParams(search).has('token_ha
 
 /**
  * The frame of every portal screen, laid out for a 360 px phone first: the platform's
- * name, the way to the account or to sign-in, the theme toggle, the content in one column, the
+ * name, the way to the account or to sign-in, the language switcher, the theme toggle, the content in one column, the
  * privacy policy and settings in the footer, and the consent banner while it asks.
  */
 export function Layout() {
@@ -55,7 +56,10 @@ export function Layout() {
                   <Trans>Sign in</Trans>
                 </Link>
               ))}
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher />
+              <ThemeToggle />
+            </div>
           </div>
         </nav>
       </header>

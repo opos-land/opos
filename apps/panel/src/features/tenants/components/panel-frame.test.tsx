@@ -10,6 +10,7 @@ import { PanelFrame } from './panel-frame'
 // The account menu has tests of its own.
 vi.mock('../../account', () => ({ NavUser: () => <p>the account</p> }))
 vi.mock('../../theme', () => ({ ThemeToggle: () => <button type="button">Dark theme</button> }))
+vi.mock('../../language', () => ({ LanguageSwitcher: () => <select aria-label="Language" /> }))
 
 const view = () =>
   render(
@@ -55,11 +56,12 @@ describe('PanelFrame', () => {
     expect(screen.getAllByRole('button', { name: 'Toggle Sidebar' })).toHaveLength(2)
   })
 
-  it('offers the theme toggle in the bar above the page', () => {
+  it('offers the theme toggle and the language switcher in the bar above the page', () => {
     view()
 
     const bar = screen.getByRole('banner')
     expect(within(bar).getByRole('button', { name: 'Dark theme' })).toBeDefined()
+    expect(within(bar).getByRole('combobox', { name: 'Language' })).toBeDefined()
   })
 
   it('closes the sidebar of a narrow screen once a link in it opens another page', async () => {

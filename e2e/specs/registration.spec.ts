@@ -70,7 +70,7 @@ test.describe('registration and the session in the portal', () => {
       await expect(page.locator('html')).toHaveAttribute('lang', 'pl')
       await expect(page.getByRole('heading', { name: pl('portal', 'Your account') })).toBeVisible()
 
-      // Signed out, the portal follows the browser's language again.
+      // Signed out, the portal shows the language chosen in this browser again.
       await page.getByRole('button', { name: pl('portal', 'Sign out') }).click()
       await expect(page).toHaveURL(/\/login/)
       await expect(page.locator('html')).toHaveAttribute('lang', 'en')

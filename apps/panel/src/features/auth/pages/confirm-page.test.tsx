@@ -10,8 +10,9 @@ import { sendPasswordLink, setPassword, verifyLink } from '../api/auth'
 import { AUTH_RETURN_STORAGE_KEY, rememberAuthReturn } from '../model/auth-return'
 import { ConfirmPage } from './confirm-page'
 
-// The theme toggle has tests of its own.
+// The theme toggle and the language switcher have tests of their own.
 vi.mock('../../theme', () => ({ ThemeToggle: () => null }))
+vi.mock('../../language', () => ({ LanguageSwitcher: () => null }))
 vi.mock('../api/auth', () => ({
   verifyLink: vi.fn(),
   setPassword: vi.fn(),

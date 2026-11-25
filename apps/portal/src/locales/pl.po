@@ -739,6 +739,7 @@ msgid "Keep the merchandise you chose?"
 msgstr "Zachować wybrane gadżety?"
 
 #: src/features/account/pages/account-page.tsx
+#: src/features/language/components/language-switcher.tsx
 msgid "Language"
 msgstr "Język"
 
@@ -1321,10 +1322,6 @@ msgstr "Administrator napisał:"
 msgid "The avatar shown now goes, and everyone sees the new one at once. To have the old one back, upload its file again."
 msgstr "Obecny awatar znika, a wszyscy od razu widzą nowy. Aby odzyskać poprzedni, wgraj jego plik ponownie."
 
-#: src/features/account/components/language-form.tsx
-msgid "The browser's language"
-msgstr "Język przeglądarki"
-
 #: src/shared/lib/notify.ts
 msgid "The changes are saved."
 msgstr "Zmiany zostały zapisane."
@@ -1338,6 +1335,7 @@ msgid "The hash of a recovery code you have used: as a record, until you delete 
 msgstr "Skrót kodu odzyskiwania, który został użyty: jako zapis, do usunięcia konta."
 
 #: src/features/account/components/language-form.tsx
+#: src/features/language/components/language-switcher.tsx
 msgid "The interface language is saved."
 msgstr "Język interfejsu został zapisany."
 

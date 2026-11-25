@@ -431,8 +431,11 @@ OPOS's public image matters as much as its features.
 ## 9. Languages, markets and time zones
 
 The MVP speaks **Polish**, the default, and **English**; a missing Polish text falls back to
-English. The interface follows the user's choice, else the browser's language; an email, the
-recipient's language, or for an address with no account, the inviting convention's.
+English. **The interface is in Polish until a language is chosen**, whatever the browser asks
+for: a signed-in account keeps its choice on the account, on every device, and a visitor's stays in
+the browser; every screen offers the choice
+([0092](adr/0092-show-polish-until-a-language-is-chosen.md)). An email is in the recipient's
+language, or for an address with no account, the inviting convention's.
 
 **One convention, one content language and one time zone**: programme items are written in its
 language, and their hours always show in its zone, so "Saturday 14:00" means the same in Prague

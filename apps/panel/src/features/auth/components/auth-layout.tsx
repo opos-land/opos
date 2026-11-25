@@ -1,9 +1,10 @@
 import { Trans } from '@lingui/react/macro'
 import { type ReactNode } from 'react'
 import { Card, CardContent } from '../../../shared/ui'
+import { LanguageSwitcher } from '../../language'
 import { ThemeToggle } from '../../theme'
 
-/** The frame of the screens before sign-in: the panel's name, the theme toggle and one column of content. */
+/** The frame of the screens before sign-in: the panel's name, the language switcher, the theme toggle and one column of content. */
 export function AuthLayout({ title, children }: { title: ReactNode; children: ReactNode }) {
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 px-4 py-12">
@@ -11,7 +12,10 @@ export function AuthLayout({ title, children }: { title: ReactNode; children: Re
         <p className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">
           <Trans>OPOS panel</Trans>
         </p>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <LanguageSwitcher />
+          <ThemeToggle />
+        </div>
       </div>
       <h1 className="text-2xl font-semibold">{title}</h1>
       <Card>

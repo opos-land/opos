@@ -383,6 +383,22 @@ describe('the variants of an item', () => {
     await waitFor(() => expect(notifySuccess).toHaveBeenCalledTimes(1))
   })
 
+  it('leaves a stock the form did not change as someone else set it meanwhile', async () => {
+    putVariants.mockResolvedValue({
+      ...shirt,
+      variants: [variant('ws', ['w', 's'], 5), variant('ml', ['m', 'l'], 0)],
+    })
+    view('shirt')
+    await waitFor(() => expect(field("Women's · S: stock").value).toBe('12'))
+
+    fireEvent.click(box("Men's · L: exists"))
+    press('Save the variants and their stock')
+
+    await waitFor(() => expect(notifySuccess).toHaveBeenCalledTimes(1))
+    expect(putVariants).toHaveBeenCalledTimes(1)
+    expect(putStock).not.toHaveBeenCalled()
+  })
+
   it('marks a variant unlimited, which holds no number', async () => {
     view('shirt')
     await waitFor(() => expect(field("Women's · S: stock").value).toBe('12'))

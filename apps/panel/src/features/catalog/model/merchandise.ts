@@ -81,6 +81,26 @@ export function variantsPlan(
 export const variantOf = (item: MerchandiseItem, valueIds: readonly string[]) =>
   item.variants.find((variant) => keyOf(variant.valueIds) === keyOf(valueIds))
 
+/**
+ * The stock saving the rows sets, once the API answered the item with the variants that exist: of
+ * a variant whose number the form changed from the one it was filled with, and of a variant the
+ * save made. A number the form did not change stays as the API holds it by now, which someone else
+ * may have set since the form was filled.
+ */
+export function stockWrites(
+  loaded: MerchandiseItem,
+  saved: MerchandiseItem,
+  stocks: readonly { valueIds: string[]; stock: number | null }[],
+): { variantId: string; stock: number | null }[] {
+  return stocks.flatMap(({ valueIds, stock }) => {
+    const variant = variantOf(saved, valueIds)
+    if (!variant || variant.stock === stock) return []
+    const before = variantOf(loaded, valueIds)
+    const untouched = before?.id === variant.id && before.stock === stock
+    return untouched ? [] : [{ variantId: variant.id, stock }]
+  })
+}
+
 /** An axis as its editor holds it: one that exists names its identifier, and so do its values. */
 export interface AxisFields {
   id?: string

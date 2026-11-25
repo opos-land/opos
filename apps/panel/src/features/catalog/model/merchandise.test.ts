@@ -9,6 +9,7 @@ import {
   itemBody,
   itemFields,
   reshapes,
+  stockWrites,
   variantRows,
   variantsPlan,
 } from './merchandise'
@@ -123,6 +124,53 @@ describe('what saving the variants asks for', () => {
     }))
 
     expect(variantsPlan(many)).toEqual({ problem: 'limit' })
+  })
+})
+
+describe('the stock saving the variants writes', () => {
+  const loaded = shirt([variant('v1', ['w', 's'], 12), variant('v2', ['w', 'l'], 50)])
+  const stocks = (first: number | null, second: number | null) => [
+    { valueIds: ['w', 's'], stock: first },
+    { valueIds: ['w', 'l'], stock: second },
+  ]
+
+  it('is that of a variant whose number the form changed', () => {
+    expect(stockWrites(loaded, loaded, stocks(20, 50))).toEqual([{ variantId: 'v1', stock: 20 }])
+    expect(stockWrites(loaded, loaded, stocks(12, null))).toEqual([
+      { variantId: 'v2', stock: null },
+    ])
+    expect(stockWrites(loaded, loaded, stocks(12, 50))).toEqual([])
+  })
+
+  it('leaves a number the form did not change as the API holds it by now', () => {
+    // Someone else lowered the stock of the second variant since the form was filled.
+    const saved = shirt([variant('v1', ['w', 's'], 12), variant('v2', ['w', 'l'], 20)])
+
+    expect(stockWrites(loaded, saved, stocks(12, 50))).toEqual([])
+    expect(stockWrites(loaded, saved, stocks(30, 50))).toEqual([{ variantId: 'v1', stock: 30 }])
+  })
+
+  it('sets the number of a variant the save made, and none that the API holds already', () => {
+    const saved = shirt([
+      variant('v1', ['w', 's'], 12),
+      // Made anew: the one the form was filled from is gone.
+      variant('v9', ['w', 'l'], 0),
+      variant('v3', ['m', 'l'], 0),
+    ])
+
+    expect(
+      stockWrites(loaded, saved, [...stocks(12, 50), { valueIds: ['m', 'l'], stock: 0 }]),
+    ).toEqual([{ variantId: 'v9', stock: 50 }])
+    expect(
+      stockWrites(loaded, saved, [...stocks(12, 50), { valueIds: ['m', 'l'], stock: 7 }]),
+    ).toEqual([
+      { variantId: 'v9', stock: 50 },
+      { variantId: 'v3', stock: 7 },
+    ])
+  })
+
+  it('writes nothing for a variant the API did not answer', () => {
+    expect(stockWrites(loaded, shirt(), stocks(20, 50))).toEqual([])
   })
 })
 

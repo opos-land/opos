@@ -1232,6 +1232,10 @@ msgid "This order cannot be corrected this way: only a paid order is corrected, 
 msgstr "Tego zamówienia nie można tak poprawić: poprawia się tylko opłacone zamówienie, a zamówienie ręczne nie ma adresu e-mail."
 
 #: src/errors.ts
+msgid "This order comes to more than one order can. Remove something from it or split it into several orders."
+msgstr "Kwota tego zamówienia jest większa, niż może mieć jedno zamówienie. Usuń z niego coś albo podziel je na kilka zamówień."
+
+#: src/errors.ts
 msgid "This order does not need review any more. Check its status."
 msgstr "To zamówienie nie jest już do wyjaśnienia. Sprawdź jego status."
 

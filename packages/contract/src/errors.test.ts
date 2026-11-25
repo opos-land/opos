@@ -66,6 +66,14 @@ describe('errorCodes', () => {
     expect(errorCodes).toContain(code)
   })
 
+  // What placing an order refuses of a cart (docs/specs/0004-checkout-and-orders.md).
+  it.each(['order.unavailable', 'order.total-changed', 'order.total-too-high'])(
+    'lists %s of a cart that is not placed as it stands',
+    (code) => {
+      expect(errorCodes).toContain(code)
+    },
+  )
+
   // What an org does with an order (docs/specs/0006-order-management.md, Routes).
   it.each([
     'order.not-correctable',

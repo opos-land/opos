@@ -1,5 +1,5 @@
 import { type NestExpressApplication } from '@nestjs/platform-express'
-import { type OrderDetail } from '@opos/contract'
+import { MAX_AMOUNT_MINOR, MAX_ORDER_TOTAL_MINOR, type OrderDetail } from '@opos/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from './app'
 import { deleteCreatedAccounts } from './auth'
@@ -189,6 +189,27 @@ describe('a manual order', () => {
 
   // A sale outside the shop does not wait for the shop: it is recorded while the shop is
   // closed, and sells merchandise alone whatever the shop lets a buyer do.
+  // Priced as the shop prices: a sale that comes to more than an order keeps of an amount is
+  // refused by its total, as a buyer's is, before anything is written.
+  it('is refused above the most an order comes to, and says so', async () => {
+    const d = await orderDesk(app)
+    const statue = await addMerchandiseItem(d.t.id, d.edition, { name: 'Statue', stock: 100 })
+    await setColumn('merchandise_items', statue.id, 'amount_minor', MAX_AMOUNT_MINOR)
+    await setColumn('merchandise_items', statue.id, 'per_order_limit', 100)
+    const of = (quantity: number) => ({
+      cart: { ticket: null, items: [{ variantId: statue.variantId, quantity }] },
+      ageBand: null,
+    })
+    expect(22 * MAX_AMOUNT_MINOR).toBeGreaterThan(MAX_ORDER_TOTAL_MINOR)
+
+    const res = await record(d, of(22)).expect(409)
+
+    expect(res.body).toMatchObject({ code: 'order.total-too-high' })
+    expect(await d.stored('orders')).toEqual([])
+    const fits = await record(d, of(21)).expect(201)
+    expect(detail(fits).totalMinor).toBe(21 * MAX_AMOUNT_MINOR)
+  })
+
   it('is recorded while the shop is closed, and sells merchandise alone', async () => {
     const d = await orderDesk(app)
     const pin = await addMerchandiseItem(d.t.id, d.edition, { name: 'Pin', stock: 5 })

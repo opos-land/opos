@@ -206,6 +206,12 @@ export type PricedLine = z.infer<typeof pricedLineSchema>
  */
 export const discountCodeEntry = z.string().trim().min(1).max(60)
 
+/**
+ * The most the lines of an order come to before a discount code, in minor units: the largest
+ * amount an order keeps. The prices and the quantities a cart may hold come to more.
+ */
+export const MAX_ORDER_TOTAL_MINOR = 2_147_483_647
+
 /** A cart to price, with the discount code the buyer entered. */
 export const quoteRequestSchema = cartSchema.extend({ discountCode: discountCodeEntry.optional() })
 
@@ -244,8 +250,8 @@ export type Quote = z.infer<typeof quoteSchema>
 
 /**
  * Why a cart cannot be had as it stands: the shop is closed, the cart is empty,
- * merch-only orders are off, or one thing of it is not on offer, has run out or is asked for in
- * more than an order may take.
+ * merch-only orders are off, one thing of it is not on offer, has run out or is asked for in
+ * more than an order may take, or all of it comes to more than an order may.
  */
 export type CartProblem =
   | { kind: 'closed' }
@@ -253,6 +259,8 @@ export type CartProblem =
   | { kind: 'merch-only' }
   | { kind: 'supporter-price' }
   | { kind: 'ticket-type' | 'add-on' | 'variant'; id: string }
+  /** The lines come to more than `MAX_ORDER_TOTAL_MINOR`, before any discount code. */
+  | { kind: 'total-too-high' }
   /** The discount code applies to nothing in the cart, or its last use is taken. */
   | { kind: 'discount-code' }
 
@@ -389,6 +397,11 @@ export function priceCart(
       })
     }
   }
+
+  // Everything of the cart can be had: what is left is whether an order keeps amounts this
+  // large. The lines are kept as priced, so a discount code brings none of them under it.
+  const sum = lines.reduce((total, line) => total + line.amountMinor, 0)
+  if (sum > MAX_ORDER_TOTAL_MINOR) return { problem: { kind: 'total-too-high' } }
 
   if (discount) {
     const off = discountOf(offer, lines, discount)

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
+import { MAX_ORDER_TOTAL_MINOR } from '@opos/contract'
 import { ORPCError } from '@orpc/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
@@ -773,6 +774,31 @@ describe('CheckoutPage', () => {
     expect(screen.getByText('It ran out while you were ordering.')).toBeDefined()
     fireEvent.click(screen.getByRole('checkbox', { name: /Painting workshop/ }))
     expect(screen.queryByText('It ran out while you were ordering.')).toBeNull()
+    expect(screen.getByText(/Total: .*120[.,]00/)).toBeDefined()
+  })
+
+  // What a cart may hold at the prices an org may set comes to more than one order may. Nothing
+  // of it ran out: the Summary says what is wrong, and the buyer takes something out.
+  it('says at the Summary that the order comes to more than one order can, and offers none to place', async () => {
+    const dear = offer()
+    dear.addOns[0]!.amountMinor = MAX_ORDER_TOTAL_MINOR
+    api.offer.mockResolvedValue(dear)
+    saveDraft('convention-a', '2027', kept({ step: 'summary', addOnIds: [ids.workshop] }))
+    view()
+    await stepHeading('Summary')
+
+    expect(screen.getByRole('alert').textContent).toMatch(
+      /This order comes to more than one order can\. Remove something from it/,
+    )
+    expect(screen.queryByText(/no longer available/)).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Order/ })).toBeNull()
+    press('Back')
+    await stepHeading('Merch')
+    press('Back')
+    await stepHeading('Add-ons')
+    // Nothing ran out, so nothing is marked as if it had.
+    expect(screen.queryByText('It ran out while you were ordering.')).toBeNull()
+    fireEvent.click(screen.getByRole('checkbox', { name: /Painting workshop/ }))
     expect(screen.getByText(/Total: .*120[.,]00/)).toBeDefined()
   })
 

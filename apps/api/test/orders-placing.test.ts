@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto'
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import {
+  MAX_AMOUNT_MINOR,
+  MAX_ORDER_TOTAL_MINOR,
   MAX_UNPAID_ORDERS,
   type Offer,
   ORDER_NUMBER_ALPHABET,
@@ -505,6 +507,37 @@ describe('the total of an order', () => {
 
     expect(res.body).toMatchObject({ code: 'order.total-changed', params: { totalMinor: 10000 } })
     expect(await s.orders()).toEqual([])
+  })
+
+  // The prices an org may set and the quantities a cart may hold come to more than an order
+  // keeps of an amount. Such an order is refused by its total, before anything is written.
+  it('above the most an order comes to places nothing and prices nothing, and says so', async () => {
+    const s = await shop()
+    const statue = await addMerchandiseItem(s.t.id, s.edition, { name: 'Statue', stock: 100 })
+    await setColumn('merchandise_items', statue.id, 'amount_minor', MAX_AMOUNT_MINOR)
+    await setColumn('merchandise_items', statue.id, 'per_order_limit', 100)
+    await offerWith(s.t.id, s.edition, s.standard, { itemIds: [statue.id] })
+    const of = (quantity: number) => ({
+      cart: {
+        ticket: { ticketTypeId: s.standard },
+        items: [{ variantId: statue.variantId, quantity }],
+      },
+      expectedTotalMinor: 10000 + quantity * MAX_AMOUNT_MINOR,
+    })
+    expect(of(22).expectedTotalMinor).toBeGreaterThan(MAX_ORDER_TOTAL_MINOR)
+
+    const res = await s.place(of(22)).expect(409)
+
+    expect(res.body).toMatchObject({ code: 'order.total-too-high' })
+    const quoted = await request(app.getHttpServer())
+      .post(`/public/tenants/${s.t.slug}/editions/${s.slug}/shop/quote`)
+      .send(of(22).cart)
+      .expect(409)
+    expect(quoted.body).toMatchObject({ code: 'order.total-too-high' })
+    expect(await s.orders()).toEqual([])
+    // One fewer comes to less, and is placed.
+    await s.place(of(21)).expect(201)
+    expect(await s.orders()).toMatchObject([{ total_minor: of(21).expectedTotalMinor }])
   })
 
   it('rests on a tier for thirty minutes after its end, and no longer', async () => {

@@ -70,6 +70,10 @@ describe('errorMessage', () => {
       'order.total-changed',
       'Kwota twojego zamówienia się zmieniła. Sprawdź nową kwotę i ją potwierdź.',
     ],
+    [
+      'order.total-too-high',
+      'Kwota tego zamówienia jest większa, niż może mieć jedno zamówienie. Usuń z niego coś albo podziel je na kilka zamówień.',
+    ],
     ['order.consent-missing', 'Zaakceptuj każdą wymaganą zgodę, żeby złożyć zamówienie.'],
     [
       'order.consent-changed',

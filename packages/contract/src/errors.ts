@@ -83,6 +83,7 @@ export const errorCodes = [
   'shop.closed',
   'order.unavailable',
   'order.total-changed',
+  'order.total-too-high',
   'order.consent-missing',
   'order.consent-changed',
   'order.email-refused',

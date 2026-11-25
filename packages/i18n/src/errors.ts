@@ -73,6 +73,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'shop.closed': msg`This shop is not selling right now.`,
   'order.unavailable': msg`Something in your order is no longer available. Check your order and try again.`,
   'order.total-changed': msg`The total of your order has changed. Check the new total and confirm it.`,
+  'order.total-too-high': msg`This order comes to more than one order can. Remove something from it or split it into several orders.`,
   'order.consent-missing': msg`Accept every required consent to place the order.`,
   'order.consent-changed': msg`The document of one of the consents has changed since this page was opened. Read it and accept the consent again to place the order.`,
   'order.email-refused': msg`The payment provider cannot take this email address. Use a shorter one.`,

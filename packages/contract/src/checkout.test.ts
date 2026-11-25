@@ -5,6 +5,9 @@ import {
   BOT_CHECK_STAND_IN,
   cartSchema,
   FAILURE_REASONS,
+  MAX_CART_LINES,
+  MAX_LINE_QUANTITY,
+  MAX_ORDER_TOTAL_MINOR,
   offerSchema,
   ORDER_NUMBER_ALPHABET,
   ORDER_STATUSES,
@@ -20,6 +23,7 @@ import {
   type Offer,
   quoteRequestSchema,
 } from './checkout'
+import { MAX_AMOUNT_MINOR } from './catalog'
 import { contract } from './index'
 
 const id = (n: number) => `0198c1a0-0000-7000-8000-${String(n).padStart(12, '0')}`
@@ -338,6 +342,42 @@ describe('the price of a cart', () => {
 
     expect(priceCart(emptied, alone)).toEqual({ problem: { kind: 'variant', id: WOMENS_M } })
   })
+
+  // An order keeps its amounts in numbers that hold no more than MAX_ORDER_TOTAL_MINOR, and
+  // what a cart may hold at the prices an org may set comes to more: such a cart is refused.
+  it('is refused where its lines come to more than an order may, and priced at exactly that', () => {
+    const shirtAt = (amountMinor: number) => {
+      const dear = offer()
+      dear.items[0]!.amountMinor = amountMinor
+      return dear
+    }
+    const alone = cart({ ticket: null, items: [{ variantId: WOMENS_S, quantity: 1 }] })
+    const withTicket = cart({ items: [{ variantId: WOMENS_S, quantity: 1 }] })
+
+    expect(MAX_CART_LINES * MAX_LINE_QUANTITY * MAX_AMOUNT_MINOR).toBeGreaterThan(
+      MAX_ORDER_TOTAL_MINOR,
+    )
+    expect(priceCart(shirtAt(MAX_ORDER_TOTAL_MINOR), alone)).toMatchObject({
+      totalMinor: MAX_ORDER_TOTAL_MINOR,
+    })
+    expect(priceCart(shirtAt(MAX_ORDER_TOTAL_MINOR + 1), alone)).toEqual({
+      problem: { kind: 'total-too-high' },
+    })
+    // It is the lines together that count, whatever each comes to.
+    expect(priceCart(shirtAt(MAX_ORDER_TOTAL_MINOR - 12000), withTicket)).toMatchObject({
+      totalMinor: MAX_ORDER_TOTAL_MINOR,
+    })
+    expect(priceCart(shirtAt(MAX_ORDER_TOTAL_MINOR - 11999), withTicket)).toEqual({
+      problem: { kind: 'total-too-high' },
+    })
+    // What cannot be had is named first: the buyer changes that before anything else.
+    expect(
+      priceCart(
+        shirtAt(MAX_ORDER_TOTAL_MINOR + 1),
+        cart({ ticket: null, items: [{ variantId: WOMENS_S, quantity: 4 }] }),
+      ),
+    ).toEqual({ problem: { kind: 'variant', id: WOMENS_S } })
+  })
 })
 
 // A discount code lowers the lines it applies to together, as one line of the order
@@ -429,6 +469,17 @@ describe('the price of a cart with a discount code', () => {
     expect(priceCart(offer({ open: false }), cart(), terms())).toEqual({
       problem: { kind: 'closed' },
     })
+  })
+
+  // The lines are kept as they are priced, the code's beside them: a code brings no cart
+  // under the most an order comes to.
+  it('lowers no cart whose lines come to more than an order may', () => {
+    const dear = offer()
+    dear.items[0]!.amountMinor = MAX_ORDER_TOTAL_MINOR + 1
+    const alone = cart({ ticket: null, items: [{ variantId: WOMENS_S, quantity: 1 }] })
+    const free = terms({ percent: 100, ticketTypeIds: [], itemIds: [SHIRT] })
+
+    expect(priceCart(dear, alone, free)).toEqual({ problem: { kind: 'total-too-high' } })
   })
 })
 

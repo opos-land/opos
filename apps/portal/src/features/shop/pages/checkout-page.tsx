@@ -8,6 +8,7 @@ import {
   type PlacedOrder,
 } from '@opos/contract'
 import { formatDateTime, isLocale } from '@opos/i18n'
+import { errorMessage } from '@opos/i18n/errors'
 import { ORPCError } from '@orpc/client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
@@ -609,9 +610,15 @@ function Checkout({
               </Trans>
             </p>
           )}
+          {current === 'summary' && problem?.kind === 'total-too-high' && (
+            // Nothing of it ran out: it is all of it together that one order cannot hold.
+            <p className="text-destructive" role="alert">
+              {i18n._(errorMessage('order.total-too-high'))}
+            </p>
+          )}
           {current === 'summary' &&
             problem &&
-            !['ticket-type', 'merch-only'].includes(problem.kind) && (
+            !['ticket-type', 'merch-only', 'total-too-high'].includes(problem.kind) && (
               <p className="text-destructive" role="alert">
                 <Trans>
                   Something you chose is no longer available. Go back to its step and change it.

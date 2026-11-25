@@ -1232,6 +1232,10 @@ msgid "This order cannot be corrected this way: only a paid order is corrected, 
 msgstr "This order cannot be corrected this way: only a paid order is corrected, and a manual order has no email address."
 
 #: src/errors.ts
+msgid "This order comes to more than one order can. Remove something from it or split it into several orders."
+msgstr "This order comes to more than one order can. Remove something from it or split it into several orders."
+
+#: src/errors.ts
 msgid "This order does not need review any more. Check its status."
 msgstr "This order does not need review any more. Check its status."
 

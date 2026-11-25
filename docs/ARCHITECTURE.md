@@ -701,7 +701,10 @@ steps of [adding a feature](#adding-a-feature).
   buyer opens filter on the tenant themselves. A cart is priced by one function of the
   contract, which the portal runs for the running total and the API for the order
   ([0050](adr/0050-price-a-cart-with-one-function-of-the-contract.md)); an order is placed at
-  the total the buyer saw or not at all. Its request names each consent accepted with the
+  the total the buyer saw or not at all. That function refuses a cart whose lines come to more
+  than an order keeps of an amount, so no quote, order or manual order reaches the database
+  with one
+  ([0100](adr/0100-refuse-a-cart-whose-lines-come-to-more-than-an-order-keeps.md)). Its request names each consent accepted with the
   version of the document shown beside it, and the API places no order with a version that is
   not the one in force, so that the order keeps what its buyer saw
   ([0094](adr/0094-attest-in-an-order-each-consent-exactly-as-its-buyer-saw-it.md)). The routes

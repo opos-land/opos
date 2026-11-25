@@ -1,4 +1,4 @@
-import { type CartProblem } from '@opos/contract'
+import { type CartProblem, MAX_ORDER_TOTAL_MINOR } from '@opos/contract'
 import { ApiError } from '../../common/errors/api-error'
 
 /** The edition's shop is closed, or nothing of it is on sale. */
@@ -8,10 +8,21 @@ export const shopClosed = () => new ApiError(409, 'shop.closed', 'The shop is no
  * Something of a cart cannot be had: it is not on offer, it ran out, or more of it is asked for
  * than an order may take. The params name what, so the buyer returns to its step.
  */
-export const orderUnavailable = (problem: Exclude<CartProblem, { kind: 'closed' }>) =>
+export const orderUnavailable = (
+  problem: Exclude<CartProblem, { kind: 'closed' | 'total-too-high' }>,
+) =>
   new ApiError(409, 'order.unavailable', 'Something of the order cannot be had', {
     kind: problem.kind,
     ...('id' in problem && { id: problem.id }),
+  })
+
+/**
+ * Everything of the cart can be had, and its lines come to more than an order keeps of an
+ * amount: nothing is priced or placed, and the buyer orders less at once.
+ */
+export const totalTooHigh = () =>
+  new ApiError(409, 'order.total-too-high', 'The order comes to more than an order may', {
+    limitMinor: MAX_ORDER_TOTAL_MINOR,
   })
 
 /** Whether an order was refused for its discount code, which cannot be used. */
@@ -21,8 +32,11 @@ export const refusedForDiscountCode = (error: unknown) =>
   error.params?.kind === 'discount-code'
 
 /** The refusal a cart's problem stands for. */
-export const cartRefusal = (problem: CartProblem) =>
-  problem.kind === 'closed' ? shopClosed() : orderUnavailable(problem)
+export const cartRefusal = (problem: CartProblem) => {
+  if (problem.kind === 'closed') return shopClosed()
+  if (problem.kind === 'total-too-high') return totalTooHigh()
+  return orderUnavailable(problem)
+}
 
 /** A field of an order that does not fit what the shop displays. */
 export const invalidOrder = (field: string, message: string) =>

@@ -4,6 +4,7 @@ import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { FAKE_ACCOUNT, FakeProvider } from '../src/modules/payments/fake-provider'
 import { providerAccountLockKey } from '../src/modules/shop/provider-account-lock'
+import { LATE_CONFIRMATION_HOURS } from '../src/modules/shop/provider-account.repository'
 import { createApp } from './app'
 import { deleteCreatedAccounts, session } from './auth'
 import {
@@ -14,6 +15,7 @@ import {
   addEdition,
   addMerchandiseItem,
   addOrder,
+  addPaymentAttempt,
   addTicketType,
   closeTenantDb,
   connectFake,
@@ -519,6 +521,72 @@ describe('what else an order keeps in place', () => {
     expect(res.status).toBe(409)
     expect(res.body).toMatchObject({ code: 'shop.payments-under-way' })
     expect(await storedRows('payment_provider_accounts', c.t.id)).toHaveLength(1)
+  })
+
+  // A payment made counts whenever its confirmation comes, and it is read with the account the
+  // convention holds then: an expired order that a payment was started for keeps the account a
+  // day longer.
+  describe('once it expired with a payment attempt nobody confirmed', () => {
+    const HOUR = 3_600_000
+    /** An order whose hold ended so long ago, expired, with an attempt of the status given. */
+    async function expired(endedAgo: number, attempt?: 'ended' | 'failed') {
+      const c = await convention()
+      await makeShopReady(c.t.id, c.edition)
+      await connectFake(c.t.id)
+      const order = await addOrder(c.t.id, c.edition, {
+        status: 'expired',
+        holds: false,
+        holdEndsAt: new Date(Date.now() - endedAgo).toISOString(),
+      })
+      if (attempt) await addPaymentAttempt(c.t.id, c.edition, order.id, { status: attempt })
+      return c
+    }
+    const disconnect = (c: Awaited<ReturnType<typeof convention>>) =>
+      call(c.t.head, 'delete', '/shop/provider-account', undefined, c.t.slug)
+    const within = LATE_CONFIRMATION_HOURS * HOUR - 60_000
+    const past = LATE_CONFIRMATION_HOURS * HOUR + 60_000
+
+    // The expiry ends an attempt that was started; a failed one keeps its reason.
+    it.each(['ended', 'failed'] as const)(
+      'keeps the account for a day from the end of its hold: an attempt that %s',
+      async (attempt) => {
+        const c = await expired(within, attempt)
+        const before = await storedAccount(c)
+
+        for (const res of [await connect(c, { account: 'another' }), await disconnect(c)]) {
+          expect(res.status).toBe(409)
+          expect(res.body).toMatchObject({ code: 'shop.payments-under-way' })
+        }
+        expect(await storedAccount(c)).toEqual(before)
+        // The same account given again goes on confirming a late payment.
+        expect((await connect(c, { account: 'demo', secret: 'corrected' })).status).toBe(200)
+      },
+    )
+
+    it('lets the account change once that day has passed', async () => {
+      const replaced = await expired(past, 'ended')
+      expect((await connect(replaced, { account: 'another' })).status).toBe(200)
+
+      const disconnected = await expired(past, 'failed')
+      expect((await disconnect(disconnected)).status).toBe(204)
+    })
+
+    it('lets the account change at once when no payment was started for it', async () => {
+      const replaced = await expired(within)
+      expect((await connect(replaced, { account: 'another' })).status).toBe(200)
+
+      const disconnected = await expired(within)
+      expect((await disconnect(disconnected)).status).toBe(204)
+    })
+
+    // Only an attempt nobody confirmed may still be confirmed.
+    it('lets the account change at once when its attempts were all confirmed', async () => {
+      const c = await expired(within)
+      const [order] = await storedRows('orders', c.t.id)
+      await addPaymentAttempt(c.t.id, c.edition, String(order!.id), { status: 'refused' })
+
+      expect((await connect(c, { account: 'another' })).status).toBe(200)
+    })
   })
 
   // An order with something to pay shares the lock on the account while it is placed, so a

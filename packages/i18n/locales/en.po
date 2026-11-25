@@ -48,6 +48,10 @@ msgstr "A payment arrived for your order {number} for {conventionName}, which wa
 msgid "A payment arrived that your order {number} does not need"
 msgstr "A payment arrived that your order {number} does not need"
 
+#: src/errors.ts
+msgid "A payment for an order of this convention may still be confirmed with this account: the order is waiting for payment, or it expired within the last 24 hours with a payment started. Until then you can only correct the credentials of the same account."
+msgstr "A payment for an order of this convention may still be confirmed with this account: the order is waiting for payment, or it expired within the last 24 hours with a payment started. Until then you can only correct the credentials of the same account."
+
 #: src/order-emails.ts
 msgid "A payment of {paid} arrived for the order {number} of {conventionName}, which was not waiting for one, and the payment provider could not refuse it."
 msgstr "A payment of {paid} arrived for the order {number} of {conventionName}, which was not waiting for one, and the payment provider could not refuse it."
@@ -133,10 +137,6 @@ msgstr "An administrator took this profile down. It cannot be published until it
 #: src/errors.ts
 msgid "An order has already accepted this, so it cannot be deleted. Hide it instead: it leaves the shop and stays on its orders."
 msgstr "An order has already accepted this, so it cannot be deleted. Hide it instead: it leaves the shop and stays on its orders."
-
-#: src/errors.ts
-msgid "An order of this convention is waiting for payment. You can replace the credentials once it is paid or expires."
-msgstr "An order of this convention is waiting for payment. You can replace the credentials once it is paid or expires."
 
 #: src/errors.ts
 msgid "An order used this discount code, so it cannot be deleted. End it instead: buyers can no longer use it, and it stays on its orders."

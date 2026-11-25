@@ -55,7 +55,7 @@ describe('errorMessage', () => {
     ],
     [
       'shop.payments-under-way',
-      'Zamówienie w tym konwencie oczekuje na płatność. Dane dostępowe zmienisz, gdy zostanie opłacone albo wygaśnie.',
+      'Płatność za zamówienie w tym konwencie może jeszcze zostać potwierdzona na tym koncie: zamówienie oczekuje na płatność albo wygasło w ciągu ostatnich 24 godzin, a płatność za nie została rozpoczęta. Do tego czasu możesz tylko poprawić dane dostępowe tego samego konta.',
     ],
     ['edition.has-orders', 'Ta edycja ma zamówienia, więc nie można jej usunąć.'],
     [

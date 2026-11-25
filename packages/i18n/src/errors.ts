@@ -68,7 +68,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'catalog.in-use': msg`This change would delete something an order holds. Hide it instead: it leaves the offer and stays on its orders.`,
   'catalog.below-held': msg`Orders already hold more than this limit: {held}. Set the limit to at least that number.`,
   'consent.in-use': msg`An order has already accepted this, so it cannot be deleted. Hide it instead: it leaves the shop and stays on its orders.`,
-  'shop.payments-under-way': msg`An order of this convention is waiting for payment. You can replace the credentials once it is paid or expires.`,
+  'shop.payments-under-way': msg`A payment for an order of this convention may still be confirmed with this account: the order is waiting for payment, or it expired within the last 24 hours with a payment started. Until then you can only correct the credentials of the same account.`,
   'shop.closed': msg`This shop is not selling right now.`,
   'order.unavailable': msg`Something in your order is no longer available. Check your order and try again.`,
   'order.total-changed': msg`The total of your order has changed. Check the new total and confirm it.`,

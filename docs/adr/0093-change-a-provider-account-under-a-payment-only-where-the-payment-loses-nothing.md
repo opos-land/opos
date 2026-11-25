@@ -23,12 +23,20 @@ which each convention is meant to connect its account again
 Consequences). Until someone changed the database by hand, no buyer of the convention could start
 a payment, and a buyer who had paid kept no ticket.
 
+The same review found the refusal too short at its other end. A payment made counts whenever its
+confirmation comes, also after its order expired (0081), and the confirmation is read with the
+account the convention holds when it comes. The refusal counted only the orders awaiting payment,
+so the account could be replaced or disconnected the minute after an order expired, and a late
+confirmation of a payment started within its hold was then answered as an unknown address.
+
 This record is the team's proposal after that review. The rule is a business rule of the tickets
 module: its domain owner confirms it.
 
 ## Decision
 
-- A payment is under way while an order of the convention awaits payment.
+- A payment is under way while an order of the convention awaits payment, and for 24 hours from
+  the end of the hold of an expired order that has a payment attempt nobody confirmed: its late
+  confirmation still needs the account.
 - While a payment is under way the provider account is not disconnected, and new credentials are
   refused, but for three accounts that lose nothing by giving way:
   - **The same account given again.** The provider's module tells whether two sets of credentials
@@ -60,6 +68,13 @@ module: its domain owner confirms it.
 - **Tell a lasting refusal of a signature from an outage when a payment is verified.** It would
   free an order held by a wrong CRC key, but what Przelewy24 answers to a wrong signature could
   not be confirmed against its sandbox, and the same account given again repairs that case.
+- **Count the 24 hours from the moment the order expired.** An order keeps no such moment, and
+  the end of its hold is the moment that matters: a payment attempt starts only within the
+  hold, so a provider's repeats of a notification run from there. An order the expiry job left
+  waiting past its hold counts as awaiting payment for as long as it waits.
+- **Keep the account for as long as each provider repeats a notification.** Przelewy24 repeats
+  one for hours, another provider will for another time; one day covers them and is a time an
+  org can be told.
 
 ## Consequences
 
@@ -75,12 +90,15 @@ module: its domain owner confirms it.
   credentials and about the stored ones. Both count as one of the convention's 20 checks an hour.
 - A provider's module answers one more question, with no call: whether two sets of credentials
   name one account.
+- A convention that moves to another account, or disconnects its own, waits a day after the last
+  order that expired with a payment attempt nobody confirmed. An attempt its provider never
+  registered counts too: the attempt does not tell it from one the expiry ended.
 - Rules P5 and P6 of the shop's setup hold as changed here; 0044 and 0081 stand.
 
 ## Sources
 
 - The review of the shop's code of 2026-11-25, findings on a dead end between the expiry job and
-  the refusal of new credentials.
+  the refusal of new credentials, and on a late confirmation that finds its account gone.
 - [Shop setup](../specs/0002-shop-setup.md), P5 and P6;
   [checkout and orders](../specs/0004-checkout-and-orders.md), Y6;
   [Przelewy24](../specs/0005-przelewy24.md).

@@ -10,12 +10,13 @@ import { ApiError } from '../../common/errors/api-error'
 export const shopOpen = () => new ApiError(409, 'shop.open', 'A shop of the convention is open')
 
 /**
- * An order of the convention awaits payment: a payment under way is confirmed with the account
- * it started with, which is not disconnected until it is paid or expires, and gives way to new
- * credentials only where the payment loses nothing by it.
+ * A payment of the convention is under way: an order awaits payment, or expired a short while
+ * ago with a payment attempt nobody confirmed. It is confirmed with the account it started with,
+ * which is not disconnected until then, and gives way to new credentials only where the payment
+ * loses nothing by it.
  */
 export const paymentsUnderWay = () =>
-  new ApiError(409, 'shop.payments-under-way', 'An order of the convention awaits payment')
+  new ApiError(409, 'shop.payments-under-way', 'A payment of the convention is under way')
 
 /** The provider refused the credentials it was given: nothing of them is stored. */
 export const credentialsRefused = () =>

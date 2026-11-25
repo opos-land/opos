@@ -49,6 +49,9 @@ describe('the payment providers the panel knows', () => {
     // Przelewy24 answers only to the addresses entered in its panel: the org is shown which.
     expect(PROVIDERS.przelewy24.needsAddress).toBe(true)
     expect(PROVIDERS.fake.needsAddress).toBeFalsy()
+    // Its access test checks neither the CRC key nor the merchant: a ready account says so.
+    expect(PROVIDERS.przelewy24.readyNote).toBeTruthy()
+    expect(PROVIDERS.fake.readyNote).toBeUndefined()
   })
 
   it('carries an answer of the org as a yes or a no, ticked or not', () => {

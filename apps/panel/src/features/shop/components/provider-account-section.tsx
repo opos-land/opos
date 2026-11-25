@@ -66,6 +66,8 @@ function Account({ state: { account } }: { state: ProviderAccountState }) {
       </p>
     )
   }
+  // What the provider's check of the credentials left unchecked, once the account sells.
+  const readyNote = account.ready ? PROVIDERS[account.provider].readyNote : undefined
   return (
     <div className="flex flex-col gap-3">
       <dl className="grid max-w-lg grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
@@ -92,6 +94,7 @@ function Account({ state: { account } }: { state: ProviderAccountState }) {
           )}
         </dd>
       </dl>
+      {readyNote && <p className="max-w-xl text-sm">{i18n._(readyNote)}</p>}
       {account.missing.length > 0 && (
         <ul className="list-disc pl-5 text-sm">
           {account.missing.map((code) => {

@@ -3385,6 +3385,10 @@ msgstr "Adres konwentu ustala administrator platformy."
 msgid "The convention’s payment provider account is connected and ready to sell."
 msgstr "Konto konwentu u dostawcy płatności jest podłączone i gotowe do sprzedaży."
 
+#: src/features/shop/model/providers.ts
+msgid "The CRC key and the merchant ID are confirmed only by the first payment a buyer starts. You can correct the credentials of this same account at any time."
+msgstr "Klucz CRC i ID sprzedawcy potwierdza dopiero pierwsza płatność rozpoczęta przez kupującego. Dane dostępowe tego samego konta możesz poprawić w każdej chwili."
+
 #: src/features/shop/components/provider-account-section.tsx
 msgid "The credentials are checked with the provider, stored encrypted and never shown again."
 msgstr "Dane dostępowe są sprawdzane u dostawcy, przechowywane w postaci zaszyfrowanej i nigdy więcej nie są pokazywane."

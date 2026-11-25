@@ -25,6 +25,11 @@ export const PROVIDERS: Record<
     fields: CredentialField[]
     /** Whether it answers only to the addresses entered in its panel: the org is shown which. */
     needsAddress?: boolean
+    /**
+     * What an account ready to sell is told, where the provider's check of the credentials does
+     * not cover all of them.
+     */
+    readyNote?: MessageDescriptor
   }
 > = {
   fake: {
@@ -40,6 +45,8 @@ export const PROVIDERS: Record<
   przelewy24: {
     name: msg`Przelewy24`,
     needsAddress: true,
+    // Its access test takes the point of sale's identifier and the API key alone.
+    readyNote: msg`The CRC key and the merchant ID are confirmed only by the first payment a buyer starts. You can correct the credentials of this same account at any time.`,
     fields: [
       {
         name: 'merchantId',

@@ -689,9 +689,13 @@ steps of [adding a feature](#adding-a-feature).
   buyer opens filter on the tenant themselves. A cart is priced by one function of the
   contract, which the portal runs for the running total and the API for the order
   ([0050](adr/0050-price-a-cart-with-one-function-of-the-contract.md)); an order is placed at
-  the total the buyer saw or not at all. The routes that open an order without a sign-in take
-  its result token in a header, for 24 hours from its placing; the token and an order link are
-  stored as hashes, the QR code of a paid order sealed for its own row
+  the total the buyer saw or not at all. Its request names each consent accepted with the
+  version of the document shown beside it, and the API places no order with a version that is
+  not the one in force, so that the order keeps what its buyer saw
+  ([0094](adr/0094-attest-in-an-order-each-consent-exactly-as-its-buyer-saw-it.md)). The routes
+  that open an order without a sign-in take its result token in a header, for 24 hours from its
+  placing; the token and an order link are stored as hashes, the QR code of a paid order sealed
+  for its own row
   ([0051](adr/0051-keep-an-orders-secrets-as-hashes-and-its-qr-code-sealed.md)). The bot check
   is verified before the order's transaction, by a stand-in on `local` and `dev` and by nothing
   that passes on production

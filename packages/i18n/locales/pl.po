@@ -968,6 +968,10 @@ msgid "The decision was made on the administrators’ own initiative, with no re
 msgstr "Decyzję podjęli administratorzy z własnej inicjatywy, bez zgłoszenia."
 
 #: src/errors.ts
+msgid "The document of one of the consents has changed since this page was opened. Read it and accept the consent again to place the order."
+msgstr "Dokument jednej ze zgód zmienił się, odkąd ta strona została otwarta. Przeczytaj go i zaakceptuj zgodę ponownie, żeby złożyć zamówienie."
+
+#: src/errors.ts
 msgid "The link has expired. Ask for a new one."
 msgstr "Link wygasł. Poproś o nowy."
 

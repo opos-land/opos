@@ -11,7 +11,7 @@ import {
   linkClass,
 } from '../../../shared/ui'
 import { useMoney, useSentence } from '../hooks/use-money'
-import { type Draft, summaryIssues } from '../model/checkout'
+import { type Draft, isAccepted, summaryIssues, withConsent } from '../model/checkout'
 import { documentVersionUrl } from '../model/files'
 
 /** The name of a line as the summary and the emails write it. */
@@ -45,6 +45,7 @@ export function SummaryStep({
   totalMinor,
   email,
   marked,
+  changedConsents,
   discount,
   joins,
   change,
@@ -58,6 +59,11 @@ export function SummaryStep({
   email: string
   /** Whether the buyer tried to place the order: what is missing shows from then on. */
   marked: boolean
+  /**
+   * The consents whose document changed since the buyer accepted them: each says so until it
+   * is accepted again.
+   */
+  changedConsents: readonly string[]
   /** What the shop made of the discount code the draft holds. */
   discount: DiscountState
   /** The number of the paid order "Buy more" adds to, whose QR code this order joins. */
@@ -69,7 +75,7 @@ export function SummaryStep({
   const sentence = useSentence()
   const missing = summaryIssues(offer, draft, totalMinor)
   const providerConsent = totalMinor > 0 ? (offer.provider?.consent ?? null) : null
-  const required = offer.consents.filter((consent) => consent.isRequired).map(({ id }) => id)
+  const required = offer.consents.filter((consent) => consent.isRequired)
   const mark = (
     <strong className="text-destructive">
       <Trans>Accept this to place the order.</Trans>
@@ -78,12 +84,9 @@ export function SummaryStep({
   // The field keeps what is typed; the draft holds a code only once the buyer applies it.
   const [code, setCode] = useState(draft.discountCode)
   const appliedCode = draft.discountCode.trim().toUpperCase()
-  const tick = (id: string, ticked: boolean) =>
-    change({
-      consentIds: ticked
-        ? [...draft.consentIds.filter((own) => own !== id), id]
-        : draft.consentIds.filter((own) => own !== id),
-    })
+  // A consent is accepted as it stands here: with the version of the document linked beside it.
+  const tick = (consent: Offer['consents'][number], ticked: boolean) =>
+    change({ consents: withConsent(draft, consent, ticked) })
 
   return (
     <div className="flex flex-col gap-4">
@@ -198,7 +201,12 @@ export function SummaryStep({
               size="sm"
               onClick={() =>
                 change({
-                  consentIds: [...new Set([...draft.consentIds, ...required])],
+                  consents: required
+                    .filter((consent) => !isAccepted(draft, consent.id))
+                    .reduce(
+                      (consents, consent) => withConsent({ consents }, consent, true),
+                      draft.consents,
+                    ),
                   // The provider's own consent only when its module allows it.
                   providerConsent:
                     draft.providerConsent || (providerConsent?.selectAllAllowed ?? false),
@@ -229,11 +237,17 @@ export function SummaryStep({
                     <Trans>Read the document</Trans>
                   </a>
                 )}{' '}
-                {marked && missing.consents.includes(consent.id) && mark}
+                {changedConsents.includes(consent.id) && !isAccepted(draft, consent.id) ? (
+                  <strong className="text-destructive">
+                    <Trans>The document has changed. Read it and accept this again.</Trans>
+                  </strong>
+                ) : (
+                  marked && missing.consents.includes(consent.id) && mark
+                )}
               </>
             }
-            checked={draft.consentIds.includes(consent.id)}
-            onChange={(ticked) => tick(consent.id, ticked)}
+            checked={isAccepted(draft, consent.id)}
+            onChange={(ticked) => tick(consent, ticked)}
           />
         ))}
         {providerConsent && (

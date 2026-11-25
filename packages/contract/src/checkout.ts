@@ -465,8 +465,15 @@ const placeOrderFields = {
     )
     .max(MAX_CUSTOM_FIELDS)
     .default([]),
-  /** The consents of the edition the buyer accepted. */
-  consentIds: z.array(z.uuid()).max(MAX_EDITION_CONSENTS).default([]),
+  /**
+   * The consents of the edition the buyer accepted, each as it was shown: with the version of the
+   * document it links, or null where it showed none. One the offer now shows with another version
+   * places no order.
+   */
+  consents: z
+    .array(z.strictObject({ consentId: z.uuid(), documentVersionId: z.uuid().nullable() }))
+    .max(MAX_EDITION_CONSENTS)
+    .default([]),
   /** The discount code the buyer entered at the Summary. */
   discountCode: discountCodeEntry.optional(),
   /** The provider's own consent, where its module requires one and there is something to pay. */

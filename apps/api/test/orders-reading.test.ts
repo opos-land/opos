@@ -274,7 +274,10 @@ describe('the page of an order', () => {
         items: [{ variantId: shirt.variantId, quantity: 2 }],
       },
       customFieldAnswers: [{ fieldId: city, answer: 'Gdynia' }],
-      consentIds: [accepted, newsletter],
+      consents: [
+        { consentId: accepted, documentVersionId: rules.versionIds[1] },
+        { consentId: newsletter, documentVersionId: null },
+      ],
       expectedTotalMinor: 10000 + 2500 + 2 * 5000,
     })
 
@@ -341,7 +344,7 @@ describe('the page of an order', () => {
       },
     ])
     expect(order.answers).toEqual([{ fieldId: city, label: 'City', answer: 'Gdynia' }])
-    // The version accepted is the one in force when the order was placed: the last published.
+    // The version accepted is the one the buyer was shown: the last published.
     expect(order.consents.map(({ acceptedAt: _, ...consent }) => consent)).toEqual([
       {
         consentId: accepted,

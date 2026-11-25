@@ -148,7 +148,7 @@ describe('the confirmation of a paid order', () => {
         ticket: { ticketTypeId: s.standard },
         items: [{ variantId: pin.variantId, quantity: 2 }],
       },
-      consentIds: [terms],
+      consents: [{ consentId: terms, documentVersionId: s.ready.terms.versionIds[0] }],
       expectedTotalMinor: 20000,
     })
     await s.pay(placed)

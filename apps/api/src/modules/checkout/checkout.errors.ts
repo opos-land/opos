@@ -39,6 +39,19 @@ export const totalChanged = (totalMinor: number) =>
 export const consentMissing = (consent: string) =>
   new ApiError(422, 'order.consent-missing', 'A required consent is missing', { consent })
 
+/**
+ * A consent was accepted as the shop no longer shows it: with another version of the document it
+ * links than the newest, or with none where it links one. Nothing is placed, and the params name
+ * the consent, which the buyer reads and accepts again.
+ */
+export const consentChanged = (consent: string) =>
+  new ApiError(
+    409,
+    'order.consent-changed',
+    'The document of a consent changed since it was shown',
+    { consent },
+  )
+
 /** The provider's module cannot take the buyer's email. */
 export const emailRefused = () =>
   new ApiError(422, 'order.email-refused', 'The payment provider cannot take the email')

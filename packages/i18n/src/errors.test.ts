@@ -68,6 +68,10 @@ describe('errorMessage', () => {
     ],
     ['order.consent-missing', 'Zaakceptuj każdą wymaganą zgodę, żeby złożyć zamówienie.'],
     [
+      'order.consent-changed',
+      'Dokument jednej ze zgód zmienił się, odkąd ta strona została otwarta. Przeczytaj go i zaakceptuj zgodę ponownie, żeby złożyć zamówienie.',
+    ],
+    [
       'order.email-refused',
       'Dostawca płatności nie przyjmuje tego adresu e-mail. Użyj krótszego adresu.',
     ],

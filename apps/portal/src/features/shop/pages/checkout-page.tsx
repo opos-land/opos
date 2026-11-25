@@ -204,11 +204,23 @@ function Checkout({
         )
     // The tab may have kept it for long: what the shop no longer offers leaves it.
     const fitted = start.draft && fitToOffer(offer, start.draft)
-    return { ...start, draft: fitted ? fitted.draft : null, dropped: !!fitted?.dropped }
+    return {
+      ...start,
+      draft: fitted ? fitted.draft : null,
+      dropped: !!fitted?.dropped,
+      changedConsents: fitted?.changedConsents ?? [],
+    }
   })
   const [draft, setDraft] = useState(begun.draft)
   /** Whether the checkout lost something the shop no longer offers: the buyer is told. */
   const [dropped, setDropped] = useState(begun.dropped)
+  /**
+   * The consents whose document changed since the buyer accepted them, so that they are accepted
+   * no longer: each says so on the Summary until the buyer accepts it again.
+   */
+  const [changedConsents, setChangedConsents] = useState<readonly string[]>(begun.changedConsents)
+  const consentsChanged = (ids: readonly string[]) =>
+    setChangedConsents((held) => [...new Set([...held, ...ids])])
   const [fittedTo, setFittedTo] = useState(offer)
   // The offer was read again, as it is after the shop refused an order: the checkout follows it.
   if (fittedTo !== offer) {
@@ -216,6 +228,7 @@ function Checkout({
     const fitted = draft && fitToOffer(offer, draft)
     if (fitted && fitted.draft !== draft) setDraft(fitted.draft)
     if (fitted?.dropped) setDropped(true)
+    if (fitted && fitted.changedConsents.length > 0) consentsChanged(fitted.changedConsents)
   }
   /** Whether the buyer still has to say what becomes of the merchandise chosen before. */
   const [asking, setAsking] = useState(begun.ask)
@@ -284,7 +297,12 @@ function Checkout({
     onError: (error) => {
       const code = errorCode(error)
       const data: unknown = error instanceof ORPCError ? error.data : undefined
-      const named = (data ?? {}) as { kind?: unknown; id?: unknown; totalMinor?: unknown }
+      const named = (data ?? {}) as {
+        kind?: unknown
+        id?: unknown
+        totalMinor?: unknown
+        consent?: unknown
+      }
       // What the shop offers changed: it is read again, and the buyer sees it as it is now.
       void queryClient.invalidateQueries({ queryKey: offerKey(tenantSlug, editionSlug) })
       if (code === 'order.unavailable' && named.kind === 'discount-code') {
@@ -307,6 +325,21 @@ function Checkout({
         return setNewTotal(named.totalMinor)
       }
       if (code === 'order.email-refused') change({ step: 'holder' })
+      if (code === 'order.consent-changed' && typeof named.consent === 'string') {
+        // The document of a consent changed since the buyer accepted it. The consent is
+        // accepted no longer and says so on its step, the Summary, where the offer read again
+        // links the version in force: the buyer reads it and accepts the consent again.
+        const consentId = named.consent
+        consentsChanged([consentId])
+        setDraft(
+          (current) =>
+            current && {
+              ...current,
+              step: 'summary',
+              consents: current.consents.filter((own) => own.consentId !== consentId),
+            },
+        )
+      }
       notifyFailure(error)
     },
   })
@@ -597,6 +630,7 @@ function Checkout({
                 totalMinor={totalMinor}
                 email={account?.email ?? draft.email.trim().toLowerCase()}
                 marked={tried.has('summary')}
+                changedConsents={changedConsents}
                 discount={discount}
                 joins={draft.extending?.number}
                 change={change}

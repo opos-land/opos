@@ -27,7 +27,14 @@ const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')
 const [standard, supporter, workshop, room, pin, shirt, small, medium, sizeS, sizeM] = [
   1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
 ].map(id)
-const [city, fandom, terms, news] = [11, 12, 13, 14].map(id)
+const [city, fandom, terms, news, termsV1, termsV2] = [11, 12, 13, 14, 15, 16].map(id)
+
+/** A consent as a checkout keeps it once accepted: with the version of its document shown then. */
+const accepted = (consentId: string, documentVersionId: string | null = null) => ({
+  consentId,
+  documentVersionId,
+})
+const [termsAccepted, newsAccepted] = [accepted(terms!, termsV1), accepted(news!)]
 
 const offer = (changes: Partial<Offer> = {}): Offer => ({
   open: true,
@@ -48,7 +55,7 @@ const offer = (changes: Partial<Offer> = {}): Offer => ({
   },
   documents: [],
   consents: [
-    { id: terms!, text: 'Terms', isRequired: true, documentVersionId: null },
+    { id: terms!, text: 'Terms', isRequired: true, documentVersionId: termsV1! },
     { id: news!, text: 'News', isRequired: false, documentVersionId: null },
   ],
   customFields: [
@@ -305,7 +312,7 @@ describe('the summary', () => {
         offer(),
         filled({
           ageBand: 'teen',
-          consentIds: [terms!],
+          consents: [termsAccepted],
           providerConsent: true,
           guardianAcknowledged: true,
         }),
@@ -315,7 +322,7 @@ describe('the summary', () => {
   })
 
   it('needs no consent of the provider for an order with nothing to pay', () => {
-    expect(summaryIssues(offer(), filled({ consentIds: [terms!] }), 0)).toEqual({
+    expect(summaryIssues(offer(), filled({ consents: [termsAccepted] }), 0)).toEqual({
       consents: [],
       provider: false,
       guardian: false,
@@ -434,13 +441,14 @@ describe('a checkout whose offer changed since it was kept', () => {
       supporterPriceMinor: 20000,
       addOnIds: [workshop!],
       items: [{ variantId: small!, quantity: 2 }],
-      consentIds: [terms!, news!],
+      consents: [termsAccepted, newsAccepted],
       answers: { [city!]: 'Poznań', [fandom!]: 'Dune' },
     })
 
     const fitted = fitToOffer(offer(), draft)
 
     expect(fitted.dropped).toBe(false)
+    expect(fitted.changedConsents).toEqual([])
     expect(fitted.draft).toBe(draft)
   })
 
@@ -487,13 +495,13 @@ describe('a checkout whose offer changed since it was kept', () => {
       ],
     })
 
-    expect(fitToOffer(ranOut, draft)).toEqual({ draft, dropped: false })
+    expect(fitToOffer(ranOut, draft)).toEqual({ draft, dropped: false, changedConsents: [] })
   })
 
   // A consent or a custom field the edition hid is on no screen: the order must not carry it.
   it('loses a consent and an answer the edition no longer asks for, with nothing to say', () => {
     const draft = filled({
-      consentIds: [terms!, news!],
+      consents: [termsAccepted, newsAccepted],
       answers: { [city!]: 'Poznań', [fandom!]: 'Dune' },
     })
     const changed = offer({
@@ -504,18 +512,51 @@ describe('a checkout whose offer changed since it was kept', () => {
     const fitted = fitToOffer(changed, draft)
 
     expect(fitted.dropped).toBe(false)
-    expect(fitted.draft).toEqual({ ...draft, consentIds: [terms], answers: { [city!]: 'Poznań' } })
+    expect(fitted.changedConsents).toEqual([])
+    expect(fitted.draft).toEqual({
+      ...draft,
+      consents: [termsAccepted],
+      answers: { [city!]: 'Poznań' },
+    })
     expect(orderBody(fitted.draft, 10000, 'token', false)).toMatchObject({
-      consentIds: [terms],
+      consents: [termsAccepted],
       customFieldAnswers: [{ fieldId: city, answer: 'Poznań' }],
     })
+  })
+
+  // A buyer accepts a consent as it was shown: with a new version of its document it is another
+  // one, and is accepted again.
+  it('loses the acceptance of a consent whose document changed since, and names the consent', () => {
+    const draft = filled({ consents: [termsAccepted, newsAccepted], step: 'summary' })
+    const [termsShown, newsShown] = offer().consents
+
+    // A new version of the terms is published.
+    const republished = fitToOffer(
+      offer({ consents: [{ ...termsShown!, documentVersionId: termsV2! }, newsShown!] }),
+      draft,
+    )
+    expect(republished.dropped).toBe(false)
+    expect(republished.changedConsents).toEqual([terms])
+    expect(republished.draft).toEqual({ ...draft, consents: [newsAccepted] })
+
+    // A consent shown with no document gets the first version of one.
+    const linked = fitToOffer(
+      offer({ consents: [termsShown!, { ...newsShown!, documentVersionId: termsV2! }] }),
+      draft,
+    )
+    expect(linked.changedConsents).toEqual([news])
+    expect(linked.draft).toEqual({ ...draft, consents: [termsAccepted] })
   })
 
   // The listing is where another ticket type is picked, and it carries over what was chosen.
   it('keeps its add-ons and merchandise while its ticket type is gone from the offer', () => {
     const draft = filled({ addOnIds: [room!], items: [{ variantId: small!, quantity: 1 }] })
 
-    expect(fitToOffer(offer({ ticketTypes: [second!] }), draft)).toEqual({ draft, dropped: false })
+    expect(fitToOffer(offer({ ticketTypes: [second!] }), draft)).toEqual({
+      draft,
+      dropped: false,
+      changedConsents: [],
+    })
   })
 
   it('fits a "Buy more" checkout to what the ticket type of its order is offered', () => {
@@ -546,7 +587,7 @@ describe('the order a checkout places', () => {
     const draft = filled({
       holderName: ' Ada ',
       answers: { [city!]: ' Poznań ', [fandom!]: '  ' },
-      consentIds: [terms!],
+      consents: [termsAccepted],
       providerConsent: true,
     })
 
@@ -555,7 +596,8 @@ describe('the order a checkout places', () => {
       holderName: 'Ada',
       ageBand: 'adult',
       customFieldAnswers: [{ fieldId: city, answer: 'Poznań' }],
-      consentIds: [terms],
+      // Each consent with the version of its document the buyer was shown.
+      consents: [{ consentId: terms, documentVersionId: termsV1 }],
       providerConsentAccepted: true,
       guardianConsentAcknowledged: false,
       expectedTotalMinor: 10000,
@@ -672,7 +714,7 @@ describe('a checkout that adds to a paid order', () => {
     const draft = {
       ...extensionDraft(offer(), paid()),
       items: [{ variantId: small!, quantity: 1 }],
-      consentIds: [terms!],
+      consents: [termsAccepted],
     }
 
     expect(orderBody(draft, 1500, 'token', true)).toEqual({
@@ -680,7 +722,7 @@ describe('a checkout that adds to a paid order', () => {
       holderName: 'Ada Lovelace',
       ageBand: null,
       customFieldAnswers: [],
-      consentIds: [terms],
+      consents: [termsAccepted],
       providerConsentAccepted: false,
       guardianConsentAcknowledged: false,
       expectedTotalMinor: 1500,
@@ -789,6 +831,33 @@ describe('an unfinished checkout', () => {
     expect(loadDraft('convention-a', '2026', undefined, 'account-a')).toEqual(
       filled({ step: 'merch' }),
     )
+  })
+
+  // A checkout kept before a consent came with the version of its document says nothing of
+  // what was shown: it goes on with no consent accepted, and the buyer accepts them as shown now.
+  it('goes on with no consent accepted when it kept consents with no version', () => {
+    window.sessionStorage.setItem(
+      'opos-checkout:convention-a:2026',
+      JSON.stringify({
+        ...filled({ step: 'summary' }),
+        consents: undefined,
+        consentIds: [terms],
+        accountId: null,
+      }),
+    )
+
+    expect(loadDraft('convention-a', '2026')).toEqual(filled({ step: 'summary', consents: [] }))
+  })
+
+  it('keeps each consent with the version of its document it was accepted with', () => {
+    const draft = filled({ step: 'summary', consents: [termsAccepted, newsAccepted] })
+
+    saveDraft('convention-a', '2026', draft)
+
+    expect(loadDraft('convention-a', '2026')?.consents).toEqual([
+      { consentId: terms, documentVersionId: termsV1 },
+      { consentId: news, documentVersionId: null },
+    ])
   })
 
   it('reads nothing from what is not a checkout', () => {

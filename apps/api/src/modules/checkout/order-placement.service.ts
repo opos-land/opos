@@ -14,6 +14,7 @@ import { TicketTypesRepository } from '../catalog/ticket-types.repository'
 import { providerUnavailable } from '../shop/shop.errors'
 import {
   cartRefusal,
+  consentChanged,
   consentMissing,
   emailRefused,
   invalidOrder,
@@ -136,13 +137,11 @@ export class OrderPlacement {
       lines,
     )
     const of = { tenantId, editionId, orderId: placed.id }
-    const versions = new Map(offer.consents.map((consent) => [consent.id, consent]))
     await this.orders.addHolderData(of, {
       answers: input.customFieldAnswers,
-      consents: input.consentIds.map((consentId) => ({
-        consentId,
-        documentVersionId: versions.get(consentId)?.documentVersionId ?? null,
-      })),
+      // Each consent with the version of its document the buyer was shown, which the check
+      // above found to be the one in force.
+      consents: input.consents,
       acceptedAt: at,
     })
     if (buyer.accountId) await this.orders.attach(of, buyer.accountId)
@@ -236,18 +235,25 @@ export class OrderPlacement {
   }
 
   /**
-   * Every required consent of the edition, a teen's acknowledgement that the guardian's consent
-   * is brought on paper, and the provider's own consent while there is something to pay.
+   * Every consent accepted as the shop shows it now, every required consent of the edition, a
+   * teen's acknowledgement that the guardian's consent is brought on paper, and the provider's
+   * own consent while there is something to pay.
    */
   private checkConsents(offer: Offer, input: PlaceOrder, totalMinor: number) {
-    const known = new Set(offer.consents.map((consent) => consent.id))
-    const accepted = new Set(input.consentIds)
+    const shown = new Map(offer.consents.map((consent) => [consent.id, consent.documentVersionId]))
+    const accepted = new Set(input.consents.map((consent) => consent.consentId))
     if (
-      accepted.size !== input.consentIds.length ||
-      input.consentIds.some((id) => !known.has(id))
+      accepted.size !== input.consents.length ||
+      input.consents.some((consent) => !shown.has(consent.consentId))
     ) {
-      throw invalidOrder('consentIds', 'A consent is not one the edition asks for')
+      throw invalidOrder('consents', 'A consent is not one the edition asks for')
     }
+    // An order attests what its buyer was shown: a consent accepted with another version of its
+    // document than the one in force is accepted again, with that one.
+    const changed = input.consents.find(
+      (consent) => shown.get(consent.consentId) !== consent.documentVersionId,
+    )
+    if (changed) throw consentChanged(changed.consentId)
     const missing = offer.consents.find(
       (consent) => consent.isRequired && !accepted.has(consent.id),
     )

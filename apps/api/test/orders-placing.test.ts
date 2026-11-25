@@ -1,6 +1,11 @@
 import { createHash } from 'node:crypto'
 import { type NestExpressApplication } from '@nestjs/platform-express'
-import { MAX_UNPAID_ORDERS, ORDER_NUMBER_ALPHABET, type PlacedOrder } from '@opos/contract'
+import {
+  MAX_UNPAID_ORDERS,
+  type Offer,
+  ORDER_NUMBER_ALPHABET,
+  type PlacedOrder,
+} from '@opos/contract'
 import { open, orderQrCodeOf, sealingKey } from '@opos/db/sealed'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -12,6 +17,7 @@ import {
   addAddOn,
   addConsent,
   addCustomField,
+  addDocumentVersion,
   addEdition,
   addMerchandiseItem,
   addOrder,
@@ -168,7 +174,7 @@ describe('a placed order', () => {
     await s
       .place({
         customFieldAnswers: [{ fieldId: city, answer: ' Poznań ' }],
-        consentIds: [terms],
+        consents: [{ consentId: terms, documentVersionId: s.ready.terms.versionIds[0] }],
       })
       .expect(201)
 
@@ -343,19 +349,80 @@ describe('what the shop displays, broken through the API alone', () => {
     const terms = await addConsent(s.t.id, s.edition, { text: 'Terms' })
     const news = await addConsent(s.t.id, s.edition, { text: 'News', isRequired: false })
 
-    const res = await s.place({ consentIds: [news] }).expect(422)
+    const accepted = (consentId: string) => ({ consentId, documentVersionId: null })
+
+    const res = await s.place({ consents: [accepted(news)] }).expect(422)
     expect(res.body).toMatchObject({ code: 'order.consent-missing', params: { consent: terms } })
 
     // The provider's own consent is required too while there is something to pay.
     const provider = await s
-      .place({ consentIds: [terms], providerConsentAccepted: false })
+      .place({ consents: [accepted(terms)], providerConsentAccepted: false })
       .expect(422)
     expect(provider.body).toMatchObject({
       code: 'order.consent-missing',
       params: { consent: 'provider' },
     })
+    // A consent named twice, or one the edition does not ask for, is no order of the page.
+    await s.place({ consents: [accepted(terms), accepted(terms)] }).expect(400)
+    await s.place({ consents: [accepted(terms), accepted(s.standard)] }).expect(400)
     await nothingPlaced(s)
-    await s.place({ consentIds: [terms] }).expect(201)
+    await s.place({ consents: [accepted(terms)] }).expect(201)
+  })
+
+  // An order attests what its buyer was shown: a consent comes with the version of its document
+  // that was on the page, and one that is no longer the newest is accepted again first.
+  it('places nothing with a consent whose document changed since the buyer was shown it', async () => {
+    const s = await shop()
+    const terms = await addConsent(s.t.id, s.edition, { documentId: s.ready.terms.id })
+    const news = await addConsent(s.t.id, s.edition, { text: 'News', isRequired: false })
+    const offer = (await request(app.getHttpServer()).get(s.path.replace(/\/orders$/, '')))
+      .body as Offer
+    const shown = offer.consents.map((consent) => ({
+      consentId: consent.id,
+      documentVersionId: consent.documentVersionId,
+    }))
+    expect(shown).toEqual([
+      { consentId: terms, documentVersionId: s.ready.terms.versionIds[0] },
+      { consentId: news, documentVersionId: null },
+    ])
+    // The org publishes a new version while the buyer is at the checkout.
+    const newer = await addDocumentVersion(s.t.id, s.edition, s.ready.terms.id)
+
+    const res = await s.place({ consents: shown }).expect(409)
+    expect(res.body).toMatchObject({ code: 'order.consent-changed', params: { consent: terms } })
+    // Nor with a version the consent never had: none for one that links a document, one for a
+    // consent that links none.
+    const none = await s.place({ consents: [{ consentId: terms, documentVersionId: null }] })
+    expect(none.status).toBe(409)
+    expect(none.body).toMatchObject({ code: 'order.consent-changed', params: { consent: terms } })
+    const foreign = await s.place({
+      consents: [
+        { consentId: terms, documentVersionId: newer },
+        { consentId: news, documentVersionId: s.ready.privacy.versionIds[0] },
+      ],
+    })
+    expect(foreign.status).toBe(409)
+    expect(foreign.body).toMatchObject({ code: 'order.consent-changed', params: { consent: news } })
+    await nothingPlaced(s)
+    expect(await storedRows('order_consents', s.t.id)).toEqual([])
+
+    // Shown the new version, the buyer accepts it, and the order keeps that one.
+    await s
+      .place({
+        consents: [
+          { consentId: terms, documentVersionId: newer },
+          { consentId: news, documentVersionId: null },
+        ],
+      })
+      .expect(201)
+    const kept = await storedRows('order_consents', s.t.id)
+    expect(kept.map((row) => [row.consent_id, row.document_version_id])).toEqual(
+      expect.arrayContaining([
+        [terms, newer],
+        [news, null],
+      ]),
+    )
+    expect(kept).toHaveLength(2)
   })
 
   it('places nothing for a teen until the guardian’s consent on paper is acknowledged', async () => {

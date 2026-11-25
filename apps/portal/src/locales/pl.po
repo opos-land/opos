@@ -1338,6 +1338,10 @@ msgstr "Zmiany zostały zapisane."
 msgid "The code was wrong."
 msgstr "Kod był błędny."
 
+#: src/features/shop/components/summary-step.tsx
+msgid "The document has changed. Read it and accept this again."
+msgstr "Dokument się zmienił. Przeczytaj go i zaakceptuj ponownie."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "The hash of a recovery code you have used: as a record, until you delete the account."
 msgstr "Skrót kodu odzyskiwania, który został użyty: jako zapis, do usunięcia konta."

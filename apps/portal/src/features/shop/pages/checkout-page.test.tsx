@@ -92,6 +92,9 @@ const kept = (changes: Partial<Draft> = {}): Draft => ({
   ...changes,
 })
 
+/** The terms as a buyer accepted them: with the version of the document the offer shows. */
+const termsAccepted = { consentId: ids.terms, documentVersionId: ids.termsVersion }
+
 const type = (label: string | RegExp, value: string) =>
   fireEvent.change(screen.getByLabelText(label), { target: { value } })
 const press = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }))
@@ -287,7 +290,7 @@ describe('CheckoutPage', () => {
         step: 'summary',
         email: '',
         emailConfirmation: '',
-        consentIds: [ids.terms],
+        consents: [termsAccepted],
         providerConsent: true,
       }),
     )
@@ -433,7 +436,8 @@ describe('CheckoutPage', () => {
       cart: { ticket: { ticketTypeId: ids.standard } },
       holderName: 'Ada',
       email: 'ada@example.test',
-      consentIds: [ids.terms],
+      // The consent with the version of the terms that was on the page.
+      consents: [{ consentId: ids.terms, documentVersionId: ids.termsVersion }],
       providerConsentAccepted: true,
       expectedTotalMinor: 12000,
     })
@@ -449,7 +453,7 @@ describe('CheckoutPage', () => {
     saveDraft(
       'convention-a',
       '2027',
-      kept({ step: 'summary', consentIds: [ids.terms], providerConsent: true }),
+      kept({ step: 'summary', consents: [termsAccepted], providerConsent: true }),
     )
     view()
     await stepHeading('Summary')
@@ -477,7 +481,7 @@ describe('CheckoutPage', () => {
     saveDraft(
       'convention-a',
       '2027',
-      kept({ step: 'summary', consentIds: [ids.terms], providerConsent: true }),
+      kept({ step: 'summary', consents: [termsAccepted], providerConsent: true }),
     )
     view()
     await stepHeading('Summary')
@@ -592,7 +596,7 @@ describe('CheckoutPage', () => {
       kept({
         step: 'summary',
         discountCode: 'EARLY10',
-        consentIds: [ids.terms],
+        consents: [termsAccepted],
         providerConsent: true,
       }),
     )
@@ -622,7 +626,7 @@ describe('CheckoutPage', () => {
       kept({
         step: 'summary',
         discountCode: 'LAST-USE',
-        consentIds: [ids.terms],
+        consents: [termsAccepted],
         providerConsent: true,
       }),
     )
@@ -640,7 +644,7 @@ describe('CheckoutPage', () => {
     saveDraft(
       'convention-a',
       '2027',
-      kept({ step: 'summary', ageBand: 'teen', consentIds: [ids.terms], providerConsent: true }),
+      kept({ step: 'summary', ageBand: 'teen', consents: [termsAccepted], providerConsent: true }),
     )
     view()
     await stepHeading('Summary')
@@ -666,7 +670,7 @@ describe('CheckoutPage', () => {
       totalMinor: 0,
       resultToken: 'token-1',
     })
-    saveDraft('convention-a', '2027', kept({ step: 'summary', consentIds: [ids.terms] }))
+    saveDraft('convention-a', '2027', kept({ step: 'summary', consents: [termsAccepted] }))
     view()
     await stepHeading('Summary')
 
@@ -692,7 +696,7 @@ describe('CheckoutPage', () => {
       kept({
         step: 'summary',
         addOnIds: [ids.workshop],
-        consentIds: [ids.terms],
+        consents: [termsAccepted],
         providerConsent: true,
       }),
     )
@@ -718,7 +722,7 @@ describe('CheckoutPage', () => {
     saveDraft(
       'convention-a',
       '2027',
-      kept({ step: 'summary', consentIds: [ids.terms], providerConsent: true }),
+      kept({ step: 'summary', consents: [termsAccepted], providerConsent: true }),
     )
     view()
     await stepHeading('Summary')
@@ -772,7 +776,11 @@ describe('CheckoutPage', () => {
     saveDraft(
       'convention-a',
       '2027',
-      kept({ step: 'summary', addOnIds: [ids.workshop, ids.room], consentIds: ['gone'] }),
+      kept({
+        step: 'summary',
+        addOnIds: [ids.workshop, ids.room],
+        consents: [{ consentId: 'gone', documentVersionId: null }],
+      }),
     )
     view()
     await stepHeading('Summary')
@@ -782,7 +790,7 @@ describe('CheckoutPage', () => {
     expect(screen.getByRole('button', { name: 'Order and pay' })).toBeDefined()
     expect(loadDraft('convention-a', '2027')).toMatchObject({
       addOnIds: [ids.room],
-      consentIds: [],
+      consents: [],
     })
   })
 
@@ -799,7 +807,7 @@ describe('CheckoutPage', () => {
       kept({
         step: 'summary',
         addOnIds: [ids.workshop],
-        consentIds: [ids.terms],
+        consents: [termsAccepted],
         providerConsent: true,
       }),
     )
@@ -825,7 +833,7 @@ describe('CheckoutPage', () => {
     saveDraft(
       'convention-a',
       '2027',
-      kept({ step: 'summary', consentIds: [ids.terms], providerConsent: true }),
+      kept({ step: 'summary', consents: [termsAccepted], providerConsent: true }),
     )
     view()
     await stepHeading('Summary')
@@ -857,7 +865,7 @@ describe('CheckoutPage', () => {
       kept({
         step: 'summary',
         discountCode: 'EARLY10',
-        consentIds: [ids.terms],
+        consents: [termsAccepted],
         providerConsent: true,
       }),
     )
@@ -880,13 +888,89 @@ describe('CheckoutPage', () => {
     })
   })
 
+  // An order attests a consent as its buyer saw it: with a new version of its document
+  // published meanwhile nothing is placed, and the buyer reads and accepts the consent again.
+  it('unticks a consent whose document changed while the buyer was ordering, and says so', async () => {
+    const refused = new ORPCError('order.consent-changed', {
+      status: 409,
+      data: { consent: ids.terms },
+    })
+    api.place.mockRejectedValueOnce(refused)
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({ step: 'summary', consents: [termsAccepted], providerConsent: true }),
+    )
+    view()
+    await stepHeading('Summary')
+    const terms = () => screen.getByRole('checkbox', { name: /shop terms/ })
+    expect(terms().getAttribute('aria-checked')).toBe('true')
+    expect(screen.queryByText(/document has changed/)).toBeNull()
+    const newVersion = '00000000-0000-4000-8000-000000000099'
+    const republished = offer()
+    republished.consents[0]!.documentVersionId = newVersion
+    api.offer.mockResolvedValue(republished)
+
+    press('Order and pay')
+
+    // Still on the step the consent is accepted on, with the consent to accept again.
+    await waitFor(() => expect(api.notify).toHaveBeenCalledWith(refused))
+    await waitFor(() => expect(terms().getAttribute('aria-checked')).toBe('false'))
+    expect(screen.getByRole('heading', { name: 'Summary', level: 2 })).toBeDefined()
+    expect(screen.getByText(/document has changed/)).toBeDefined()
+    expect(api.leave).not.toHaveBeenCalled()
+    expect(loadDraft('convention-a', '2027')).toMatchObject({ consents: [] })
+    // The link opens the version in force now.
+    await waitFor(() =>
+      expect(
+        screen.getByRole('link', { name: 'Read the document' }).getAttribute('href'),
+      ).toContain(newVersion),
+    )
+
+    fireEvent.click(terms())
+    expect(screen.queryByText(/document has changed/)).toBeNull()
+    press('Order and pay')
+
+    await waitFor(() => expect(api.leave).toHaveBeenCalled())
+    expect(api.place.mock.calls[1]![1]).toMatchObject({
+      consents: [{ consentId: ids.terms, documentVersionId: newVersion }],
+    })
+  })
+
+  // The tab keeps a checkout for days: a consent accepted with a version that is no longer the
+  // newest is one the buyer has not seen.
+  it('opens a kept checkout with a consent unticked once its document changed, and says so', async () => {
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({
+        step: 'summary',
+        consents: [
+          { consentId: ids.terms, documentVersionId: '00000000-0000-4000-8000-000000000098' },
+          { consentId: ids.news, documentVersionId: null },
+        ],
+        providerConsent: true,
+      }),
+    )
+    view()
+    await stepHeading('Summary')
+
+    expect(screen.getByRole('checkbox', { name: /shop terms/ }).getAttribute('aria-checked')).toBe(
+      'false',
+    )
+    expect(screen.getByRole('checkbox', { name: /news/ }).getAttribute('aria-checked')).toBe('true')
+    expect(screen.getByText(/document has changed/)).toBeDefined()
+    press('Order and pay')
+    expect(api.place).not.toHaveBeenCalled()
+  })
+
   it('says so when the bot check failed, and lets the buyer try again', async () => {
     const failed = new ORPCError('bot-check.failed', { status: 403 })
     api.place.mockRejectedValueOnce(failed)
     saveDraft(
       'convention-a',
       '2027',
-      kept({ step: 'summary', consentIds: [ids.terms], providerConsent: true }),
+      kept({ step: 'summary', consents: [termsAccepted], providerConsent: true }),
     )
     view()
     await stepHeading('Summary')

@@ -96,6 +96,11 @@ describe('errorCodes', () => {
     expect(errorCodes).toContain('order.not-extendable')
   })
 
+  // A consent whose document changed since its buyer was shown it places no order.
+  it('lists order.consent-changed of a consent accepted as it no longer is', () => {
+    expect(errorCodes).toContain('order.consent-changed')
+  })
+
   // docs/specs/0008-discount-codes.md, Routes.
   it.each(['discount-code.taken', 'discount-code.refused', 'discount-code.in-use'])(
     'lists %s of the discount codes',

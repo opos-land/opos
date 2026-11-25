@@ -211,6 +211,25 @@ export async function addDocument(
   return { id: document!.id, versionIds, fileIds }
 }
 
+/** Another version of a document, published after those it has; answers the version's identifier. */
+export async function addDocumentVersion(tenantId: string, editionId: string, documentId: string) {
+  const [file] = await db.execute<{ id: string }>(sql`
+    insert into uploaded_files (tenant_id, edition_id, kind, content_type, size, sha256, name)
+    values (${tenantId}, ${editionId}, 'edition-document', 'application/pdf', 10,
+      repeat('e', 64), 'document.pdf')
+    returning id
+  `)
+  const [version] = await db.execute<{ id: string }>(sql`
+    insert into edition_document_versions (tenant_id, edition_id, document_id, number, file_id)
+    values (${tenantId}, ${editionId}, ${documentId}, (
+      select coalesce(max(number), 0) + 1 from edition_document_versions
+      where document_id = ${documentId}
+    ), ${file!.id})
+    returning id
+  `)
+  return version!.id
+}
+
 /** A consent of an edition as its row alone, last in the list unless a place is given. */
 export async function addConsent(
   tenantId: string,

@@ -283,7 +283,7 @@ describe('a manual order', () => {
     for (const changes of [
       { reason: 'gift' },
       { email: 'buyer@example.test' },
-      { consentIds: [] },
+      { consents: [] },
       { note: 'n'.repeat(501) },
     ]) {
       await record(d, changes).expect(400)

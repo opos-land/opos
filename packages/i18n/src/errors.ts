@@ -73,6 +73,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'order.unavailable': msg`Something in your order is no longer available. Check your order and try again.`,
   'order.total-changed': msg`The total of your order has changed. Check the new total and confirm it.`,
   'order.consent-missing': msg`Accept every required consent to place the order.`,
+  'order.consent-changed': msg`The document of one of the consents has changed since this page was opened. Read it and accept the consent again to place the order.`,
   'order.email-refused': msg`The payment provider cannot take this email address. Use a shorter one.`,
   'order.too-many-unpaid': msg`This email address already has orders waiting for payment. Pay one of them or wait until it expires.`,
   'order.hold-ended': msg`The time to pay for this order has ended. Start a new order.`,

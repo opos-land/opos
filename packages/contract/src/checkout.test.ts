@@ -544,12 +544,32 @@ describe('placing an order', () => {
       holderName: 'Ada',
       ageBand: 'adult',
       customFieldAnswers: [],
-      consentIds: [],
+      consents: [],
       providerConsentAccepted: false,
       guardianConsentAcknowledged: false,
       expectedTotalMinor: 12000,
       botCheckToken: 'token',
     })
+  })
+
+  // A consent is accepted as it was shown: with the version of its document, or with none.
+  it('takes each consent accepted with the version of its document the buyer was shown', () => {
+    const consents = [
+      { consentId: STANDARD, documentVersionId: STANDARD },
+      { consentId: STANDARD, documentVersionId: null },
+    ]
+
+    expect(placeOrderSchema.parse({ ...order, consents })).toMatchObject({ consents })
+    for (const refused of [
+      // The consent alone says nothing of what was shown with it.
+      { consentIds: [STANDARD] },
+      { consents: [STANDARD] },
+      { consents: [{ consentId: STANDARD }] },
+      { consents: [{ consentId: STANDARD, documentVersionId: 'newest' }] },
+      { consents: [{ consentId: STANDARD, documentVersionId: null, text: 'I accept' }] },
+    ]) {
+      expect(placeOrderSchema.safeParse({ ...order, ...refused }).success).toBe(false)
+    }
   })
 
   // Nobody has to be named: a name left out or blank is an empty one.

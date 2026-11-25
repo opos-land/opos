@@ -242,7 +242,7 @@ export const publicContract = {
       path: '/public/tenants/{slug}/editions/{editionSlug}/shop/orders',
       successStatus: 201,
       summary:
-        "Place a visitor's order; refused with shop.closed, order.unavailable naming what ran out, order.total-changed with the new total, order.consent-missing, order.email-refused, order.too-many-unpaid or bot-check.failed; no sign-in",
+        "Place a visitor's order; refused with shop.closed, order.unavailable naming what ran out, order.total-changed with the new total, order.consent-missing, order.consent-changed naming the consent whose document changed since it was shown, order.email-refused, order.too-many-unpaid or bot-check.failed; no sign-in",
     })
     .input(edition.extend({ body: placeVisitorOrderSchema }))
     .output(placedOrderSchema),

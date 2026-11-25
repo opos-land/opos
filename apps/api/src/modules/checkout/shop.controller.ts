@@ -89,6 +89,10 @@ export class ShopPublicController {
     return implement(contract.public.placeOrder).handler(async ({ input }) => {
       const address = this.context.clientAddress()
       await this.limiter.consume('orderPlacements', `ip:${address}`)
+      // An order tries its code as a quote does: the tries of both are counted together.
+      if (input.body.discountCode !== undefined) {
+        await this.limiter.consume('discountCodeTries', `ip:${address}`)
+      }
       if (!(await this.botCheck.verify(input.body.botCheckToken, address))) throw botCheckFailed()
       // The address was typed twice and compared: what is left of the body is the order itself.
       const order = placeOrderSchema.parse(

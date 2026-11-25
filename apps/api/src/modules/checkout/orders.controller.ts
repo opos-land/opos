@@ -34,7 +34,12 @@ export class OrdersController {
   @Prepares(BotCheckPreparation)
   placeOrder() {
     return implement(contract.checkout.placeOrder).handler(async ({ input }) => {
-      await this.limiter.consume('orderPlacements', `ip:${this.context.clientAddress()}`)
+      const address = this.context.clientAddress()
+      await this.limiter.consume('orderPlacements', `ip:${address}`)
+      // An order tries its code as a quote does: the tries of both are counted together.
+      if (input.body.discountCode !== undefined) {
+        await this.limiter.consume('discountCodeTries', `ip:${address}`)
+      }
       if (!this.context.prepared<boolean>()) throw botCheckFailed()
       const tenantId = this.context.tenant().id
       const edition = await this.orders.publishedEdition(tenantId, input.params.editionId)

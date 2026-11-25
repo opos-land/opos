@@ -33,7 +33,10 @@ export const ROUTE_RATE_LIMITS = {
   paymentAttempts: { limit: 300, ttl: 3_600_000 },
   /** Resending an order's confirmation, per order: each one is an email to its buyer. */
   confirmationResends: { limit: 5, ttl: 3_600_000 },
-  /** A quote that tries a discount code, per client address: a code is guessed by nobody. */
+  /**
+   * A quote or an order that tries a discount code: one counter, per client address. A code is
+   * guessed by nobody.
+   */
   discountCodeTries: { limit: 30, ttl: 3_600_000 },
   /** The files of an edition's sales, per account: they hold names and email addresses. */
   salesExports: { limit: 30, ttl: 3_600_000 },

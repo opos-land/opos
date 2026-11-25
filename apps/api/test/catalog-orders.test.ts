@@ -18,6 +18,7 @@ import {
   makeShopReady,
   type Member,
   openTransaction,
+  setColumn,
   sleep,
   storedRows,
   tenantWithHead,
@@ -270,6 +271,51 @@ describe('a capacity and a stock', () => {
 
     expect(change.status).toBe(409)
     expect(change.body).toMatchObject(belowHeld(2))
+  })
+})
+
+// An order locks the add-ons of its cart by identifier (docs/ARCHITECTURE.md, invariant 9). A
+// change that touches several add-ons takes them the same way, so neither waits for the other
+// while it holds a row the other needs.
+describe('a change of several add-ons at once', () => {
+  it.each([
+    ['a new place with a new capacity', 'patch', 200],
+    ['a deletion, after which the rest close ranks', 'delete', 204],
+  ] as const)('takes them as an order being placed does: %s', async (_, method, status) => {
+    const c = await convention()
+    const limited = { kind: 'limited', capacity: 10 } as const
+    const [first, second] = [
+      await addAddOn(c.t.id, c.edition, limited),
+      await addAddOn(c.t.id, c.edition, limited),
+    ].sort() as [string, string]
+    // The one an order locks second stands first in the list: moved or deleted, it moves the
+    // other.
+    await setColumn('add_ons', second, 'position', 1)
+    await setColumn('add_ons', first, 'position', 2)
+
+    const res = await whilePlacing(
+      // An order being placed with both holds the first, and has not reached the second.
+      (sql) => sql`select id from add_ons where id = ${first} for update`,
+      () =>
+        c.as(
+          method,
+          `/add-ons/${second}`,
+          method === 'patch' ? { capacity: 5, position: 2 } : undefined,
+        ),
+      // It takes the second without waiting: the change holds neither of the two yet.
+      (sql) => sql`select id from add_ons where id = ${second} for update nowait`,
+    )
+
+    expect(res.status).toBe(status)
+    const left = (await storedRows('add_ons', c.t.id)).map((row) => [row.id, row.position])
+    expect(left).toEqual(
+      method === 'patch'
+        ? expect.arrayContaining([
+            [first, 1],
+            [second, 2],
+          ])
+        : [[first, 1]],
+    )
   })
 })
 

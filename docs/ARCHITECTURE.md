@@ -674,11 +674,12 @@ steps of [adding a feature](#adding-a-feature).
   a whole. A ticket type has one price at a moment or none: an exclusion constraint keeps its
   tiers apart, and the API refuses them first by a code of its own
   ([0046](adr/0046-keep-the-price-tiers-of-a-ticket-type-apart-with-an-exclusion-constraint.md)).
-  A statement by identifier names the parent it acts within, whoever calls it. A picture or a
-  size chart of a merchandise item, and the picture of an add-on, is a file for everyone once
-  what it shows is not hidden and its edition is published, served under the convention's address
-  by the identifier its row holds; before that the edition's orgs read it through a route of
-  their own.
+  A statement by identifier names the parent it acts within, whoever calls it. A change that
+  writes several add-ons, a new place or a deletion, first locks the edition's add-ons by
+  identifier, as an order locks those of its cart (invariant 9). A picture or a size chart of a
+  merchandise item, and the picture of an add-on, is a file for everyone once what it shows is
+  not hidden and its edition is published, served under the convention's address by the
+  identifier its row holds; before that the edition's orgs read it through a route of their own.
 - **Checkout and orders.** A buyer needs no membership: a visitor's routes open the tenant from
   its address and answer an unpublished edition and a suspended tenant as an unknown address; an
   account's are tenant routes behind `@InTenant`, which answer an unpublished edition the same

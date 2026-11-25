@@ -34,8 +34,9 @@ tickets module: its domain owner confirms it.
 ## Decision
 
 - Each payment attempt of an expired order that nobody confirmed is asked about at its provider
-  once more. The API's expiry job does it after each of its runs, with the question the expiry
-  itself asks.
+  once more, with the question the expiry itself asks. A job of the API's own does it every 15
+  minutes, each run a quarter of an hour after the one before ended. It runs on a clock apart
+  from the expiry's: the expiry of orders waits for no answer to this question.
 - An attempt is asked about from an hour after the end of its order's hold. An order keeps no
   moment of its expiry, and a payment attempt starts only within the hold, so the hour runs from
   there, as the day of
@@ -45,7 +46,7 @@ tickets module: its domain owner confirms it.
   settled, which a provider answers well a second time, and it pays the order while what the
   order held is still there, or sends it to review, as every late payment does.
 - An attempt the provider answered about is marked with the moment, after a payment it reported
-  was taken, and is not asked about again: a provider gets one more question an attempt. The
+  was taken, and is not asked about again: a provider answers one more question an attempt. The
   mark is the only thing written, and it is written last: a process that dies before it leaves
   the attempt to the next run.
 - A provider out of reach, or a payment found that could not be settled, leaves the attempt for
@@ -53,6 +54,12 @@ tickets module: its domain owner confirms it.
   the convention no longer holds an account of has nobody to ask, and is marked.
 - An attempt its provider refused to register carries the mark from its start: the provider
   answered then that it knows no such attempt, and is not asked about it.
+- Once a convention's provider did not answer about one attempt, or the convention's credentials
+  did not open, the run asks nothing about the convention's other attempts: they wait for the
+  next run. A provider out of reach gets one question a convention a run, 92 over the 23 hours
+  at most, however many attempts wait.
+- A run asks 500 questions at most, answered or not, the attempts whose hold ended longest ago
+  first, and leaves the attempts after them to the next run.
 - The attempts are found across tenants by identifiers alone, of tenants not suspended, and each
   is judged again in its own tenant's transaction.
 
@@ -67,6 +74,12 @@ tickets module: its domain owner confirms it.
   starts for an expired order.
 - **Ask at every run for the whole day.** Some 1 400 questions an attempt, nearly all of them
   about an attempt nobody paid, against a provider that limits its API.
+- **Ask in the expiry's own chain, after each of its runs.** A provider that does not answer
+  takes its timeout for each attempt in turn, and the expiry of every convention's orders would
+  wait for all of them: what the orders hold stays held, and the shops show "Sold out".
+- **Ask about every attempt at every run until its provider answers.** A provider that refuses a
+  replaced API key answers none of them, so each would be asked every run for the day, from the
+  one address the API calls every convention's provider from.
 - **Ask once, at the end of the day.** A buyer who paid would wait a day for the ticket. An hour
   covers the time a provider lets a buyer finish a payment started within the hold.
 - **Ask at once when the order expires.** The expiry already asks then; the payment this is for
@@ -84,15 +97,21 @@ tickets module: its domain owner confirms it.
   ([ARCHITECTURE.md, Tenant isolation](../ARCHITECTURE.md#tenant-isolation)).
 - Every attempt of an expired order that its provider did not refuse to register costs the
   provider one more question, and nearly all are answered as not paid.
-- With several API processes, two that find the same attempt at the same moment may each ask.
-  The payment is taken once: the order's lock lets one of them write it.
+- An attempt is asked about in the first run that comes an hour after the end of its hold,
+  about a quarter of an hour later at most, and in a later one where a run spent its questions
+  before reaching it or its provider did not answer. An attempt whose payment was found and
+  could not be settled is asked about at each run until it is.
+- With several API processes, each asks on its own clock, and two that find the same attempt at
+  the same moment may each ask. The payment is taken once: the order's lock lets one of them
+  write it.
 - A provider account is kept while an attempt of an expired order may still be confirmed (0093):
   until the attempt carries the mark, and for the 24 hours this question may be asked in at
   most.
 - What stays open: a payment made later than an hour after the hold whose settlement answer is
-  lost, an attempt of an order the expiry left waiting for more than 24 hours past its hold, and
-  the other attempts of an order a payment already paid or sent to review, which is expired no
-  more. Each needs a second failure on top of the one this record repairs.
+  lost, an attempt of an order the expiry left waiting for more than 24 hours past its hold, an
+  attempt no run reached with a question within the 24 hours, and the other attempts of an
+  order a payment already paid or sent to review, which is expired no more. Each needs a second
+  failure on top of the one this record repairs.
 - That Przelewy24 reports a transaction it verified, whose answer never arrived, as a payment
   made rests on its documentation (Przelewy24, N6), not on its sandbox.
 - 0047 and 0081 stand: no state between the steps, and a payment found late is decided as they

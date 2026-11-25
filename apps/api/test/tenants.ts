@@ -163,6 +163,12 @@ export async function connectAccount(
   `)
 }
 
+/** Leaves the tenant's provider account with credentials nothing opens, as a replaced key does. */
+export const loseCredentials = (tenantId: string) =>
+  db.execute(sql`
+    update payment_provider_accounts set credentials = 'sealed' where tenant_id = ${tenantId}
+  `)
+
 /** Complete seller's details of the tenant, as its shop settings set them. */
 export const addSeller = (tenantId: string) =>
   db.execute(sql`

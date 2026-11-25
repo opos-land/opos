@@ -312,9 +312,10 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   behind an advisory lock, so one process sweeps at a time, removing, once older than 24 hours,
   a file's row nothing points at and an object no row explains; the expiry of orders every
   minute and the outbox of their emails every quarter of a minute, each claiming a row under a
-  lock another process skips; with the expiry, the question asked once more about the payment
-  attempts of expired orders, which two processes may each ask while the order's lock lets one
-  take the payment; the reminders before an edition every five minutes, each queued
+  lock another process skips; the question asked once more about the payment attempts of
+  expired orders every quarter of an hour, on a clock of its own so that no provider's answer
+  holds an expiry back, which two processes may each ask while the order's lock lets one take
+  the payment; the reminders before an edition every five minutes, each queued
   under a lock of its edition's shop row, so a second process finds it gone out; the removal of
   the profile reports closed twelve months before, daily, which two processes do once. A job finds its
   rows across tenants by identifiers alone, passes a suspended tenant's by, and acts on each in
@@ -739,12 +740,14 @@ steps of [adding a feature](#adding-a-feature).
   ([0093](adr/0093-change-a-provider-account-under-a-payment-only-where-the-payment-loses-nothing.md)).
   An order being placed and a change of the account share one lock of the tenant's account. The
   expiry of orders asks the account the convention holds now, and expires an order whose attempt
-  that account does not know. After each run it asks the provider once more about each payment
-  attempt of an expired order that nobody confirmed, from an hour after the end of the hold and
-  for 24 hours from it at most, so that a payment settled with its answer lost is found. A
-  payment the provider reports goes through the three steps of a confirmation, as a late one;
-  the attempt is marked once the provider answered and is not asked about again, and nothing is
-  written before the answer, so no state stands between the steps
+  that account does not know. A job of its own, which the expiry never waits for, asks the
+  provider once more about each payment attempt of an expired order that nobody confirmed, from
+  an hour after the end of the hold and for 24 hours from it at most, so that a payment settled
+  with its answer lost is found. A payment the provider reports goes through the three steps of
+  a confirmation, as a late one; the attempt is marked once the provider answered and is not
+  asked about again, and nothing is written before the answer, so no state stands between the
+  steps. A provider that did not answer about one attempt of a convention is asked about no
+  other of them until the next run, and a run asks a limited number of questions
   ([0104](adr/0104-ask-the-provider-once-more-about-each-payment-attempt-of-an-expired-order.md)).
   The orders awaiting
   payment in an edition are counted for the buyer the request proves: those on the account that

@@ -1,11 +1,11 @@
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import { type PlacedOrder, RESULT_TOKEN_HEADER, type StartedAttempt } from '@opos/contract'
 import request from 'supertest'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { STAND_IN_TOKEN } from '../src/modules/checkout/bot-check'
 import { OrderExpiry } from '../src/modules/checkout/order-expiry.service'
 import { FAKE_ACCOUNT, type FakeProvider } from '../src/modules/payments/fake-provider'
-import { PROVIDER_MODULES } from '../src/modules/payments/payment-providers'
+import { CredentialsVault, PROVIDER_MODULES } from '../src/modules/payments/payment-providers'
 import { createApp } from './app'
 import { deleteCreatedAccounts } from './auth'
 import {
@@ -15,6 +15,7 @@ import {
   connectAccount,
   connectFake,
   deleteCreatedTenants,
+  loseCredentials,
   makeShopReady,
   openShop,
   restore,
@@ -34,6 +35,10 @@ let app: NestExpressApplication
 beforeAll(async () => {
   app = await createApp()
   await app.listen(0, '127.0.0.1')
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 afterAll(async () => {
@@ -345,6 +350,59 @@ describe('asking again about the attempts of an expired order', () => {
     await setColumn('orders', placed.orderId, 'hold_ends_at', ago(23 * HOUR))
     expect(await recheck(s)).toEqual({ taken: 1, unpaid: 0, waiting: 0 })
     expect(await s.stored(placed)).toMatchObject({ status: 'paid' })
+  })
+
+  // A provider that did not answer about one attempt of a convention is asked about no other of
+  // them in that run: each question it does not answer takes its time, and it limits its API.
+  it('asks a provider out of reach once a run, and leaves the convention’s other attempts unasked', async () => {
+    const s = await shop()
+    const first = await expired(s, { minutes: 3 * HOUR })
+    const second = await expired(s, { email: 'other@example.test' })
+    fake().pay(second.attemptId)
+    await connectFake(s.t.id, FAKE_ACCOUNT.stateUnavailable)
+    const state = vi.spyOn(fake(), 'state')
+
+    expect(await recheck(s)).toEqual({ taken: 0, unpaid: 0, waiting: 2 })
+
+    expect(state).toHaveBeenCalledTimes(1)
+    expect(await attempt(s, first.attemptId)).toMatchObject({ rechecked_at: null })
+    expect(await attempt(s, second.attemptId)).toMatchObject({ rechecked_at: null })
+
+    // The next run finds the provider back, and asks about each.
+    await connectFake(s.t.id, 'demo')
+    expect(await recheck(s)).toEqual({ taken: 1, unpaid: 1, waiting: 0 })
+    expect(state).toHaveBeenCalledTimes(3)
+  })
+
+  it('tries credentials that no longer open once a run, and asks nobody', async () => {
+    const s = await shop()
+    await expired(s, { minutes: 3 * HOUR })
+    await expired(s, { email: 'other@example.test' })
+    await loseCredentials(s.t.id)
+    const state = vi.spyOn(fake(), 'state')
+    const open = vi.spyOn(app.get(CredentialsVault), 'open')
+
+    expect(await recheck(s)).toEqual({ taken: 0, unpaid: 0, waiting: 2 })
+
+    expect(open).toHaveBeenCalledTimes(1)
+    expect(state).not.toHaveBeenCalled()
+  })
+
+  // The providers are asked from one address for every convention: a run asks so many questions
+  // and leaves the attempts after them to the next one.
+  it('asks no more questions than a run may, and takes the rest in the next run', async () => {
+    const s = await shop()
+    const first = await expired(s, { minutes: 3 * HOUR })
+    const second = await expired(s, { email: 'other@example.test' })
+
+    const one = await app.get(OrderExpiry).recheck(new Date(), { tenantId: s.t.id, questions: 1 })
+
+    expect(one).toEqual({ taken: 0, unpaid: 1, waiting: 0 })
+    expect((await attempt(s, first.attemptId)).rechecked_at).not.toBeNull()
+    expect(await attempt(s, second.attemptId)).toMatchObject({ rechecked_at: null })
+
+    expect(await recheck(s)).toEqual({ taken: 0, unpaid: 1, waiting: 0 })
+    expect((await attempt(s, second.attemptId)).rechecked_at).not.toBeNull()
   })
 
   // The provider counts the payment as made, and settling it does not answer: nothing is written,

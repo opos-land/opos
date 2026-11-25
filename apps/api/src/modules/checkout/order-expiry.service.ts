@@ -20,12 +20,25 @@ const EXPIRY_PAGE = 200
 const MAX_PAGES = 50
 
 /**
+ * How often the job asks again about the attempts of expired orders: on a clock of its own, so
+ * that a provider slow to answer holds no expiry back, and seldom enough for one that does not
+ * answer.
+ */
+const ASK_AGAIN_EVERY_MS = 15 * 60_000
+
+/**
  * When an attempt of an expired order nobody confirmed is asked about once more: from an hour
  * after the end of the order's hold, and for no longer than 24 hours after it. An order keeps no
  * moment of its expiry, so both run from the end of its hold.
  */
 const ASK_AGAIN_AFTER_MS = 60 * 60_000
 const ASK_AGAIN_UNTIL_MS = 24 * 60 * 60_000
+
+/**
+ * How many questions one run asks the providers at most, answered or not: they go out from one
+ * address for every convention. The attempts after them wait for the next run.
+ */
+const ASK_AGAIN_QUESTIONS = 500
 
 /** What one run made of the orders it found: expired, paid after all, or left to wait. */
 export interface ExpiryResult {
@@ -44,6 +57,18 @@ export interface AskAgainResult {
   waiting: number
 }
 
+/** What one run that asks again takes: the rows of a job's run, and how many questions at most. */
+export type AskAgainScope = JobScope & { questions?: number }
+
+/**
+ * What a run that asks again keeps count of: the questions it asked, and the tenants whose
+ * provider did not answer or whose credentials do not open, which it asks nothing more of.
+ */
+interface AskAgainRound {
+  asked: number
+  out: Set<string>
+}
+
 /**
  * The expiry job (docs/specs/0004-checkout-and-orders.md, Y6, H3): every minute it finds the
  * orders awaiting payment whose hold ended and asks the provider's module about their open
@@ -52,17 +77,19 @@ export interface AskAgainResult {
  * whether it was paid is not known. Several API processes may run it at once: an order is
  * claimed under a lock the others skip.
  *
- * After each run it asks once more about the attempts of the orders that expired
- * (docs/ARCHITECTURE.md, Modules waiting for their domain owner): a payment its provider settled
- * whose answer was lost left no trace, and the provider repeats nothing of it. An attempt nobody
- * confirmed is asked about once, an hour after the end of its order's hold, and marked; a payment
- * found is taken as any late one is. A provider out of reach leaves the attempt for the next
- * run, for 24 hours from the end of the hold at most.
+ * Beside it, every quarter of an hour and on a clock of its own, it asks once more about the
+ * attempts of the orders that expired (docs/ARCHITECTURE.md, Modules waiting for their domain
+ * owner): a payment its provider settled whose answer was lost left no trace, and the provider
+ * repeats nothing of it. An attempt nobody confirmed is asked about once, from an hour after the
+ * end of its order's hold, and marked; a payment found is taken as any late one is. A provider
+ * out of reach leaves the attempt, and the others of its convention unasked, for the next run,
+ * for 24 hours from the end of the hold at most. The expiry waits for none of it.
  */
 @Injectable()
 export class OrderExpiry implements OnApplicationBootstrap, OnApplicationShutdown {
   private readonly logger = new Logger(OrderExpiry.name)
   private timer?: NodeJS.Timeout
+  private askAgainTimer?: NodeJS.Timeout
 
   constructor(
     private readonly global: GlobalDbService,
@@ -79,15 +106,22 @@ export class OrderExpiry implements OnApplicationBootstrap, OnApplicationShutdow
     const run = () => {
       this.run()
         .catch((error: unknown) => this.logger.error(`The expiry failed: ${String(error)}`))
-        .then(() => this.recheck())
-        .catch((error: unknown) => this.logger.error(`Asking again failed: ${String(error)}`))
         .finally(() => (this.timer = setTimeout(run, EXPIRY_EVERY_MS).unref()))
     }
     this.timer = setTimeout(run, EXPIRY_EVERY_MS).unref()
+    // A chain of its own: each run starts a quarter of an hour after the one before ended,
+    // however long a provider took to answer, and the expiry never waits for it.
+    const askAgain = () => {
+      this.recheck()
+        .catch((error: unknown) => this.logger.error(`Asking again failed: ${String(error)}`))
+        .finally(() => (this.askAgainTimer = setTimeout(askAgain, ASK_AGAIN_EVERY_MS).unref()))
+    }
+    this.askAgainTimer = setTimeout(askAgain, ASK_AGAIN_EVERY_MS).unref()
   }
 
   onApplicationShutdown() {
     clearTimeout(this.timer)
+    clearTimeout(this.askAgainTimer)
   }
 
   /**
@@ -175,19 +209,31 @@ export class OrderExpiry implements OnApplicationBootstrap, OnApplicationShutdow
   /**
    * One run over the attempts to ask about again by `now`, a page at a time, each page after the
    * last attempt of the one before: an attempt left for the next run holds no other one back.
+   * Once a tenant's provider did not answer, or its credentials did not open, the tenant's other
+   * attempts wait for the next run unasked: a provider out of reach gets one question a
+   * convention a run. The run ends at the most questions it may ask.
    */
-  async recheck(now = new Date(), scope: JobScope = {}): Promise<AskAgainResult> {
+  async recheck(
+    now = new Date(),
+    { questions = ASK_AGAIN_QUESTIONS, ...scope }: AskAgainScope = {},
+  ): Promise<AskAgainResult> {
     const result: AskAgainResult = { taken: 0, unpaid: 0, waiting: 0 }
     const window = {
       from: new Date(now.getTime() - ASK_AGAIN_UNTIL_MS),
       to: new Date(now.getTime() - ASK_AGAIN_AFTER_MS),
     }
+    const round: AskAgainRound = { asked: 0, out: new Set() }
     let after: { holdEndsAt: Date; id: string } | undefined
     for (let page = 0; page < MAX_PAGES; page += 1) {
       const due = await this.global.attemptsToAskAgain(window, { ...scope, after })
       for (const { id, tenantId } of due) {
+        if (round.out.has(tenantId)) {
+          result.waiting += 1
+          continue
+        }
+        if (round.asked >= questions) return result
         try {
-          const made = await this.again(tenantId, id, now)
+          const made = await this.again(tenantId, id, now, round)
           if (made) result[made] += 1
         } catch (error) {
           // A payment found that could not be settled, or a tenant suspended meanwhile: the
@@ -208,12 +254,14 @@ export class OrderExpiry implements OnApplicationBootstrap, OnApplicationShutdow
    * Asks the provider about one attempt, once: the attempt is marked when the provider answered,
    * after a payment it reports was taken. Undefined for an attempt that is no longer one to ask
    * about. The provider is asked outside every transaction, and nothing is written before it
-   * answers: a process that dies meanwhile leaves the attempt to the next run.
+   * answers: a process that dies meanwhile leaves the attempt to the next run. A question asked
+   * is counted in `round`, and a tenant whose provider or credentials are out of reach noted.
    */
   private async again(
     tenantId: string,
     attemptId: string,
     now: Date,
+    round: AskAgainRound,
   ): Promise<keyof AskAgainResult | undefined> {
     const read = await this.context.withTenant(tenantId, async () => {
       const attempt = await this.payments.attempt(attemptId)
@@ -235,14 +283,19 @@ export class OrderExpiry implements OnApplicationBootstrap, OnApplicationShutdow
       try {
         credentials = this.vault.open({ tenantId, provider: account.provider }, account.credentials)
       } catch {
+        round.out.add(tenantId)
         return 'waiting'
       }
+      round.asked += 1
       const answer = await this.providers.state(
         attempt.provider,
         credentials,
         attemptOf(order, attempt),
       )
-      if (answer.state === 'unavailable') return 'waiting'
+      if (answer.state === 'unavailable') {
+        round.out.add(tenantId)
+        return 'waiting'
+      }
       if (answer.state === 'paid') {
         // It decides as for every late payment, and throws while the payment cannot be settled.
         await this.confirmations.take(tenantId, attempt.id, answer.payment, now)

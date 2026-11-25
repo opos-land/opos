@@ -30,6 +30,13 @@ A checkout places one order, however often it is sent.
   keeps the key with the checkout in the tab and sends it with every try to place that checkout.
   A new checkout draws a new key. Both routes that place an order take the key, and neither
   requires it: an order sent with no key is placed each time it is sent.
+- The key stands for what the checkout orders, not for the checkout the tab keeps. The portal
+  draws a new one whenever anything of the checkout but the step it is on changes: the cart, the
+  ticket holder's data, the email address, the answers to the custom fields, the consents or the
+  discount code. A try sent again unchanged carries the same key, and a changed checkout places
+  an order of its own. The portal does this in the one place every change of a checkout passes,
+  never change by change. The API's refusals below stay as the second line, for a client that
+  keeps its key over a change.
 - An order keeps the hash of the key it was placed with, unique in its edition. The key is a
   secret of the buyer's, as a result token is
   ([0051](0051-keep-an-orders-secrets-as-hashes-and-its-qr-code-sealed.md)). An account's key is
@@ -76,7 +83,8 @@ A checkout places one order, however often it is sent.
   after a lost answer would be sent to pay an order of another total than the Summary showed,
   against the rule that an order is placed at the total its buyer saw.
 - **Compare the whole request with the one that placed the order.** It needs the request, or a
-  hash of it, kept with the order. The total is on the order already and is what the rule names.
+  hash of it, kept with the order. The total is on the order already and is what the rule names,
+  and a change the total does not tell is one the portal draws a new key for.
 - **Let the unique index alone settle tries sent together.** The try that loses has checked the
   limits by then. Where the first took the last place or the last use of a code, the second
   would be told that it ran out, and its buyer would give up an order they hold.
@@ -95,8 +103,15 @@ A checkout places one order, however often it is sent.
 - A checkout a visitor started and an account goes on with after signing in keeps its key, which
   is then hashed with the account. Where the visitor's try placed an order whose answer was
   lost, the account's try places another.
-- A checkout changed after a lost answer in a way that leaves its total as it was, such as
-  another variant at the same price, is answered with the order placed before.
+- A checkout changed after a lost answer places a new order, whether its total changed or not.
+  The order placed before stays as an order its buyer left does: it holds its stock and awaits
+  payment until it expires. A client that keeps its key over a change which leaves the total as
+  it was, such as another variant at the same price, is answered with the order placed before:
+  the API compares the email address, the total and the status alone.
+- A browser copies a tab's checkout, key and all, into a tab duplicated from it. Changed there,
+  as for another ticket holder, it places an order of its own. Left as it was, it is the same
+  checkout: it is answered with the order the first tab placed and with a new result token, so
+  the token the first tab holds stops opening the order.
 - A try sent again once its order expired, was canceled or declined, or needs review is refused
   once. The buyer presses again and places a new order.
 - A repeated try passes the bot check and counts against the rate limit of placing orders as any

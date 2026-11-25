@@ -109,6 +109,9 @@ const type = (label: string | RegExp, value: string) =>
   fireEvent.change(screen.getByLabelText(label), { target: { value } })
 const press = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }))
 const stepHeading = (name: string) => screen.findByRole('heading', { name, level: 2 })
+/** The placement key of each order sent to the shop, in the order they were sent. */
+const sentKeys = () =>
+  api.place.mock.calls.map((call) => (call[1] as { placementKey?: string }).placementKey)
 
 /** Fills the first step as a visitor does and goes on. */
 async function fillHolder() {
@@ -487,25 +490,64 @@ describe('CheckoutPage', () => {
   it('sends the same placement key when the buyer tries again after a failure', async () => {
     const lost = new TypeError('Failed to fetch')
     api.place.mockRejectedValueOnce(lost)
-    saveDraft(
-      'convention-a',
-      '2027',
-      kept({ step: 'summary', consents: [termsAccepted], providerConsent: true }),
-    )
+    const begun = kept({ step: 'summary', consents: [termsAccepted], providerConsent: true })
+    saveDraft('convention-a', '2027', begun)
     view()
     await stepHeading('Summary')
 
     press('Order and pay')
     await waitFor(() => expect(api.notify).toHaveBeenCalledWith(lost))
-    const held = loadDraft('convention-a', '2027')?.placementKey
+    // Another step and back is the same checkout.
+    press('Back')
+    await stepHeading('Merch')
+    press('Next')
+    await stepHeading('Summary')
     press('Order and pay')
     await waitFor(() => expect(api.leave).toHaveBeenCalled())
 
-    const sent = api.place.mock.calls.map(
-      (call) => (call[1] as { placementKey?: string }).placementKey,
-    )
-    expect(sent[0]).toMatch(/^[0-9a-f-]{36}$/)
-    expect(sent).toEqual([held, held])
+    expect(begun.placementKey).toMatch(/^[0-9a-f-]{36}$/)
+    expect(sentKeys()).toEqual([begun.placementKey, begun.placementKey])
+  })
+
+  // The key stands for what the checkout orders. Changed after a try whose answer never came, it
+  // is an order the shop has not placed: answered with the one placed before, the buyer would
+  // pay for what the Summary no longer shows.
+  it('sends another placement key once the buyer changed the checkout after a failure', async () => {
+    const lost = new TypeError('Failed to fetch')
+    api.place.mockRejectedValueOnce(lost)
+    const begun = kept({ step: 'summary', consents: [termsAccepted], providerConsent: true })
+    saveDraft('convention-a', '2027', begun)
+    view()
+    await stepHeading('Summary')
+
+    press('Order and pay')
+    await waitFor(() => expect(api.notify).toHaveBeenCalledWith(lost))
+    fireEvent.click(screen.getByRole('checkbox', { name: /news/ }))
+    press('Order and pay')
+    await waitFor(() => expect(api.leave).toHaveBeenCalled())
+
+    const [first, second] = sentKeys()
+    expect(first).toBe(begun.placementKey)
+    expect(second).toMatch(/^[0-9a-f-]{36}$/)
+    expect(second).not.toBe(first)
+    expect(api.place.mock.calls[1]?.[1]).toMatchObject({
+      consents: [termsAccepted, { consentId: ids.news, documentVersionId: null }],
+    })
+  })
+
+  // A tab the buyer duplicated holds the same checkout with the same key. Taken up there for
+  // another ticket type, it is another order.
+  it('draws another placement key for a kept checkout begun again with another ticket type', async () => {
+    const begun = kept({ step: 'summary', consents: [termsAccepted], providerConsent: true })
+    saveDraft('convention-a', '2027', begun)
+
+    view(`?ticketType=${ids.supporter}`)
+    await stepHeading('Ticket holder')
+
+    const held = loadDraft('convention-a', '2027')
+    expect(held).toMatchObject({ ticketTypeId: ids.supporter, holderName: 'Ada' })
+    expect(held?.placementKey).toMatch(/^[0-9a-f-]{36}$/)
+    expect(held?.placementKey).not.toBe(begun.placementKey)
   })
 
   // A key the shop refuses answers no try of this checkout any more, as when the buyer changed

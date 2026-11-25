@@ -65,6 +65,7 @@ import {
   newPlacementKey,
   orderBody,
   quoteOf,
+  rekeyed,
   resumeExtension,
   saveDraft,
   type StepId,
@@ -208,12 +209,22 @@ function Checkout({
     const fitted = start.draft && fitToOffer(offer, start.draft)
     return {
       ...start,
-      draft: fitted ? fitted.draft : null,
+      // Begun with another content than the tab kept, it is placed with a key of its own.
+      draft: fitted ? rekeyed(kept, fitted.draft) : null,
       dropped: !!fitted?.dropped,
       changedConsents: fitted?.changedConsents ?? [],
     }
   })
-  const [draft, setDraft] = useState(begun.draft)
+  const [draft, setKept] = useState(begun.draft)
+  /**
+   * Every change of the checkout: one of what it orders draws a new placement key, so the order
+   * placed for what it was is never the answer to what it is now.
+   */
+  const setDraft = (next: Draft | ((current: Draft | null) => Draft | null)) =>
+    setKept((current) => {
+      const after = typeof next === 'function' ? next(current) : next
+      return after && rekeyed(current, after)
+    })
   /** Whether the checkout lost something the shop no longer offers: the buyer is told. */
   const [dropped, setDropped] = useState(begun.dropped)
   /**

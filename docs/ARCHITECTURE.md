@@ -757,7 +757,9 @@ steps of [adding a feature](#adding-a-feature).
   invariant 9
   ([0099](adr/0099-count-an-accounts-unpaid-orders-apart-from-a-visitors-under-its-email.md)).
   A request that places an order may carry a placement key, which the portal draws with a
-  checkout and sends with every try to place it. The key is a secret of the buyer's: the order
+  checkout and sends with every try to place it. The key stands for what the checkout orders:
+  the portal draws a new one whenever anything of the checkout but its step changes, so a
+  changed checkout places an order of its own. The key is a secret of the buyer's: the order
   keeps its hash, unique in the edition and made with the account that places, so an account's
   key finds that account's order alone. A try whose key placed an order under the same email
   address places nothing and takes nothing again: it is answered with that order and a new

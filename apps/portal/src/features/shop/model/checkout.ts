@@ -65,9 +65,10 @@ const draftSchema = z.object({
     .nullable()
     .default(null),
   /**
-   * The key the checkout's order is placed with, drawn when the checkout starts and sent with
-   * every try to place it: a try whose answer never came is sent again with the same key, and
-   * the shop answers with the order it placed then. A checkout kept without one draws its own.
+   * The key the checkout's order is placed with, sent with every try to place it: a try whose
+   * answer never came is sent again with the same key, and the shop answers with the order it
+   * placed then. It stands for what the checkout orders, so `rekeyed` draws a new one whenever
+   * that changes. A checkout kept without one draws its own.
    */
   placementKey: z.uuid().default(() => newPlacementKey()),
   step: z.enum(STEPS),
@@ -91,6 +92,31 @@ export function newPlacementKey(): string {
     hex.slice(16, 20),
     hex.slice(20),
   ].join('-')
+}
+
+/**
+ * What the checkout orders, as a text two checkouts that order the same share: all of it but the
+ * step it is on and its placement key, whatever order the fields of an object were written in.
+ */
+const contentOf = (draft: Draft) =>
+  JSON.stringify({ ...draft, step: null, placementKey: null }, (_, value: unknown) =>
+    typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => (a < b ? -1 : 1)))
+      : value,
+  )
+
+/**
+ * The checkout `after` as it goes on from `before`, which is null where it starts. The placement
+ * key stands for what the checkout orders: on another step it stays, and once anything else
+ * changed a new one is drawn. A try sent again unchanged is so answered with the order placed
+ * before, and a changed checkout places an order of its own, whatever the tab kept its key for.
+ */
+export function rekeyed(before: Draft | null, after: Draft): Draft {
+  const changed =
+    before !== null &&
+    after.placementKey === before.placementKey &&
+    contentOf(after) !== contentOf(before)
+  return changed ? { ...after, placementKey: newPlacementKey() } : after
 }
 
 export const emptyDraft = (ticketTypeId: string | null): Draft => ({

@@ -16,6 +16,7 @@ import {
   offeredItems,
   orderBody,
   quoteOf,
+  rekeyed,
   resumeExtension,
   saveDraft,
   stepsOf,
@@ -35,6 +36,9 @@ const accepted = (consentId: string, documentVersionId: string | null = null) =>
   documentVersionId,
 })
 const [termsAccepted, newsAccepted] = [accepted(terms!, termsV1), accepted(news!)]
+
+/** A placement key as a checkout draws it. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
 
 const offer = (changes: Partial<Offer> = {}): Offer => ({
   open: true,
@@ -786,24 +790,89 @@ describe('an unfinished checkout', () => {
 
   // The key its order is placed with: every try to place the checkout sends it, so a try whose
   // answer never came places no second order.
-  it('draws a placement key of its own when it starts, and keeps it for as long as it lives', () => {
+  it('draws a placement key of its own when it starts, and keeps it over a reload', () => {
     const [first, second] = [emptyDraft(standard!), emptyDraft(standard!)]
-    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
 
-    expect(first.placementKey).toMatch(uuid)
-    expect(second.placementKey).toMatch(uuid)
+    expect(first.placementKey).toMatch(UUID)
+    expect(second.placementKey).toMatch(UUID)
     expect(second.placementKey).not.toBe(first.placementKey)
-    // Another step, another ticket type and a reload are the same checkout.
     saveDraft('convention-a', '2026', { ...first, step: 'summary' })
     expect(loadDraft('convention-a', '2026')?.placementKey).toBe(first.placementKey)
-    expect(withTicketType(offer(), first, supporter!, true).draft.placementKey).toBe(
-      first.placementKey,
-    )
     expect(orderBody(first, 10000, 'token', false)).toMatchObject({
       placementKey: first.placementKey,
     })
     expect(orderBody(first, 10000, 'token', true)).toMatchObject({
       placementKey: first.placementKey,
+    })
+  })
+
+  // The key stands for what the checkout orders, not for the checkout the tab keeps: a try sent
+  // again unchanged is answered with the order placed before, and a changed one, as in a tab the
+  // buyer duplicated to order for somebody else, places an order of its own.
+  describe('going on from what it was', () => {
+    const before = filled({
+      step: 'summary',
+      addOnIds: [workshop!],
+      items: [{ variantId: small!, quantity: 1 }],
+      consents: [termsAccepted],
+      providerConsent: true,
+      discountCode: 'EARLY10',
+    })
+
+    it('keeps its placement key on another step, and as it was read back from the tab', () => {
+      const moved = { ...before, step: 'holder' as const }
+      saveDraft('convention-a', '2026', before)
+
+      expect(rekeyed(before, moved)).toBe(moved)
+      expect(rekeyed(loadDraft('convention-a', '2026'), before)).toBe(before)
+      // The same answers written in another order are the same answers.
+      const answers = { [fandom!]: 'Dune', [city!]: 'Poznań' }
+      const reordered = { ...before, answers: { [city!]: 'Poznań', [fandom!]: 'Dune' } }
+      expect(rekeyed({ ...before, answers }, reordered)).toBe(reordered)
+    })
+
+    it('has the key it drew where it goes on from nothing', () => {
+      expect(rekeyed(null, before)).toBe(before)
+    })
+
+    it('draws a new placement key once anything of what it orders changes', () => {
+      const changes: Partial<Draft>[] = [
+        { ticketTypeId: supporter! },
+        { supporterPriceMinor: 20000 },
+        { holderName: 'Ola' },
+        { ageBand: 'teen' },
+        { email: 'ola@example.test' },
+        { emailConfirmation: 'ola@example.test' },
+        { answers: { [city!]: 'Gdynia' } },
+        { addOnIds: [workshop!, room!] },
+        { items: [{ variantId: medium!, quantity: 1 }] },
+        { items: [{ variantId: small!, quantity: 2 }] },
+        { consents: [termsAccepted, newsAccepted] },
+        { consents: [accepted(terms!, termsV2)] },
+        { providerConsent: false },
+        { guardianAcknowledged: true },
+        { discountCode: '' },
+      ]
+
+      for (const change of changes) {
+        const after = rekeyed(before, { ...before, ...change, step: 'holder' })
+
+        expect(after).toEqual({
+          ...before,
+          ...change,
+          step: 'holder',
+          placementKey: expect.any(String) as string,
+        })
+        expect(after.placementKey).toMatch(UUID)
+        expect(after.placementKey, JSON.stringify(change)).not.toBe(before.placementKey)
+      }
+    })
+
+    // The page draws one itself once the shop refused the key before.
+    it('keeps a key drawn for what it orders already', () => {
+      const drawn = { ...before, placementKey: emptyDraft(null).placementKey }
+
+      expect(rekeyed(before, drawn)).toBe(drawn)
     })
   })
 

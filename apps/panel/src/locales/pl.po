@@ -1761,7 +1761,7 @@ msgstr "Ostatnio używany"
 
 #: src/features/scanner/pages/new-scanner-page.tsx
 msgid "Left empty, the scanner’s access ends a day after the edition’s last day, also when that day is changed later, and no later than your own access."
-msgstr "Jeśli zostawisz to pole puste, dostęp skanera skończy się dzień po ostatnim dniu edycji, także gdy ten dzień zostanie później zmieniony, nie później niż twój własny dostęp."
+msgstr "Jeśli zostawisz to pole puste, dostęp skanera skończy się dzień po ostatnim dniu edycji, także gdy ten dzień zostanie później zmieniony, ale nie później niż twój własny dostęp."
 
 #: src/features/discounts/pages/discount-codes-page.tsx
 msgid "Let it run again"

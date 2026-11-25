@@ -209,6 +209,17 @@ published edition has a page of its own, a past one too, which shows the convent
 logo and the edition's dates and venue, and leads to its programme and, while it is open, to its
 shop. A convention with no logo shows none.
 
+**A link says what it leads to.** Where a link to the portal is shared, and to a search engine, the
+page it leads to is named before anyone opens it: a convention, an edition, its programme, a
+programme item, its shop or a published profile by its name, with when and where an edition takes
+place and what a programme item or a profile says of itself, and with the convention's logo or the
+profile's avatar as its picture. A convention's pages that anyone may open are named in the
+convention's language; every other page as it names itself in the tab, in the default language. A
+page that shows a stranger nothing asks search engines to leave it out: an account's own pages and
+its personal schedule, the page a confirmation link opens, the second step of signing in, a
+checkout and an order. An address nothing is at says so to a search engine too
+([0091](adr/0091-fill-the-head-of-the-portals-pages-on-a-server-beside-it.md)).
+
 **Only the admin sets a convention's address and custom domain.** Changing the address breaks every
 old link, and no address is a word the platform uses itself, such as `panel` or `api`. The address
 of a deleted convention is never given to another

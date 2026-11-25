@@ -220,6 +220,7 @@ msgid "Avatar file"
 msgstr "Plik awatara"
 
 #: src/features/profile/pages/profile-page.tsx
+#: src/server/routes.ts
 msgid "Avatar of {name}"
 msgstr "Awatar: {name}"
 
@@ -309,6 +310,7 @@ msgid "Check your inbox"
 msgstr "Sprawdź skrzynkę pocztową"
 
 #: src/features/shop/pages/checkout-page.tsx
+#: src/server/routes.ts
 msgid "Checkout"
 msgstr "Składanie zamówienia"
 
@@ -394,6 +396,7 @@ msgid "Confirm your address"
 msgstr "Potwierdź swój adres"
 
 #: src/features/auth/pages/confirm-page.tsx
+#: src/server/routes.ts
 msgid "Confirmation link"
 msgstr "Link potwierdzający"
 
@@ -427,6 +430,7 @@ msgstr "Liczenie odwiedzin i sprawdzanie, jak używane są strony, aby ulepszać
 #: src/features/auth/pages/register-page.tsx
 #: src/features/landing/pages/landing-page.tsx
 #: src/features/shop/pages/checkout-page.tsx
+#: src/server/routes.ts
 msgid "Create an account"
 msgstr "Załóż konto"
 
@@ -589,6 +593,7 @@ msgid "Expired"
 msgstr "Wygasłe"
 
 #: src/features/landing/pages/landing-page.tsx
+#: src/server/routes.ts
 msgid "Fantasy conventions, in one place"
 msgstr "Konwenty fantastyki w jednym miejscu"
 
@@ -789,6 +794,7 @@ msgstr "Dokupujesz do zamówienia {firstNumber}"
 
 #: src/app/layout.tsx
 #: src/features/schedule/pages/schedule-page.tsx
+#: src/server/routes.ts
 msgid "My schedule"
 msgstr "Mój plan"
 
@@ -869,6 +875,7 @@ msgid "Open the link from your email to confirm your address or reset your passw
 msgstr "Otwórz link z wiadomości e-mail, aby potwierdzić adres lub ustawić nowe hasło."
 
 #: src/app/layout.tsx
+#: src/server/routes.ts
 #: src/shared/lib/page-title.ts
 msgid "OPOS"
 msgstr "OPOS"
@@ -878,6 +885,7 @@ msgid "OPOS is free for conventions."
 msgstr "OPOS jest bezpłatny dla konwentów."
 
 #: src/features/landing/pages/landing-page.tsx
+#: src/server/routes.ts
 msgid "OPOS is the platform conventions use for their programme, tickets and attendee sign-ups. It is free for conventions."
 msgstr "OPOS to platforma, na której konwenty prowadzą swój program, akredytacje i zapisy uczestników. Dla konwentów jest bezpłatna."
 
@@ -936,6 +944,7 @@ msgstr "Zamówienia są dokumentacją sprzedaży konwentów: zostają po usunię
 msgid "Other editions"
 msgstr "Inne edycje"
 
+#: src/server/routes.ts
 #: src/shared/ui/messages.tsx
 msgid "Page not found"
 msgstr "Nie znaleziono strony"
@@ -1014,6 +1023,7 @@ msgstr "Cena"
 #: src/app/layout.tsx
 #: src/features/consent/components/consent-banner.tsx
 #: src/features/landing/pages/privacy-page.tsx
+#: src/server/routes.ts
 msgid "Privacy policy"
 msgstr "Polityka prywatności"
 
@@ -1023,6 +1033,7 @@ msgid "Privacy settings"
 msgstr "Ustawienia prywatności"
 
 #: src/features/conventions/pages/edition-program-page.tsx
+#: src/server/routes.ts
 msgid "Programme"
 msgstr "Program"
 
@@ -1127,6 +1138,7 @@ msgstr "Wyślij kod QR ponownie"
 
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
+#: src/server/routes.ts
 msgid "Reset your password"
 msgstr "Zresetuj hasło"
 
@@ -1206,6 +1218,7 @@ msgid "Send the report"
 msgstr "Wyślij zgłoszenie"
 
 #: src/features/shop/pages/shop-page.tsx
+#: src/server/routes.ts
 msgid "Shop"
 msgstr "Sklep"
 
@@ -1222,6 +1235,7 @@ msgstr "Pokaż ten kod przy wejściu i przy odbiorze gadżetów. Każdy, kto go 
 #: src/features/auth/pages/login-page.tsx
 #: src/features/landing/pages/landing-page.tsx
 #: src/features/shop/pages/checkout-page.tsx
+#: src/server/routes.ts
 msgid "Sign in"
 msgstr "Zaloguj się"
 
@@ -1295,6 +1309,7 @@ msgstr "Daj znać administratorom OPOS, że tego profilu nie powinno tu być. Cz
 
 #: src/app/layout.tsx
 #: src/features/landing/pages/terms-page.tsx
+#: src/server/routes.ts
 msgid "Terms"
 msgstr "Regulamin"
 
@@ -1546,6 +1561,7 @@ msgstr "Włącz uwierzytelnianie dwuskładnikowe"
 
 #: src/features/account/pages/account-page.tsx
 #: src/features/auth/pages/mfa-page.tsx
+#: src/server/routes.ts
 msgid "Two-factor authentication"
 msgstr "Uwierzytelnianie dwuskładnikowe"
 
@@ -1766,6 +1782,7 @@ msgstr "Wybrano inny rodzaj akredytacji. Gadżety, których on nie obejmuje, i t
 #: src/features/account/pages/account-page.tsx
 #: src/features/landing/pages/terms-page.tsx
 #: src/features/profile/pages/my-profile-page.tsx
+#: src/server/routes.ts
 msgid "Your account"
 msgstr "Twoje konto"
 
@@ -1829,6 +1846,7 @@ msgstr "Twoja nazwa publiczna, awatar i profil"
 #: src/features/shop/components/summary-step.tsx
 #: src/features/shop/pages/order-link-page.tsx
 #: src/features/shop/pages/result-page.tsx
+#: src/server/routes.ts
 msgid "Your order"
 msgstr "Twoje zamówienie"
 
@@ -1851,6 +1869,7 @@ msgstr "Twoja płatność jest wyjaśniana"
 
 #: src/features/account/pages/account-page.tsx
 #: src/features/profile/pages/my-profile-page.tsx
+#: src/server/routes.ts
 msgid "Your profile"
 msgstr "Twój profil"
 

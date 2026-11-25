@@ -10,6 +10,7 @@ here in [AGENTS.md](../AGENTS.md).
 ```mermaid
 graph LR
     portal["apps/portal"] -->|cookie| api["apps/api"]
+    server["the portal's server"] -->|public routes| api
     panel["apps/panel"] -->|cookie| api
     admin["apps/admin"] -->|cookie| api
     api -->|secret key| auth["Supabase Auth"]
@@ -24,7 +25,7 @@ graph LR
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `apps/api`          | NestJS, Drizzle ([0005](adr/0005-build-the-api-with-nestjs-and-drizzle.md)), oRPC ([0006](adr/0006-define-the-api-in-an-orpc-contract.md)): the only backend, and the only holder of a Supabase address or key                                                                                                                                      |
 | `apps/panel`        | the organizers' SPA, desktop-first; later also the scanner under `/scanner`                                                                                                                                                                                                                                                                         |
-| `apps/portal`       | the attendees' SPA, mobile-first: home page with the list of editions, account, convention and edition pages, likes, schedule                                                                                                                                                                                                                       |
+| `apps/portal`       | the attendees' SPA, mobile-first: home page with the list of editions, account, convention and edition pages, likes, schedule; a server beside it answers the document of each page with that page's head ([0091](adr/0091-fill-the-head-of-the-portals-pages-on-a-server-beside-it.md))                                                            |
 | `apps/admin`        | the admins' SPA: the conventions with their suspension and deletion, the reset of an account's two-factor authentication, the log ([0029](adr/0029-ship-four-web-applications.md))                                                                                                                                                                  |
 | `packages/contract` | the oRPC contract with zod schemas, the single source of the API's shape                                                                                                                                                                                                                                                                            |
 | `packages/db`       | schema, migrations, database roles, seed, verification, the scripts that grant the admin role and take it away                                                                                                                                                                                                                                      |
@@ -344,6 +345,22 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
 - Every page calls `usePageTitle` before its first `return`, naming the page, then its edition or
   convention, as the tab title and the panel's breadcrumb show them; `src/app/pages.test.ts`
   enforces it.
+- **The portal's document comes with the head of the page asked for**: the title the page gives
+  itself, a description, the page's own address and what the preview of a shared link reads, in the
+  convention's language on a convention's pages and in the default one elsewhere; an address
+  nothing is at answers 404. A page that shows a stranger nothing asks search engines to leave it
+  out there, and is named in the default language with no read of the API, under a convention's
+  address too. `src/server` of the portal makes the head, in a process beside the portal
+  that its web server asks for every address that is no built file. That process reads the API's
+  public routes alone, with no session and no secret, so the head of an address is the same for
+  every visitor, and it fails open: a page whose head cannot be made gets the plain one, and the
+  web server answers the plain document when the process does not. A route added to the router is
+  added to [routes.ts](../apps/portal/src/server/routes.ts), with the messages the page itself
+  uses; `src/server/routes.router.test.ts` fails until it is. No module the browser runs imports
+  `src/server`, which takes from the portal only modules that run without a browser;
+  `src/server/boundary.test.ts` keeps both. The portal drops what the server wrote into the head
+  once it shows another page
+  ([0091](adr/0091-fill-the-head-of-the-portals-pages-on-a-server-beside-it.md)).
 - Screens are built from shadcn/ui components on Base UI, which the CLI of each application adds to
   its `shared/ui` as it writes them, but for formatting, lint fixes and their own texts moved into
   Lingui macros; an application's own compositions of them sit beside them. They are styled only

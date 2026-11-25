@@ -215,6 +215,18 @@ never allowed by an exception.
 called before the page's first `return`; `src/app/pages.test.ts` of each application fails on a page
 that does not ([frontends](docs/ARCHITECTURE.md#frontends)).
 
+**Every route of the portal has its head on the server.** The portal's document is answered with
+the head of the page asked for, which a search engine and the preview of a shared link read
+without running the portal. [apps/portal/src/server/routes.ts](apps/portal/src/server/routes.ts)
+says what it holds for each route, with the messages the page itself uses: a route added to the
+router is added there, and `src/server/routes.router.test.ts` fails until it is. A page that shows
+a stranger nothing, such as one behind a sign-in, is added as `unlisted`, which asks search engines
+to leave it out. That code runs in
+Node beside the portal, with no session and no secret, from the API's public routes alone; nothing
+the browser runs imports `src/server`, and it takes from the portal only modules that run without
+a browser, which `src/server/boundary.test.ts` keeps so
+([0091](docs/adr/0091-fill-the-head-of-the-portals-pages-on-a-server-beside-it.md)).
+
 **Every write tells its outcome in a notification**: a success, a warning for a refusal the member
 can act on, an error for a failure. The query client of each application notifies every mutation; a
 new one names its success in `meta.success` when "The changes are saved." says too little, and a

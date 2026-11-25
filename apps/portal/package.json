@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "local:start": "vite",
-    "build": "vite build",
+    "build": "vite build && vite build --ssr src/server/main.ts --outDir build",
     "typecheck": "tsc",
     "lint": "eslint --max-warnings 0 .",
     "test": "vitest run",

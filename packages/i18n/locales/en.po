@@ -135,6 +135,10 @@ msgid "An administrator took this profile down. It cannot be published until it 
 msgstr "An administrator took this profile down. It cannot be published until it is restored."
 
 #: src/errors.ts
+msgid "An order has already accepted this consent, so its sentence cannot be changed. Hide it and add a new consent with the new sentence."
+msgstr "An order has already accepted this consent, so its sentence cannot be changed. Hide it and add a new consent with the new sentence."
+
+#: src/errors.ts
 msgid "An order has already accepted this, so it cannot be deleted. Hide it instead: it leaves the shop and stays on its orders."
 msgstr "An order has already accepted this, so it cannot be deleted. Hide it instead: it leaves the shop and stays on its orders."
 

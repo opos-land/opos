@@ -670,6 +670,10 @@ steps of [adding a feature](#adding-a-feature).
   from an open shop is refused under the same lock. A published version of a legal document is a
   file for everyone, served by the version's own identifier and bound to the tenant its address
   names; it is not bound by its edition's publication, since a buyer reads what they accepted.
+  The sentence of a consent an order accepted is refused any change, by a code of its own; the
+  change locks the consent's row before it reads the orders, so an order that accepts the
+  consent at that moment is counted
+  ([0094](adr/0094-attest-in-an-order-each-consent-exactly-as-its-buyer-saw-it.md)).
 - **The catalog.** What an edition sells lies in edition tables behind `tickets`. A list a row
   carries, such as a ticket type's price tiers or an item's option axes, travels with its row as
   a whole. A ticket type has one price at a moment or none: an exclusion constraint keeps its

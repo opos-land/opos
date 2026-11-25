@@ -54,6 +54,10 @@ describe('errorMessage', () => {
       'To zostało już zaakceptowane w zamówieniu, więc nie można tego usunąć. Zamiast usuwać, ukryj to: zniknie ze sklepu, a w zamówieniach pozostanie.',
     ],
     [
+      'consent.accepted',
+      'Ta zgoda została już zaakceptowana w zamówieniu, więc jej zdania nie można zmienić. Ukryj ją i dodaj nową zgodę z nowym zdaniem.',
+    ],
+    [
       'shop.payments-under-way',
       'Płatność za zamówienie w tym konwencie może jeszcze zostać potwierdzona na tym koncie: zamówienie oczekuje na płatność albo wygasło w ciągu ostatnich 24 godzin, a płatność za nie została rozpoczęta. Do tego czasu możesz tylko poprawić dane dostępowe tego samego konta.',
     ],

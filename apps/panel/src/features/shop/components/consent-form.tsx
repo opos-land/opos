@@ -22,6 +22,7 @@ export function ConsentForm({
   onSubmit,
   onCancel,
   linksDocument = true,
+  sentenceFixed = false,
 }: {
   initial: ConsentFields
   documents: EditionDocument[]
@@ -31,6 +32,8 @@ export function ConsentForm({
   onCancel?: () => void
   /** A consent that exists links its document for good: only a new one chooses it. */
   linksDocument?: boolean
+  /** A consent an order accepted keeps its sentence: the orders show it as their buyers saw it. */
+  sentenceFixed?: boolean
 }) {
   const { t } = useLingui()
   const [text, setText] = useState(initial.text)
@@ -49,13 +52,18 @@ export function ConsentForm({
     >
       <FormField
         label={t`Sentence the buyer accepts`}
-        hint={t`Shown at the checkout beside a checkbox, in your own words, up to 1000 characters.`}
+        hint={
+          sentenceFixed
+            ? t`An order has already accepted this consent, so its sentence cannot be changed. To ask for another sentence, hide this consent in the list of consents and add a new one.`
+            : t`Shown at the checkout beside a checkbox, in your own words, up to 1000 characters.`
+        }
       >
         {(control) => (
           <Textarea
             {...control}
             rows={3}
             maxLength={1000}
+            readOnly={sentenceFixed}
             value={text}
             onChange={(event) => setText(event.target.value)}
           />

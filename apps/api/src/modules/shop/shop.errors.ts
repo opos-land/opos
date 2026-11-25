@@ -60,3 +60,10 @@ export const tooManyConsents = () =>
   new ApiError(409, 'consent.too-many', 'The edition holds the most consents it can', {
     limit: MAX_EDITION_CONSENTS,
   })
+
+/**
+ * The sentence of a consent an order accepted stays as that order's buyer saw it: another
+ * sentence is a new consent. Not the refusal of a deletion, which is `consent.in-use`.
+ */
+export const consentAccepted = () =>
+  new ApiError(409, 'consent.accepted', 'An order accepted the consent: its sentence stays')

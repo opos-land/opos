@@ -407,6 +407,77 @@ describe('what else an order keeps in place', () => {
     await c.as('delete', `/consents/${free}`).expect(204)
   })
 
+  // An order shows the sentence its buyer accepted: once one has, the sentence stays, and
+  // another one is a new consent.
+  it('keeps the sentence of the consent it accepted: hidden, moved or made optional, never reworded', async () => {
+    const c = await convention()
+    const terms = await addConsent(c.t.id, c.edition, { text: 'I accept the terms' })
+    const free = await addConsent(c.t.id, c.edition, { text: 'News', isRequired: false })
+    const order = await addOrder(c.t.id, c.edition)
+    await openTransaction().then(async ({ sql, commit }) => {
+      await sql`
+        insert into order_consents (tenant_id, edition_id, order_id, consent_id)
+        values (${c.t.id}, ${c.edition}, ${order.id}, ${terms})
+      `
+      await commit()
+    })
+    const list = async () =>
+      (await c.as('get', '/consents').expect(200)).body as Record<string, unknown>[]
+    const before = await list()
+    // An org is told which consents an order accepted before it tries.
+    expect(before).toMatchObject([
+      { id: terms, accepted: true },
+      { id: free, accepted: false },
+    ])
+
+    for (const body of [
+      { text: 'Send me offers of your partners' },
+      // Nothing of a refused change is kept.
+      { text: 'Send me offers of your partners', isRequired: false, hidden: true, position: 2 },
+    ]) {
+      const res = await c.as('patch', `/consents/${terms}`, body)
+      expect(res.status).toBe(409)
+      expect(res.body).toMatchObject({ code: 'consent.accepted' })
+    }
+    expect(await list()).toEqual(before)
+
+    // The same sentence sent again, as a form sends all its fields, changes nothing of it.
+    const kept = await c
+      .as('patch', `/consents/${terms}`, { text: 'I accept the terms', isRequired: false })
+      .expect(200)
+    expect(kept.body).toMatchObject({ text: 'I accept the terms', isRequired: false })
+    await c.as('patch', `/consents/${terms}`, { position: 2 }).expect(200)
+    const hidden = await c.as('patch', `/consents/${terms}`, { hidden: true }).expect(200)
+    expect(hidden.body).toMatchObject({ hidden: true, position: 2, accepted: true })
+    // A consent no order accepted is still reworded.
+    const reworded = await c.as('patch', `/consents/${free}`, { text: 'Other news' }).expect(200)
+    expect(reworded.body).toMatchObject({ text: 'Other news', accepted: false })
+  })
+
+  // Nothing is read first and written after: an order that accepts the consent while its
+  // sentence is being changed is waited for, and counts.
+  it('keeps the sentence of a consent an order is accepting at that moment', async () => {
+    const c = await convention()
+    const terms = await addConsent(c.t.id, c.edition, { text: 'I accept the terms' })
+    const order = await addOrder(c.t.id, c.edition)
+
+    const res = await whilePlacing(
+      // The order writes the consent it accepted, and has not committed.
+      (sql) => sql`
+        insert into order_consents (tenant_id, edition_id, order_id, consent_id)
+        values (${c.t.id}, ${c.edition}, ${order.id}, ${terms})
+      `,
+      () => c.as('patch', `/consents/${terms}`, { text: 'Send me offers of your partners' }),
+      () => Promise.resolve(),
+    )
+
+    expect(res.status).toBe(409)
+    expect(res.body).toMatchObject({ code: 'consent.accepted' })
+    expect(await storedRows('edition_consents', c.t.id)).toMatchObject([
+      { id: terms, text: 'I accept the terms' },
+    ])
+  })
+
   it('keeps its edition: an edition that has an order is not deleted', async () => {
     const c = await convention()
     await addOrder(c.t.id, c.edition)

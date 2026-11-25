@@ -497,6 +497,10 @@ msgstr "Gadżet może mieć najwyżej 100 wariantów. Odznacz część kombinacj
 msgid "An item without option axes has no size chart."
 msgstr "Gadżet bez osi nie ma tabeli rozmiarów."
 
+#: src/features/shop/components/consent-form.tsx
+msgid "An order has already accepted this consent, so its sentence cannot be changed. To ask for another sentence, hide this consent in the list of consents and add a new one."
+msgstr "Ta zgoda została już zaakceptowana w zamówieniu, więc jej zdania nie można zmienić. Jeśli sklep ma prosić o inne zdanie, ukryj tę zgodę na liście zgód i dodaj nową."
+
 #: src/features/orders/pages/orders-page.tsx
 msgid "An order’s number, a name, an email address or a QR code."
 msgstr "Numer zamówienia, imię i nazwisko, adres e-mail albo kod QR."

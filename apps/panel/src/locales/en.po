@@ -497,6 +497,10 @@ msgstr "An item holds at most 100 variants. Untick some of the combinations."
 msgid "An item without option axes has no size chart."
 msgstr "An item without option axes has no size chart."
 
+#: src/features/shop/components/consent-form.tsx
+msgid "An order has already accepted this consent, so its sentence cannot be changed. To ask for another sentence, hide this consent in the list of consents and add a new one."
+msgstr "An order has already accepted this consent, so its sentence cannot be changed. To ask for another sentence, hide this consent in the list of consents and add a new one."
+
 #: src/features/orders/pages/orders-page.tsx
 msgid "An order’s number, a name, an email address or a QR code."
 msgstr "An order’s number, a name, an email address or a QR code."

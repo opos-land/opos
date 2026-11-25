@@ -78,6 +78,7 @@ export const errorCodes = [
   'catalog.in-use',
   'catalog.below-held',
   'consent.in-use',
+  'consent.accepted',
   'shop.payments-under-way',
   'shop.closed',
   'order.unavailable',

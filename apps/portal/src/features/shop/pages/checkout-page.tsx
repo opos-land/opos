@@ -80,6 +80,12 @@ import { keepResultToken } from '../model/result-token'
 /** The cart of a checkout that holds nothing: never priced, it only shapes a query that is off. */
 const NO_CART: Cart = { ticket: null, addOnIds: [], items: [] }
 
+/** Whether the shop refused the placement key an order was sent with, saying nothing of why. */
+const keyRefused = (error: unknown) =>
+  error instanceof ORPCError &&
+  errorCode(error) === 'request.invalid' &&
+  (error.data as { field?: unknown } | undefined)?.field === 'placementKey'
+
 /** The ticket type the address asks for: an identifier, `none` for merchandise alone, or nothing. */
 const asked = (value: string | null) =>
   value === null ? undefined : value === 'none' ? null : value
@@ -256,12 +262,19 @@ function Checkout({
   /** The order this checkout placed, once it has. */
   const placedId = useRef<string | null>(null)
 
+  /**
+   * The shop refused the checkout's placement key twice over: the order is not placed, and the
+   * Summary says so until the buyer tries again.
+   */
+  const [unplaced, setUnplaced] = useState(false)
+
   const change = (changes: Partial<Draft>) =>
     setDraft((current) => (current ? { ...current, ...changes } : current))
 
-  // Kept in the tab on every change, so a reload resumes on the same step with the same data.
+  // Kept in the tab on every change, so a reload resumes on the same step with the same data. A
+  // checkout whose order is placed is over: a change still on its way then keeps nothing.
   useEffect(() => {
-    if (draft) saveDraft(tenantSlug, editionSlug, draft, accountId)
+    if (draft && placedId.current === null) saveDraft(tenantSlug, editionSlug, draft, accountId)
   }, [draft, tenantSlug, editionSlug, accountId])
 
   const step = draft?.step
@@ -288,12 +301,28 @@ function Checkout({
   const place = useMutation({
     mutationFn: async (order: { draft: Draft; totalMinor: number; withCode: boolean }) => {
       const at = { slug: tenantSlug, editionSlug, editionId }
-      const placed: PlacedOrder = await placeOrder(
-        at,
-        orderBody(order.draft, order.totalMinor, BOT_CHECK_STAND_IN, signedIn, order.withCode),
-        signedIn,
-      )
+      const send = (sent: Draft): Promise<PlacedOrder> =>
+        placeOrder(
+          at,
+          orderBody(sent, order.totalMinor, BOT_CHECK_STAND_IN, signedIn, order.withCode),
+          signedIn,
+        )
+      const placed = await send(order.draft).catch((error: unknown) => {
+        if (!keyRefused(error)) throw error
+        // The key placed an order this checkout is no longer answered with, as one that expired
+        // since. It is nothing the buyer entered or can correct: the same order is sent once
+        // more with a new key, and only that once. The checkout keeps the new key, unless it
+        // changed meanwhile and drew its own: the answer to this try may never arrive too.
+        const placementKey = newPlacementKey()
+        setDraft((current) =>
+          current?.placementKey === order.draft.placementKey
+            ? { ...current, placementKey }
+            : current,
+        )
+        return send({ ...order.draft, placementKey })
+      })
       // The order is placed: the checkout is over, and its result page opens with the token.
+      placedId.current = placed.orderId
       keepResultToken(placed.orderId, placed.resultToken)
       clearDraft(tenantSlug, editionSlug, order.draft.extending?.orderId)
       if (placed.status === 'paid') return { placed, redirectUrl: null }
@@ -309,7 +338,6 @@ function Checkout({
     // The page shows what came of it itself.
     meta: { success: false, failure: false },
     onSuccess: ({ placed, redirectUrl }) => {
-      placedId.current = placed.orderId
       if (redirectUrl) leaveTo(redirectUrl)
       else void navigate(`${shop}/result/${placed.orderId}`, { replace: true })
     },
@@ -321,10 +349,15 @@ function Checkout({
         id?: unknown
         totalMinor?: unknown
         consent?: unknown
-        field?: unknown
       }
       // What the shop offers changed: it is read again, and the buyer sees it as it is now.
       void queryClient.invalidateQueries({ queryKey: offerKey(tenantSlug, editionSlug) })
+      if (keyRefused(error)) {
+        // The second key in a row: nothing more is sent by itself. The Summary says that the
+        // order is not placed, and the buyer's own next try is sent with a new key.
+        change({ placementKey: newPlacementKey() })
+        return setUnplaced(true)
+      }
       if (code === 'order.unavailable' && named.kind === 'discount-code') {
         // The code was used up or ended since it was applied: asked again, the shop refuses
         // it, and the Summary says so beside the code.
@@ -345,12 +378,6 @@ function Checkout({
         return setNewTotal(named.totalMinor)
       }
       if (code === 'order.email-refused') change({ step: 'holder' })
-      if (code === 'request.invalid' && named.field === 'placementKey') {
-        // The key placed an order this checkout is no longer answered with, as when its email
-        // address or its total changed since: the next try is sent with a new key, and places
-        // the order as the Summary shows it.
-        change({ placementKey: newPlacementKey() })
-      }
       if (code === 'order.consent-changed' && typeof named.consent === 'string') {
         // The document of a consent changed since the buyer accepted it. The consent is
         // accepted no longer and says so on its step, the Summary, where the offer read again
@@ -500,6 +527,7 @@ function Checkout({
       // browser still leaves for the provider or for the result.
       if (placing) return
       setNewTotal(null)
+      setUnplaced(false)
       place.mutate({ draft, totalMinor, withCode: applied })
       return
     }
@@ -670,6 +698,11 @@ function Checkout({
               {nothingMore && tried.has('summary') && (
                 <p className="text-destructive" role="alert">
                   <Trans>Choose at least one add-on or item to order.</Trans>
+                </p>
+              )}
+              {unplaced && (
+                <p className="text-destructive" role="alert">
+                  <Trans>We could not place the order. Check the summary and try again.</Trans>
                 </p>
               )}
             </>

@@ -109,6 +109,9 @@ const type = (label: string | RegExp, value: string) =>
   fireEvent.change(screen.getByLabelText(label), { target: { value } })
 const press = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }))
 const stepHeading = (name: string) => screen.findByRole('heading', { name, level: 2 })
+/** The shop's refusal of the placement key an order was sent with. */
+const keyRefused = () =>
+  new ORPCError('request.invalid', { status: 400, data: { field: 'placementKey' } })
 /** The placement key of each order sent to the shop, in the order they were sent. */
 const sentKeys = () =>
   api.place.mock.calls.map((call) => (call[1] as { placementKey?: string }).placementKey)
@@ -550,14 +553,48 @@ describe('CheckoutPage', () => {
     expect(held?.placementKey).not.toBe(begun.placementKey)
   })
 
-  // A key the shop refuses answers no try of this checkout any more, as when the buyer changed
-  // the email address since the order it placed: the next try is sent with a new one.
-  it('draws another placement key once the shop refuses the one it sent', async () => {
-    const refused = new ORPCError('request.invalid', {
-      status: 400,
-      data: { field: 'placementKey' },
-    })
-    api.place.mockRejectedValueOnce(refused)
+  // A key the shop refuses answers no try of this checkout any more, as when the order it placed
+  // has expired since. The key is nothing the buyer entered or can correct: the checkout is sent
+  // once more with a new one, and the buyer is told nothing of it.
+  it('sends the checkout once more by itself, with another key, once the shop refuses its key', async () => {
+    api.place.mockRejectedValueOnce(keyRefused())
+    const begun = kept({ step: 'summary', consents: [termsAccepted], providerConsent: true })
+    saveDraft('convention-a', '2027', begun)
+    view()
+    await stepHeading('Summary')
+
+    press('Order and pay')
+    await waitFor(() => expect(api.leave).toHaveBeenCalledWith('https://provider.test/pay/1'))
+
+    expect(api.place).toHaveBeenCalledTimes(2)
+    const [first, second] = sentKeys()
+    expect(first).toBe(begun.placementKey)
+    expect(second).toMatch(/^[0-9a-f-]{36}$/)
+    expect(second).not.toBe(first)
+    // The same order, as the Summary shows it.
+    const [sent, again] = api.place.mock.calls.map((call) => ({
+      ...(call[1] as object),
+      placementKey: null,
+    }))
+    expect(again).toEqual(sent)
+    expect(api.notify).not.toHaveBeenCalled()
+    // The order is placed: the checkout is forgotten, with the key it was placed with.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)))
+    expect(loadDraft('convention-a', '2027')).toBeNull()
+  })
+
+  // The second try is a try like any other: its answer may never arrive too. The checkout keeps
+  // the key it was sent with, so the buyer's next try is answered with the order it placed.
+  it('keeps the button off during the second try, and the key it was sent with after it', async () => {
+    const lost = new TypeError('Failed to fetch')
+    let lose = () => {}
+    api.place.mockRejectedValueOnce(keyRefused())
+    api.place.mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          lose = () => reject(lost)
+        }),
+    )
     saveDraft(
       'convention-a',
       '2027',
@@ -565,18 +602,54 @@ describe('CheckoutPage', () => {
     )
     view()
     await stepHeading('Summary')
+    const order = screen.getByRole<HTMLButtonElement>('button', { name: 'Order and pay' })
 
     press('Order and pay')
-    await waitFor(() => expect(api.notify).toHaveBeenCalledWith(refused))
-    expect(screen.getByRole('heading', { name: 'Summary', level: 2 })).toBeDefined()
+    await waitFor(() => expect(api.place).toHaveBeenCalledTimes(2))
+    expect(order.disabled).toBe(true)
+    expect(api.notify).not.toHaveBeenCalled()
+    await waitFor(() => expect(loadDraft('convention-a', '2027')?.placementKey).toBe(sentKeys()[1]))
+
+    lose()
+    await waitFor(() => expect(api.notify).toHaveBeenCalledWith(lost))
+    expect(api.notify).toHaveBeenCalledTimes(1)
+    expect(order.disabled).toBe(false)
     press('Order and pay')
     await waitFor(() => expect(api.leave).toHaveBeenCalled())
 
-    const [first, second] = api.place.mock.calls.map(
-      (call) => (call[1] as { placementKey?: string }).placementKey,
+    expect(api.place).toHaveBeenCalledTimes(3)
+    expect(sentKeys()[2]).toBe(sentKeys()[1])
+  })
+
+  // Once more, never on and on: a second refusal of the key is told in words the buyer can act
+  // on, not as data they entered wrong.
+  it('tells the buyer the order could not be placed once the shop refuses the second key too', async () => {
+    api.place.mockRejectedValueOnce(keyRefused()).mockRejectedValueOnce(keyRefused())
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({ step: 'summary', consents: [termsAccepted], providerConsent: true }),
     )
-    expect(second).toMatch(/^[0-9a-f-]{36}$/)
-    expect(second).not.toBe(first)
+    view()
+    await stepHeading('Summary')
+    const told = 'We could not place the order. Check the summary and try again.'
+
+    press('Order and pay')
+    expect((await screen.findByText(told)).getAttribute('role')).toBe('alert')
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)))
+
+    expect(api.place).toHaveBeenCalledTimes(2)
+    expect(api.notify).not.toHaveBeenCalled()
+    expect(screen.getByRole('heading', { name: 'Summary', level: 2 })).toBeDefined()
+    const order = screen.getByRole<HTMLButtonElement>('button', { name: 'Order and pay' })
+    expect(order.disabled).toBe(false)
+
+    // The buyer's own next try is sent with a key the shop has not refused.
+    press('Order and pay')
+    await waitFor(() => expect(api.leave).toHaveBeenCalled())
+    expect(screen.queryByText(told)).toBeNull()
+    expect(api.place).toHaveBeenCalledTimes(3)
+    expect(new Set(sentKeys()).size).toBe(3)
   })
 
   // Back from the provider's page, a browser may show the checkout again out of its memory, as

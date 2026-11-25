@@ -1648,6 +1648,10 @@ msgstr "Nie możemy tu pokazać tego zamówienia. Ta strona otwiera się w przeg
 msgid "We could not find what you are looking for."
 msgstr "Nie znaleźliśmy tego, czego szukasz."
 
+#: src/features/shop/pages/checkout-page.tsx
+msgid "We could not place the order. Check the summary and try again."
+msgstr "Nie udało się złożyć zamówienia. Sprawdź podsumowanie i spróbuj ponownie."
+
 #: src/features/auth/pages/confirm-page.tsx
 msgid "We could not sign you in"
 msgstr "Nie udało się zalogować"

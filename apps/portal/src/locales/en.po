@@ -1648,6 +1648,10 @@ msgstr "We cannot show this order here. The page opens in the browser the order 
 msgid "We could not find what you are looking for."
 msgstr "We could not find what you are looking for."
 
+#: src/features/shop/pages/checkout-page.tsx
+msgid "We could not place the order. Check the summary and try again."
+msgstr "We could not place the order. Check the summary and try again."
+
 #: src/features/auth/pages/confirm-page.tsx
 msgid "We could not sign you in"
 msgstr "We could not sign you in"

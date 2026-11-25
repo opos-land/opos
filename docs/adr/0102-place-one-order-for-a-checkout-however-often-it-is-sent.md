@@ -51,8 +51,12 @@ A checkout places one order, however often it is sent.
 - A key is refused as an invalid field of the request, with nothing told of its order, where the
   answer of a placed order would not be true of it: the order is under another email address,
   the checkout comes to another total than the order was placed at, or the order neither awaits
-  payment nor is paid any more. The portal then draws a new key for the checkout, and the next
-  try places it as the Summary shows it.
+  payment nor is paid any more.
+- The portal answers a refused key by itself: it draws a new key and sends the checkout once
+  more, as the Summary shows it, and tells the buyer nothing. The key is nothing the buyer
+  entered or can correct, so the refusal is never shown as data to check. It does so once and
+  no more: where the second key is refused too, the Summary says that the order could not be
+  placed, and the buyer's own next try is sent with a new key.
 - Tries sent at the same moment place one order. The key is looked up under a lock of the key in
   the edition, the first lock a placing takes: the other tries wait there, and then answer as a
   try sent later does. The unique index is the database's own guarantee of it.
@@ -113,9 +117,10 @@ A checkout places one order, however often it is sent.
   checkout: it is answered with the order the first tab placed and with a new result token, so
   the token the first tab holds stops opening the order.
 - A try sent again once its order expired, was canceled or declined, or needs review is refused
-  once. The buyer presses again and places a new order.
+  once. The portal sends it once more with a new key, and it places a new order with no second
+  press.
 - A repeated try passes the bot check and counts against the rate limit of placing orders as any
-  try does. One that names a discount code, from an address out of tries of a code, is refused
+  try does, and so does the try the portal sends by itself after a refused key. One that names a discount code, from an address out of tries of a code, is refused
   before its key is looked at.
 - A manual order carries no key.
 

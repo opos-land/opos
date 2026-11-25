@@ -95,6 +95,7 @@ export const errorMessages: Record<string, MessageDescriptor> = {
   'scanner.outlives-org': msg`A scanner cannot work longer than your access to the convention. Set an earlier end, or ask an organizer whose access lasts longer.`,
   'scanner.code-refused': msg`This pairing code does not work: it was already used or it expired. Ask an organizer for a new one.`,
   'scanner.revoked': msg`This scanner no longer works: its access was revoked or expired. Pair the phone again.`,
+  'scanner.stopped': msg`This scanner is stopped for now: the organizer who enabled it cannot manage tickets at the moment. Ask an organizer to restore that access, then try again.`,
   'scanner.ended': msg`This scanner was revoked or its access has ended, so it gets no new pairing code. Enable a new scanner.`,
   'bot-check.failed': msg`We could not confirm that you are not a robot. Try again.`,
   'speaker.account-not-found': msg`No confirmed account uses the email address {email}. Ask the speaker to create an account if they have none yet, and to confirm this address.`,

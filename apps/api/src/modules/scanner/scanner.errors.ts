@@ -22,11 +22,20 @@ export const pairingCodeRefused = () =>
   new ApiError(403, 'scanner.code-refused', 'The pairing code is refused')
 
 /**
- * The caller is no scanner that stands: no token, an unknown one, or one of a device that was
- * revoked, has ended, or whose org has. One answer for all, which tells nothing of a token.
+ * The caller is no scanner that stands, and nothing it holds will make it one: no token, an
+ * unknown one, or one of a device that was revoked, has ended, was given a new pairing code, or
+ * whose org left the team. One answer for all, which tells nothing of a token.
  */
 export const scannerRevoked = () =>
   new ApiError(401, 'scanner.revoked', 'The scanner has no access')
+
+/**
+ * The scanner and the token it was asked by stand, and the org who enabled it is in the team
+ * but cannot write the tickets of its edition at this moment: their access has ended or their
+ * permission was lowered. The same token works again once the org can, so the phone keeps it.
+ */
+export const scannerStopped = () =>
+  new ApiError(403, 'scanner.stopped', 'The org who enabled the scanner has no access now')
 
 /** The QR code opens nothing here: "Not valid", with the reason (S3). */
 export const scanNotValid = (reason: ScanRefusal) =>

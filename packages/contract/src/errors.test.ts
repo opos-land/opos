@@ -85,6 +85,7 @@ describe('errorCodes', () => {
     'scanner.outlives-org',
     'scanner.code-refused',
     'scanner.revoked',
+    'scanner.stopped',
     'scanner.ended',
     'scan.not-valid',
   ])('lists %s of the scanner', (code) => {

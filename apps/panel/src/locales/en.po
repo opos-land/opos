@@ -175,6 +175,10 @@ msgstr "A scanner is a phone that reads buyers’ QR codes at the gate and at th
 msgid "A size chart belongs to a value, such as a cut. Give charts to the values of one axis: the shop shows the chart of the value a buyer chose."
 msgstr "A size chart belongs to a value, such as a cut. Give charts to the values of one axis: the shop shows the chart of the value a buyer chose."
 
+#: src/features/scanner/pages/edition-scanner-page.tsx
+msgid "A stopped scanner gets no new pairing code."
+msgstr "A stopped scanner gets no new pairing code."
+
 #: src/features/scanner/model/labels.ts
 msgid "A teen enters only with the guardian’s consent on paper."
 msgstr "A teen enters only with the guardian’s consent on paper."
@@ -3224,6 +3228,14 @@ msgstr "Status"
 msgid "Stock"
 msgstr "Stock"
 
+#: src/features/scanner/components/scanner-state.ts
+msgid "Stopped: its organizer cannot manage tickets now"
+msgstr "Stopped: its organizer cannot manage tickets now"
+
+#: src/features/scanner/components/scanner-state.ts
+msgid "Stopped: its organizer left the team"
+msgstr "Stopped: its organizer left the team"
+
 #: src/features/orders/pages/email-page.tsx
 msgid "Subject"
 msgstr "Subject"
@@ -4074,6 +4086,10 @@ msgstr "This order needs review"
 msgid "This phone is no scanner yet. Open the pairing link an organizer shows you in the panel, or read its QR code with the camera."
 msgstr "This phone is no scanner yet. Open the pairing link an organizer shows you in the panel, or read its QR code with the camera."
 
+#: src/features/scanner/pages/scanner-page.tsx
+msgid "This phone stays the scanner: it does not have to be paired again."
+msgstr "This phone stays the scanner: it does not have to be paired again."
+
 #: src/features/shop/components/provider-account-section.tsx
 msgid "This provider answers only calls from the IP addresses entered in its panel. Ask the OPOS administrators for the address to enter there before you connect the account."
 msgstr "This provider answers only calls from the IP addresses entered in its panel. Ask the OPOS administrators for the address to enter there before you connect the account."
@@ -4085,6 +4101,14 @@ msgstr "This provider answers only calls from the IP addresses entered in its pa
 #: src/features/scanner/pages/scanner-page.tsx
 msgid "This scanner no longer works: its access was revoked or has ended. Ask an organizer to pair this phone again."
 msgstr "This scanner no longer works: its access was revoked or has ended. Ask an organizer to pair this phone again."
+
+#: src/features/scanner/pages/edition-scanner-page.tsx
+msgid "This scanner reads and marks nothing for now: the organizer who enabled it cannot manage the tickets of this edition at the moment, because their access has ended or their tickets permission was lowered. The scanner works again, on the phone that holds it, as soon as that organizer can."
+msgstr "This scanner reads and marks nothing for now: the organizer who enabled it cannot manage the tickets of this edition at the moment, because their access has ended or their tickets permission was lowered. The scanner works again, on the phone that holds it, as soon as that organizer can."
+
+#: src/features/scanner/pages/edition-scanner-page.tsx
+msgid "This scanner reads and marks nothing, for good: the organizer who enabled it left the team. Revoke it and enable a new scanner."
+msgstr "This scanner reads and marks nothing, for good: the organizer who enabled it left the team. Revoke it and enable a new scanner."
 
 #: src/features/scanner/pages/edition-scanner-page.tsx
 msgid "This scanner was revoked or its access has ended: it gets no new pairing code. Enable a new scanner instead."
@@ -4222,6 +4246,7 @@ msgid "Transaction number"
 msgstr "Transaction number"
 
 #: src/features/auth/components/accept-invitation.tsx
+#: src/features/scanner/pages/scanner-page.tsx
 #: src/shared/ui/messages.tsx
 msgid "Try again"
 msgstr "Try again"

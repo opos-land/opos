@@ -118,6 +118,10 @@ describe('errorMessage', () => {
       'Ten skaner już nie działa: jego dostęp został cofnięty albo wygasł. Sparuj telefon ponownie.',
     ],
     [
+      'scanner.stopped',
+      'Ten skaner jest chwilowo zatrzymany: organizator, który go włączył, nie może teraz zarządzać biletami. Poproś organizatora o przywrócenie tego dostępu i spróbuj ponownie.',
+    ],
+    [
       'production.before-deadline',
       'Liczby do produkcji będą gotowe po upływie terminu przedsprzedaży.',
     ],

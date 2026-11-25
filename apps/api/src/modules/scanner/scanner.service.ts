@@ -23,6 +23,7 @@ import {
   scannerNameTaken,
   scannerOutlivesOrg,
   scannerRevoked,
+  scannerStopped,
 } from './scanner.errors'
 import { ScannersRepository, type StandingScanner } from './scanners.repository'
 import { ScansRepository } from './scans.repository'
@@ -139,7 +140,10 @@ export class ScannerService {
       const scanner = await this.scanners.standing(found.tenantId, found.id, now, {
         pairingCodeHash,
       })
-      if (!scanner || scanner.pairingExpiresAt <= now) throw pairingCodeRefused()
+      // A scanner its org stops pairs no phone: its code is refused like any that does not work.
+      if (!scanner || scanner.stopped || scanner.pairingExpiresAt <= now) {
+        throw pairingCodeRefused()
+      }
       const names = await this.scanners.names(found.tenantId, scanner.editionId)
       if (!names) throw pairingCodeRefused()
       const token = secretToken()
@@ -214,8 +218,11 @@ export class ScannerService {
   /**
    * Runs `fn` as the scanner the request's token named, in its tenant's transaction. The
    * device's access is judged here at every request: that it still holds the token the request
-   * came with, was not revoked and has not ended, and the org who enabled it, whose expiry and
-   * removal end it. A suspended tenant is refused
+   * came with, was not revoked and has not ended, and the org who enabled it. An org who left
+   * the team ends it like a revocation; one whose access has ended or who no longer writes the
+   * tickets of its edition stops it for as long as that lasts, which is told apart so that the
+   * phone keeps its token (docs/ARCHITECTURE.md, Modules waiting for their domain owner). A
+   * suspended tenant is refused
    * where its transaction opens. The request was counted against the scanner where its token
    * named it, in ScannerGuard.
    */
@@ -229,6 +236,7 @@ export class ScannerService {
         tokenHash: found.tokenHash,
       })
       if (!scanner) throw scannerRevoked()
+      if (scanner.stopped) throw scannerStopped()
       await this.scanners.touch(found.tenantId, scanner.id, now)
       return fn(scanner)
     })

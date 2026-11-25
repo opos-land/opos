@@ -175,6 +175,10 @@ msgstr "Skaner to telefon, który odczytuje kody QR kupujących przy wejściu i 
 msgid "A size chart belongs to a value, such as a cut. Give charts to the values of one axis: the shop shows the chart of the value a buyer chose."
 msgstr "Tabela rozmiarów należy do wartości, na przykład do kroju. Dodaj tabele do wartości jednej osi: sklep pokazuje tabelę tej wartości, którą wybrał kupujący."
 
+#: src/features/scanner/pages/edition-scanner-page.tsx
+msgid "A stopped scanner gets no new pairing code."
+msgstr "Zatrzymany skaner nie dostaje nowego kodu parowania."
+
 #: src/features/scanner/model/labels.ts
 msgid "A teen enters only with the guardian’s consent on paper."
 msgstr "Nastolatek wchodzi tylko ze zgodą opiekuna na papierze."
@@ -3224,6 +3228,14 @@ msgstr "Status"
 msgid "Stock"
 msgstr "Stan magazynowy"
 
+#: src/features/scanner/components/scanner-state.ts
+msgid "Stopped: its organizer cannot manage tickets now"
+msgstr "Zatrzymany: jego organizator nie może teraz zarządzać biletami"
+
+#: src/features/scanner/components/scanner-state.ts
+msgid "Stopped: its organizer left the team"
+msgstr "Zatrzymany: jego organizator odszedł z zespołu"
+
 #: src/features/orders/pages/email-page.tsx
 msgid "Subject"
 msgstr "Temat"
@@ -4074,6 +4086,10 @@ msgstr "To zamówienie jest do wyjaśnienia"
 msgid "This phone is no scanner yet. Open the pairing link an organizer shows you in the panel, or read its QR code with the camera."
 msgstr "Ten telefon nie jest jeszcze skanerem. Otwórz link parowania, który organizator pokaże ci w panelu, albo odczytaj aparatem jego kod QR."
 
+#: src/features/scanner/pages/scanner-page.tsx
+msgid "This phone stays the scanner: it does not have to be paired again."
+msgstr "Ten telefon pozostaje skanerem: nie trzeba go parować ponownie."
+
 #: src/features/shop/components/provider-account-section.tsx
 msgid "This provider answers only calls from the IP addresses entered in its panel. Ask the OPOS administrators for the address to enter there before you connect the account."
 msgstr "Ten dostawca odpowiada tylko na wywołania z adresów IP wpisanych w jego panelu. Zanim podłączysz konto, zapytaj administratorów OPOS o adres, który trzeba tam wpisać."
@@ -4085,6 +4101,14 @@ msgstr "Ten dostawca odpowiada tylko na wywołania z adresów IP wpisanych w jeg
 #: src/features/scanner/pages/scanner-page.tsx
 msgid "This scanner no longer works: its access was revoked or has ended. Ask an organizer to pair this phone again."
 msgstr "Ten skaner już nie działa: jego dostęp został cofnięty albo wygasł. Poproś organizatora o ponowne sparowanie tego telefonu."
+
+#: src/features/scanner/pages/edition-scanner-page.tsx
+msgid "This scanner reads and marks nothing for now: the organizer who enabled it cannot manage the tickets of this edition at the moment, because their access has ended or their tickets permission was lowered. The scanner works again, on the phone that holds it, as soon as that organizer can."
+msgstr "Ten skaner na razie niczego nie odczyta ani nie oznaczy: organizator, który go włączył, nie może w tej chwili zarządzać biletami tej edycji, bo jego dostęp wygasł albo obniżono mu uprawnienie do biletów. Skaner zacznie znowu działać, na telefonie, który jest teraz skanerem, gdy tylko ten organizator odzyska dostęp."
+
+#: src/features/scanner/pages/edition-scanner-page.tsx
+msgid "This scanner reads and marks nothing, for good: the organizer who enabled it left the team. Revoke it and enable a new scanner."
+msgstr "Ten skaner już niczego nie odczyta ani nie oznaczy: organizator, który go włączył, odszedł z zespołu. Cofnij dostęp tego skanera i włącz nowy."
 
 #: src/features/scanner/pages/edition-scanner-page.tsx
 msgid "This scanner was revoked or its access has ended: it gets no new pairing code. Enable a new scanner instead."
@@ -4222,6 +4246,7 @@ msgid "Transaction number"
 msgstr "Numer transakcji"
 
 #: src/features/auth/components/accept-invitation.tsx
+#: src/features/scanner/pages/scanner-page.tsx
 #: src/shared/ui/messages.tsx
 msgid "Try again"
 msgstr "Spróbuj ponownie"

@@ -113,6 +113,25 @@ function About({ scanner, at }: { scanner: ScannerDetail; at: number }) {
   const stateOf = useScannerState()
   return (
     <Section title={<Trans>Scanner</Trans>}>
+      {/* Why a scanner that is neither revoked nor ended reads nothing, for a reader too. */}
+      {stands(scanner, at) && scanner.orgStanding === 'stopped' && (
+        <p role="note" className="max-w-2xl text-sm">
+          <Trans>
+            This scanner reads and marks nothing for now: the organizer who enabled it cannot manage
+            the tickets of this edition at the moment, because their access has ended or their
+            tickets permission was lowered. The scanner works again, on the phone that holds it, as
+            soon as that organizer can.
+          </Trans>
+        </p>
+      )}
+      {stands(scanner, at) && scanner.orgStanding === 'left' && (
+        <p role="note" className="max-w-2xl text-sm">
+          <Trans>
+            This scanner reads and marks nothing, for good: the organizer who enabled it left the
+            team. Revoke it and enable a new scanner.
+          </Trans>
+        </p>
+      )}
       <Facts
         caption={<Trans>The scanner</Trans>}
         rows={[
@@ -275,7 +294,12 @@ function Changes({
           </Trans>
         </p>
         <div>
-          {scanner.paired ? (
+          {scanner.orgStanding !== 'writes' ? (
+            // A code would pair no phone while the organizer behind the scanner stops it.
+            <p className="max-w-2xl text-sm">
+              <Trans>A stopped scanner gets no new pairing code.</Trans>
+            </p>
+          ) : scanner.paired ? (
             <IrreversibleAction
               label={<Trans>New pairing code</Trans>}
               title={<Trans>Pair another phone with {name}?</Trans>}

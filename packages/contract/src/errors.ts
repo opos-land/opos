@@ -105,6 +105,7 @@ export const errorCodes = [
   'scanner.outlives-org',
   'scanner.code-refused',
   'scanner.revoked',
+  'scanner.stopped',
   'scanner.ended',
   'bot-check.failed',
 ] as const

@@ -1260,6 +1260,10 @@ msgid "This request cannot be made from this address. Reload the page and try ag
 msgstr "Tego żądania nie można wykonać z tego adresu. Odśwież stronę i spróbuj ponownie."
 
 #: src/errors.ts
+msgid "This scanner is stopped for now: the organizer who enabled it cannot manage tickets at the moment. Ask an organizer to restore that access, then try again."
+msgstr "Ten skaner jest chwilowo zatrzymany: organizator, który go włączył, nie może teraz zarządzać biletami. Poproś organizatora o przywrócenie tego dostępu i spróbuj ponownie."
+
+#: src/errors.ts
 msgid "This scanner no longer works: its access was revoked or expired. Pair the phone again."
 msgstr "Ten skaner już nie działa: jego dostęp został cofnięty albo wygasł. Sparuj telefon ponownie."
 

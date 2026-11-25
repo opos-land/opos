@@ -821,7 +821,14 @@ steps of [adding a feature](#adding-a-feature).
   token alone ([0059](adr/0059-pair-a-scanner-with-a-code-and-know-it-by-a-token.md)). A guard
   names the scanner before anything of a request is read, and the device is judged at every
   request in its tenant's transaction: revoked, ended, or enabled by an org whose access has
-  ended or who no longer writes the tickets of its edition, it opens nothing. It is judged there by the secret the phone sent, the token or the
+  ended or who no longer writes the tickets of its edition, it opens nothing. A refusal that
+  lasts and one that passes are told apart: a scanner that was revoked, has ended, was given a
+  new pairing code or whose org left the team answers as a caller with no token does, and the
+  phone forgets it; one whose org is in the team and cannot write the tickets of its edition at
+  that moment answers that it is stopped, under an error code of its own, and the phone keeps
+  its token, which works again once the org can
+  ([0096](adr/0096-pair-the-phone-that-opens-a-pairing-link-and-forget-a-scanner-only-on-a-lasting-refusal.md)).
+  It is judged there by the secret the phone sent, the token or the
   pairing code, which the scanner must still hold: a new pairing code replaces both, and the hash
   that found the scanner across tenants was read a moment before. The guard counts every request
   of a scanner's route: against the scanner its token names, under the limit of the route and
@@ -832,7 +839,8 @@ steps of [adding a feature](#adding-a-feature).
   carries, and no email address; a code of another edition is told as such, and nothing of its
   order is read. A hand-out is marked only under the code the scanner read, and names the
   scanner. The list of an edition's scanners tells who enabled each by an address only to a
-  member who may read the team; another org is told its own address alone. QR codes are drawn and read in the browser, and a camera frame never leaves the phone
+  member who may read the team; another org is told its own address alone, and of any scanner
+  whether the org who enabled it writes the tickets, is stopped or has left. QR codes are drawn and read in the browser, and a camera frame never leaves the phone
   ([0060](adr/0060-read-and-draw-qr-codes-in-the-panels-browser.md)).
 
 ## Adding a feature

@@ -46,6 +46,7 @@ const scanner = (name: string, fields: object = {}) => ({
   lastUsedAt: '2026-06-05T09:00:00.000Z',
   expiresAt: '2099-06-08T16:00:00.000Z',
   revokedAt: null,
+  orgStanding: 'writes',
   ...fields,
 })
 
@@ -109,6 +110,30 @@ describe('the scanners page', () => {
     // No address: an org who left the team, or one this member may not be told of.
     expect(within(rows[2]!).getByText('Another organizer')).toBeDefined()
     expect(within(rows[3]!).getByText('Revoked')).toBeDefined()
+  })
+
+  // A scanner opens nothing while the organizer who enabled it cannot manage the tickets: the
+  // list tells that apart from a scanner that works, and says why.
+  it('tells a scanner its organizer stops apart from one that works, with the reason', async () => {
+    readScanners.mockResolvedValue([
+      scanner('Main gate'),
+      scanner('Side gate', { orgStanding: 'stopped' }),
+      scanner('Desk', { orgStanding: 'left', enabledBy: null }),
+      // Revoked or ended, a scanner is told as that alone.
+      scanner('Old gate', { orgStanding: 'left', revokedAt: '2026-06-05T12:00:00.000Z' }),
+      scanner('Last year', { orgStanding: 'stopped', expiresAt: '2020-01-01T00:00:00.000Z' }),
+    ])
+
+    view()
+
+    const rows = await screen.findAllByRole('row')
+    expect(within(rows[1]!).getByText('Paired with a phone')).toBeDefined()
+    expect(
+      within(rows[2]!).getByText('Stopped: its organizer cannot manage tickets now'),
+    ).toBeDefined()
+    expect(within(rows[3]!).getByText('Stopped: its organizer left the team')).toBeDefined()
+    expect(within(rows[4]!).getByText('Revoked')).toBeDefined()
+    expect(within(rows[5]!).getByText('Ended')).toBeDefined()
   })
 
   it('opens the page of a scanner from its row, for a reader too, and revokes none in the list', async () => {

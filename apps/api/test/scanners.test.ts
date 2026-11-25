@@ -224,6 +224,40 @@ describe('the scanners of an edition', () => {
     ])
     expect(list(res)[2]!.revokedAt).not.toBeNull()
   })
+
+  // A scanner opens nothing while the org who enabled it cannot write the tickets of its
+  // edition: the list says so of each, and tells an org who may come back from one who left.
+  it('are told with how the org who enabled each stands', async () => {
+    const c = await convention()
+    const [writer, reader, expired] = [await member(), await member(), await member()]
+    const writerId = await addOrg(c.t.id, writer)
+    await addEditionAccess(c.t.id, writerId, c.edition, { tickets: 'write' })
+    const readerId = await addOrg(c.t.id, reader)
+    await addEditionAccess(c.t.id, readerId, c.edition, { tickets: 'read' })
+    const expiredId = await addOrg(c.t.id, expired, { expiresAt: new Date(Date.now() - DAY) })
+    await addEditionAccess(c.t.id, expiredId, c.edition, { tickets: 'write' })
+    await addScanner(c.t.id, c.edition, { name: 'A of the head' })
+    await addScanner(c.t.id, c.edition, { name: 'B of a writer', membershipId: writerId })
+    const lowered = await addScanner(c.t.id, c.edition, {
+      name: 'C of a reader',
+      membershipId: readerId,
+    })
+    await addScanner(c.t.id, c.edition, { name: 'D of an expired', membershipId: expiredId })
+    await addScanner(c.t.id, c.edition, { name: 'E of nobody', membershipId: null })
+
+    const res = await c.head('get').expect(200)
+
+    expect(list(res).map((scanner) => [scanner.name, scanner.orgStanding])).toEqual([
+      ['A of the head', 'writes'],
+      ['B of a writer', 'writes'],
+      ['C of a reader', 'stopped'],
+      ['D of an expired', 'stopped'],
+      ['E of nobody', 'left'],
+    ])
+    // The scanner's own page tells the same, to an org who reads the tickets alone too.
+    const page = await c.as(reader, 'get', `/${lowered.id}`).expect(200)
+    expect(page.body).toMatchObject({ orgStanding: 'stopped', enabledBy: reader.email })
+  })
 })
 
 describe('revoking a scanner', () => {

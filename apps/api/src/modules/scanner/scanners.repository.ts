@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common'
-import { MAX_LISTED_HAND_OUTS, type Scanner, type ScannerDetail } from '@opos/contract'
+import {
+  MAX_LISTED_HAND_OUTS,
+  type Scanner,
+  type ScannerDetail,
+  type ScannerOrgStanding,
+} from '@opos/contract'
 import {
   accounts,
   editionMemberships,
@@ -84,18 +89,28 @@ const orgStands = (now: Date) =>
 export class ScannersRepository {
   constructor(private readonly context: TenantContextService) {}
 
-  private listed() {
+  /**
+   * A scanner as the panel reads it at `now`, with how the org who enabled it then stands: one
+   * who left the team left the scanner no membership.
+   */
+  private listed(now: Date) {
     return this.context
       .tx()
-      .select(columns)
+      .select({
+        ...columns,
+        orgStanding: sql<ScannerOrgStanding>`case
+          when ${tenantMemberships.id} is null then 'left'
+          when ${orgStands(now)} then 'writes'
+          else 'stopped' end`,
+      })
       .from(scannerDevices)
       .leftJoin(tenantMemberships, eq(tenantMemberships.id, scannerDevices.enabledByMembershipId))
       .leftJoin(accounts, eq(accounts.id, tenantMemberships.accountId))
   }
 
   /** The edition's scanners: those that are not revoked first, each group by name. */
-  async list(editionId: string): Promise<Scanner[]> {
-    const rows = await this.listed()
+  async list(editionId: string, now = new Date()): Promise<Scanner[]> {
+    const rows = await this.listed(now)
       .where(eq(scannerDevices.editionId, editionId))
       .orderBy(
         sql`(${scannerDevices.revokedAt} is not null)`,
@@ -106,9 +121,9 @@ export class ScannersRepository {
   }
 
   /** The scanner of the edition, or 404. */
-  async get(editionId: string, id: string): Promise<Scanner> {
+  async get(editionId: string, id: string, now = new Date()): Promise<Scanner> {
     if (!isUuid(id)) throw notFound('scanner')
-    const [row] = await this.listed().where(
+    const [row] = await this.listed(now).where(
       and(eq(scannerDevices.editionId, editionId), eq(scannerDevices.id, id)),
     )
     if (!row) throw notFound('scanner')
@@ -266,7 +281,9 @@ export class ScannersRepository {
 
   /**
    * The scanner of the tenant when it stands at `now`: not revoked, not ended, and enabled by an
-   * org who is still in the team with an access that has not ended. It is asked for by the hash
+   * org who is still in the team. Whether that org then writes the tickets of its edition is
+   * answered beside it, as `stopped` when they do not: a state that passes, which the caller
+   * tells apart from a scanner that stands no more. It is asked for by the hash
    * of the secret the phone sent, which the scanner must hold at this moment: the token of a
    * paired one, or the pairing code of one still waiting for its phone, its row then locked. The
    * hash found the scanner across tenants a moment before, and a new pairing code may have
@@ -277,7 +294,9 @@ export class ScannersRepository {
     id: string,
     now: Date,
     by: { tokenHash: string } | { pairingCodeHash: string },
-  ): Promise<(StandingScanner & { expiresAt: Date; pairingExpiresAt: Date }) | undefined> {
+  ): Promise<
+    (StandingScanner & { expiresAt: Date; pairingExpiresAt: Date; stopped: boolean }) | undefined
+  > {
     const paired = 'tokenHash' in by
     const query = this.context
       .tx()
@@ -288,6 +307,7 @@ export class ScannersRepository {
         name: scannerDevices.name,
         expiresAt: scannerDevices.expiresAt,
         pairingExpiresAt: scannerDevices.pairingExpiresAt,
+        stopped: sql<boolean>`not (${orgStands(now)})`,
       })
       .from(scannerDevices)
       .innerJoin(tenantMemberships, enabledBy)
@@ -306,7 +326,6 @@ export class ScannersRepository {
                 isNull(scannerDevices.pairedAt),
                 eq(scannerDevices.pairingCodeHash, by.pairingCodeHash),
               ),
-          orgStands(now),
         ),
       )
     const [row] = await (paired ? query : query.for('update', { of: scannerDevices }))

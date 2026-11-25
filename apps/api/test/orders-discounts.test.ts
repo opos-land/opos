@@ -200,6 +200,29 @@ describe('a discount code at the Summary', () => {
     await placeWith(d, undefined, 10000, {}, ip).expect(201)
   })
 
+  // Sent together, the orders of one address are not all answered before the first is counted.
+  it('is tried no more often by orders sent together than by orders sent one by one', async () => {
+    const d = await orderDesk(app)
+    const buyer = await member()
+    const ip = from()
+    const { limit } = ROUTE_RATE_LIMITS.discountCodeTries
+
+    const answers = await Promise.all([
+      ...Array.from({ length: limit + 4 }, (_, tried) =>
+        placeWith(d, `guess-${tried}`, 9000, {}, ip),
+      ),
+      placeAs(buyer, d, 'a-guess-signed-in', 9000, ip),
+    ])
+
+    const told = answers.filter((res) => res.status === 409)
+    for (const res of told) expect(res.body).toMatchObject(usedUp)
+    expect(told.length).toBeGreaterThan(0)
+    expect(told.length).toBeLessThanOrEqual(limit)
+    expect(answers.filter((res) => res.status === 429)).toHaveLength(limit + 5 - told.length)
+    // Counted, the address is out of tries.
+    await placeWith(d, 'one-more', 9000, {}, ip).expect(429)
+  })
+
   // Using a code is no try of one: buyers behind one address use a code as often as they buy.
   it('spends no try by an order whose code can be used, a visitor’s or an account’s', async () => {
     const d = await orderDesk(app)

@@ -45,18 +45,20 @@ export class OrdersController {
       const edition = await this.orders.publishedEdition(tenantId, input.params.editionId)
       if (!edition) throw notFound('edition')
       const account = this.context.account()
-      try {
-        return await this.placement.place(tenantId, edition.id, input.body, {
+      const place = () =>
+        this.placement.place(tenantId, edition.id, input.body, {
           email: account.email,
           accountId: account.id,
         })
-      } catch (error) {
-        // A code that cannot be used is a try of one, counted with a quote's; one used is none.
-        if (refusedForDiscountCode(error)) {
-          await this.limiter.spend('discountCodeTries', `ip:${address}`)
-        }
-        throw error
-      }
+      if (input.body.discountCode === undefined) return place()
+      // A code that cannot be used is a try of one, counted with a quote's; one used is none.
+      // Orders sent together are counted as those sent one by one.
+      return this.limiter.counting(
+        'discountCodeTries',
+        `ip:${address}`,
+        place,
+        refusedForDiscountCode,
+      )
     })
   }
 

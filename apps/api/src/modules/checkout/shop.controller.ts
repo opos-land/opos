@@ -107,18 +107,20 @@ export class ShopPublicController {
           ),
         ),
       )
-      try {
-        return await this.convention.within(input.params.slug, async (tenant) => {
+      const place = () =>
+        this.convention.within(input.params.slug, async (tenant) => {
           const edition = await this.editions.edition(input.params.editionSlug)
           return this.placement.place(tenant.id, edition.id, order, { email: input.body.email })
         })
-      } catch (error) {
-        // A code that cannot be used is a try of one, counted with a quote's; one used is none.
-        if (refusedForDiscountCode(error)) {
-          await this.limiter.spend('discountCodeTries', `ip:${address}`)
-        }
-        throw error
-      }
+      if (order.discountCode === undefined) return place()
+      // A code that cannot be used is a try of one, counted with a quote's; one used is none.
+      // Orders sent together are counted as those sent one by one.
+      return this.limiter.counting(
+        'discountCodeTries',
+        `ip:${address}`,
+        place,
+        refusedForDiscountCode,
+      )
     })
   }
 }

@@ -69,6 +69,9 @@ const rateLimited = (retryAfterSeconds: number) =>
 /** Counts the endpoint limits in the default limit's in-memory storage, under their own keys. */
 @Injectable()
 export class RouteRateLimiter {
+  /** How many requests of a key `counting` is running now: each may yet be spent. */
+  private readonly held = new Map<string, number>()
+
   constructor(@Inject(ThrottlerStorage) private readonly storage: ThrottlerStorageService) {}
 
   /** Spends one request of `tracker`; above the limit, 429 with Retry-After in seconds. */
@@ -103,5 +106,36 @@ export class RouteRateLimiter {
   async spend(name: RouteRateLimitName, tracker: string) {
     const { limit, ttl } = ROUTE_RATE_LIMITS[name]
     await this.storage.increment(`${name}:${tracker}`, ttl, limit - 1, ttl, name)
+  }
+
+  /**
+   * Runs `request` for a route that counts only its requests that fail: a blocked `tracker` is
+   * refused as by `check`, and a request that fails as `failed` tells is spent once it is
+   * answered. No more of a tracker's requests run at once than it has left, and one where none
+   * is left: sent together, they are not all answered before the first of them is counted.
+   */
+  async counting<T>(
+    name: RouteRateLimitName,
+    tracker: string,
+    request: () => Promise<T>,
+    failed: (error: unknown) => boolean,
+  ): Promise<T> {
+    this.check(name, tracker)
+    const key = `${name}:${tracker}`
+    const counted = this.storage.storage.get(key)?.totalHits.get(name) ?? 0
+    const held = this.held.get(key) ?? 0
+    // The ones running end soon, whatever they are answered.
+    if (held >= Math.max(1, ROUTE_RATE_LIMITS[name].limit - counted)) throw rateLimited(1)
+    this.held.set(key, held + 1)
+    try {
+      return await request()
+    } catch (error) {
+      if (failed(error)) await this.spend(name, tracker)
+      throw error
+    } finally {
+      const left = (this.held.get(key) ?? 1) - 1
+      if (left > 0) this.held.set(key, left)
+      else this.held.delete(key)
+    }
   }
 }

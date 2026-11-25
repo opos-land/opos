@@ -718,7 +718,8 @@ steps of [adding a feature](#adding-a-feature).
   is queued without a text: the outbox writes it from the order as it stands when it is sent,
   under the lock of the order's row, so each thing an org changes is a kind of email of its own,
   and an email that would hand the order over to an address the order has left since is
-  withdrawn, never sent. What a sent email said is kept on its row, a subject and a text written
+  withdrawn, never sent. So is an email that says the order is paid, with its QR code, once the
+  order no longer is. What a sent email said is kept on its row, a subject and a text written
   apart from the email that goes out, as for an address with no account: in the convention's
   language and with no way to sign in. It holds neither the QR code nor the token of the order
   link: each is noted for leaving out where the outbox makes it, never by the kind of the email,

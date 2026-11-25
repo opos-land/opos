@@ -424,6 +424,51 @@ describe('the emails of order management', () => {
     expect(await mailTo(old)).toHaveLength(1)
   })
 
+  // A confirmation says the order is paid and hands its QR code over: of an order canceled
+  // before it went out, neither is true any more.
+  it('send no confirmation and no QR code of an order canceled before they went out', async () => {
+    const s = await shop('en')
+    const [to, moved] = [buyer(), buyer()]
+    const org = (path: string) =>
+      request(app.getHttpServer())
+        .post(`/editions/${s.edition}/orders/${path}`)
+        .use(session(s.t.head.token))
+        .set('X-Tenant-Slug', s.t.slug)
+    const placed = await s.place(to)
+    await s.pay(placed)
+    // The org cancels the order before the outbox has sent its confirmation.
+    await org(`${placed.orderId}/cancel`).send({ reason: 'Asked to' }).expect(200)
+    // Another order is moved to a new address, and canceled before that address was told.
+    const other = await s.place(buyer())
+    await s.pay(other)
+    await setColumn('orders', other.orderId, 'email', moved)
+    await queueOrderEmail(s.t.id, s.edition, other.orderId, 'order-email-changed', moved)
+    await org(`${other.orderId}/cancel`).send({ reason: 'Asked to' }).expect(200)
+
+    expect(await send(s)).toMatchObject({ sent: 2, failed: 0 })
+
+    for (const address of [to, moved]) {
+      const mails = await mailTo(address)
+      expect(mails.map((mail) => mail.Subject)).toEqual([
+        expect.stringMatching(/^Your order \S+ for .+ was canceled$/),
+      ])
+      expect(mails[0]!.Text).not.toMatch(/\b[A-Z2-7]{32}\b|\/order#/)
+    }
+    // Withdrawn, they are never sent, and no link was made for them.
+    const unsent = (await s.emails()).filter((row) => row.kind !== 'order-canceled')
+    expect(unsent.map((row) => row.kind).sort()).toEqual([
+      'order-confirmation',
+      'order-confirmation',
+      'order-email-changed',
+    ])
+    for (const row of unsent) {
+      expect(row.sent_at).toBeNull()
+      expect(row.withdrawn_at).not.toBeNull()
+    }
+    expect(await storedRows('order_links', s.t.id)).toHaveLength(0)
+    expect(await send(s)).toMatchObject({ sent: 0, failed: 0 })
+  })
+
   it('tell the buyer of a declined payment where the money is, and of a canceled order that its QR code is no longer valid', async () => {
     const s = await shop('en')
     const [declined, canceled] = [buyer(), buyer()]

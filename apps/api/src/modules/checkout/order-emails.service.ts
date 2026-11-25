@@ -60,6 +60,12 @@ const QR_CODE_CID = 'qr-code@opos'
 /** What writing an email answers when the email is not to be sent. */
 const WITHDRAWN = 'withdrawn'
 
+/** The emails that say an order is paid and carry its QR code. */
+const OF_A_PAID_ORDER: readonly ClaimedEmail['kind'][] = [
+  'order-confirmation',
+  'order-email-changed',
+]
+
 /**
  * How long a failed send waits for its next try, by how many tries have failed: a minute, then
  * twice as long each time, up to six hours.
@@ -209,7 +215,8 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
    * The email as it is sent: to whom, in what language, saying what. It is written from the
    * order as it stands now, so one that hands the order over, with its QR code and a link, goes
    * only to the address the order has: queued for an address the order has left since, it is
-   * withdrawn instead. What it hands the order over with is added to `handedOver`.
+   * withdrawn instead. So is one that says the order is paid, with its QR code, once the order
+   * no longer is. What it hands the order over with is added to `handedOver`.
    */
   private async compose(
     email: ClaimedEmail,
@@ -218,7 +225,9 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
   ): Promise<Composed | typeof WITHDRAWN> {
     const order = await this.emails.order(email.orderId)
     if (!order) throw new Error('The order of the email is not there')
-    if (HANDING_OVER_EMAIL_KINDS.includes(email.kind) && email.recipient !== order.email) {
+    const left = HANDING_OVER_EMAIL_KINDS.includes(email.kind) && email.recipient !== order.email
+    const noLongerPaid = OF_A_PAID_ORDER.includes(email.kind) && order.status !== 'paid'
+    if (left || noLongerPaid) {
       await this.emails.withdraw(email.id, now)
       return WITHDRAWN
     }

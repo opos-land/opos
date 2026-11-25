@@ -109,6 +109,33 @@ export class DiscountCodesRepository {
     }))
   }
 
+  /**
+   * Holds the ticket types and the add-ons a change of a code names, in the order an order locks
+   * them and before the row of the code, which an order locks last
+   * (docs/ARCHITECTURE.md, invariant 9). Naming them takes a key share of each row, which waits
+   * for an order that holds the row. Taken here, the change waits while it holds nothing of the
+   * code; taken under the lock of the code, it would wait for an order that waits for the code.
+   */
+  async holdNamed(editionId: string, applies: AppliesTo) {
+    const tx = this.context.tx()
+    const hold = async (
+      table: PgTable,
+      id: PgColumn,
+      edition: PgColumn,
+      ids: readonly string[] = [],
+    ) => {
+      if (ids.length === 0) return
+      await tx
+        .select({ id })
+        .from(table)
+        .where(and(eq(edition, editionId), inArray(id, [...ids])))
+        .orderBy(asc(id))
+        .for('key share')
+    }
+    await hold(ticketTypes, ticketTypes.id, ticketTypes.editionId, applies.ticketTypeIds)
+    await hold(addOns, addOns.id, addOns.editionId, applies.addOnIds)
+  }
+
   /** The stored terms of the code of the edition, its row locked, or 404. */
   async locked(editionId: string, id: string) {
     if (!isUuid(id)) throw notFound('discount code')

@@ -676,10 +676,11 @@ steps of [adding a feature](#adding-a-feature).
   ([0046](adr/0046-keep-the-price-tiers-of-a-ticket-type-apart-with-an-exclusion-constraint.md)).
   A statement by identifier names the parent it acts within, whoever calls it. A change that
   writes several add-ons, a new place or a deletion, first locks the edition's add-ons by
-  identifier, as an order locks those of its cart (invariant 9). A picture or a size chart of a
-  merchandise item, and the picture of an add-on, is a file for everyone once what it shows is
-  not hidden and its edition is published, served under the convention's address by the
-  identifier its row holds; before that the edition's orgs read it through a route of their own.
+  identifier, as an order locks those of its cart, and a deletion of a merchandise item first
+  locks its variants (invariant 9). A picture or a size chart of a merchandise item, and the
+  picture of an add-on, is a file for everyone once what it shows is not hidden and its edition
+  is published, served under the convention's address by the identifier its row holds; before
+  that the edition's orgs read it through a route of their own.
 - **Checkout and orders.** A buyer needs no membership: a visitor's routes open the tenant from
   its address and answer an unpublished edition and a suspended tenant as an unknown address; an
   account's are tenant routes behind `@InTenant`, which answer an unpublished edition the same
@@ -737,8 +738,9 @@ steps of [adding a feature](#adding-a-feature).
   the code took off is a line of the order below zero, the only one. A use is an order that
   holds: it is counted under the lock of the code's row, the last lock an order takes
   (invariant 9), when an order is placed, when a payment after the hold or an org settling a
-  review takes it again, and when an org changes the limit. A code an order names is never
-  deleted: the order's foreign key refuses it.
+  review takes it again, and when an org changes the limit. A change of a code takes the ticket
+  types and the add-ons it names before the code's row, as an order does. A code an order names
+  is never deleted: the order's foreign key refuses it.
 - **Sales reports.** The dashboard of an edition and its lists are read from the orders as they
   are, by queries that lock nothing: a report never slows a sale. What is sold is what "Paid"
   and "Paid - manual" orders hold; what orders awaiting payment and needing review hold is

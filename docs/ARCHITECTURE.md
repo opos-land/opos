@@ -820,7 +820,11 @@ steps of [adding a feature](#adding-a-feature).
   email that carries it hands the order over, and is withdrawn like a confirmation when the order
   has left its address. The routes of an account's own orders are tenant routes that ask for no
   membership: their reads filter on the tenant and on the session's account, and another
-  account's order is not there. A "Buy more" order names the account's own paid order of the
+  account's order is not there. An order an org moved to another email stays on the account it
+  was on, whose list says that its confirmation is sent again no longer: "Resend QR code" is
+  refused for it as "Buy more" is, before the order's limit of resends is counted
+  ([0101](adr/0101-send-nothing-of-an-order-to-the-address-it-left-or-at-its-old-accounts-asking.md)).
+  A "Buy more" order names the account's own paid order of the
   same edition, whose row is locked before any limit, when the order is placed and when a
   payment or an org makes it paid; it is priced by the contract's one function against what that
   order's ticket type offers and what was bought on its QR code, and

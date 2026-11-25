@@ -105,6 +105,11 @@ describe('errorCodes', () => {
     expect(errorCodes).toContain('order.not-extendable')
   })
 
+  // An order an org moved to another address is sent nowhere at its old account's asking.
+  it('lists order.passed-on of "Resend QR code"', () => {
+    expect(errorCodes).toContain('order.passed-on')
+  })
+
   // A consent whose document changed since its buyer was shown it places no order.
   it('lists order.consent-changed of a consent accepted as it no longer is', () => {
     expect(errorCodes).toContain('order.consent-changed')

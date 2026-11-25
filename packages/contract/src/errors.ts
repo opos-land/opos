@@ -95,6 +95,7 @@ export const errorCodes = [
   'order.not-in-review',
   'order.not-paid',
   'order.not-extendable',
+  'order.passed-on',
   'scan.already-handed-out',
   'production.before-deadline',
   'discount-code.taken',

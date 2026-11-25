@@ -1134,6 +1134,7 @@ describe('CheckoutPage, adding to a paid order', () => {
     placedAt: '2027-05-01T10:00:00.000Z',
     holdEndsAt: null,
     payable: false,
+    resendable: true,
     holderName: 'Ada Lovelace',
     edition: { id: 'edition-1', slug: '2027', name: 'Convention A 2027' },
     lines: [],

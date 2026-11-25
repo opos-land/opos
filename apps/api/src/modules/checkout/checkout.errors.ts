@@ -101,3 +101,10 @@ export const quoteRefusedForDiscountCode = (error: unknown) =>
 /** "Buy more" adds to the account's own paid order of the same edition, and to no other. */
 export const notExtendable = () =>
   new ApiError(409, 'order.not-extendable', 'Nothing can be added to this order')
+
+/**
+ * An order an org moved to another address has passed to another person: the account it stays
+ * on has nothing of it sent.
+ */
+export const passedOn = () =>
+  new ApiError(409, 'order.passed-on', 'The order was moved to another email address')

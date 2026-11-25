@@ -21,8 +21,9 @@ const ASK_AGAIN_MS = 5000
 /**
  * The orders of the signed-in account in a convention, on the convention's page
  * (docs/specs/0009-buyer-self-service.md, U1-U4): each with its status and what it holds; a paid
- * one with "Resend QR code" and "Buy more", an unpaid one within its hold with "Pay now". A
- * visitor, and an account that bought nothing here, see nothing of it.
+ * one with "Resend QR code" and "Buy more" while its email is the account's, an unpaid one
+ * within its hold with "Pay now". A visitor, and an account that bought nothing here, see
+ * nothing of it.
  */
 export function MyOrders({ tenantSlug, timeZone }: { tenantSlug: string; timeZone: string }) {
   const signedIn = useSession((state) => state.account !== null)
@@ -82,6 +83,10 @@ function OrderRow({
   const resend = useMutation({
     mutationFn: () => resendConfirmation(tenantSlug, order.id),
     meta: { success: msg`We sent the QR code to the email address of the order.` },
+    // Moved to another email since the list was read: read again, it offers this no longer.
+    onError: (error) => {
+      if (errorCode(error) === 'order.passed-on') onChanged()
+    },
   })
   const pay = useMutation({
     mutationFn: () => payNow(tenantSlug, order.edition.id, order.id),
@@ -117,12 +122,15 @@ function OrderRow({
         )}
       </p>
       <OrderLines lines={order.lines} totalMinor={order.totalMinor} currency={order.currency} />
-      {order.status === 'paid' && (
+      {/* An order an org moved to another email passed to another person: it is listed still,
+          and the account it stays on neither has its QR code sent nor adds to it. */}
+      {(order.resendable || order.bought) && (
         <div className="flex flex-wrap gap-3">
-          <Button variant="outline" onClick={() => resend.mutate()} disabled={resend.isPending}>
-            <Trans>Resend QR code</Trans>
-          </Button>
-          {/* Nothing is added to an order an org moved to another address. */}
+          {order.resendable && (
+            <Button variant="outline" onClick={() => resend.mutate()} disabled={resend.isPending}>
+              <Trans>Resend QR code</Trans>
+            </Button>
+          )}
           {order.bought && (
             <Link
               to={`${shop}/checkout?extends=${order.id}`}

@@ -204,6 +204,44 @@ describe('"Resend QR code"', () => {
     await resend(buyer, paid.orderId).expect(404)
     expect(await d.emails(paid.orderId)).toHaveLength(2)
   })
+
+  // A changed email is the one way a ticket passes to another person
+  // (docs/specs/0006-order-management.md, C2 and C3): the order stays among those of the account
+  // it was on, which has nothing sent to its new holder from then on.
+  it('sends nothing of an order an org moved to another address, and the list says so', async () => {
+    const d = await orderDesk(app)
+    const buyer = await member()
+    const paid = await bought(d, buyer)
+    const unpaid = await placed(d, buyer)
+    const offered = async () =>
+      Object.fromEntries((await mine(d, buyer)).map((order) => [order.id, order.resendable]))
+    expect(await offered()).toEqual({ [paid.orderId]: true, [unpaid.orderId]: false })
+    await d
+      .head('put', `/orders/${paid.orderId}/email`, { email: 'new-holder@example.test' })
+      .expect(200)
+    const queued = await d.emails(paid.orderId)
+
+    // As often as an order's confirmation is sent again in an hour: a refusal spends no try.
+    for (let asked = 0; asked < ROUTE_RATE_LIMITS.confirmationResends.limit; asked += 1) {
+      const refused = await as(
+        d,
+        buyer,
+        'post',
+        `/orders/mine/${paid.orderId}/resend-confirmation`,
+      ).expect(409)
+      expect(refused.body).toMatchObject({ code: 'order.passed-on' })
+    }
+
+    expect(await d.emails(paid.orderId)).toEqual(queued)
+    // The order is still the account's to see, with no way to send its QR code.
+    expect(await offered()).toEqual({ [paid.orderId]: false, [unpaid.orderId]: false })
+    // The org of the edition still sends it to the address the order has now.
+    await d.head('post', `/orders/${paid.orderId}/resend-confirmation`).expect(200)
+    expect(await d.emails(paid.orderId)).toContainEqual([
+      'order-confirmation',
+      'new-holder@example.test',
+    ])
+  })
 })
 
 describe('"Pay now"', () => {

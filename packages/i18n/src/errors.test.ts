@@ -100,6 +100,10 @@ describe('errorMessage', () => {
       'Do tego zamówienia nie można nic dokupić: dokupuje się tylko do własnego, opłaconego zamówienia.',
     ],
     [
+      'order.passed-on',
+      'To zamówienie przeniesiono na inny adres e-mail, więc jego kodu QR nie da się już wysłać z tego konta.',
+    ],
+    [
       'discount-code.in-use',
       'Ten kod rabatowy został już użyty w zamówieniu, więc nie można go usunąć. Zamiast usuwać, zakończ go: kupujący nie użyją go więcej, a w zamówieniach pozostanie.',
     ],

@@ -48,6 +48,7 @@ const order = (number: string, changes: Partial<MyOrder> = {}): MyOrder => ({
   placedAt: '2027-05-01T10:00:00.000Z',
   holdEndsAt: null,
   payable: false,
+  resendable: true,
   holderName: 'Ada Lovelace',
   edition: { id: 'edition-1', slug: '2027', name: 'Convention A 2027' },
   lines: [{ kind: 'ticket', name: 'Standard', variant: [], quantity: 1, amountMinor: 12000 }],
@@ -62,6 +63,7 @@ const awaiting = (number: string, minutesLeft: number) =>
     holdEndsAt: new Date(Date.now() + minutesLeft * MINUTE).toISOString(),
     // The shop's own word on whether "Pay now" would start an attempt.
     payable: minutesLeft > 0,
+    resendable: false,
     bought: null,
   })
 
@@ -165,14 +167,34 @@ describe('the orders of an account on a convention’s page', () => {
     await waitFor(() => expect(api.resend).toHaveBeenCalledWith('convention-a', 'order-PAD2222222'))
   })
 
-  // An order an org moved to another email passed to another person: nothing is added to it.
-  it('offer no "Buy more" for a paid order nothing can be added to', async () => {
-    api.list.mockResolvedValue([order('MQVED22222', { bought: null })])
+  // An order an org moved to another email passed to another person: it stays in the list, and
+  // the account it stays on neither has its QR code sent nor adds to it.
+  it('offer neither for a paid order an org moved to another email, which is still listed', async () => {
+    api.list.mockResolvedValue([order('MQVED22222', { resendable: false, bought: null })])
     view()
     const moved = await item('MQVED22222')
 
-    expect(within(moved).getByRole('button', { name: 'Resend QR code' })).toBeDefined()
+    expect(within(moved).getByText('Paid')).toBeDefined()
+    expect(within(moved).queryByRole('button', { name: 'Resend QR code' })).toBeNull()
     expect(within(moved).queryByRole('link', { name: 'Buy more' })).toBeNull()
+  })
+
+  // The list was read before the org moved the order: the refusal is told as any failure, and
+  // the list read again no longer offers the order's QR code.
+  it('read the orders again when an order turns out moved to another email meanwhile', async () => {
+    api.list.mockResolvedValueOnce([order('MQVED22222')])
+    api.list.mockResolvedValue([order('MQVED22222', { resendable: false, bought: null })])
+    api.resend.mockRejectedValue(new ORPCError('order.passed-on', { status: 409 }))
+    view()
+
+    fireEvent.click(
+      within(await item('MQVED22222')).getByRole('button', { name: 'Resend QR code' }),
+    )
+
+    await waitFor(() => expect(api.list).toHaveBeenCalledTimes(2))
+    await waitFor(async () =>
+      expect(within(await item('MQVED22222')).queryByRole('button')).toBeNull(),
+    )
   })
 
   // U3: an unpaid order within its hold offers "Pay now"; after the hold nothing starts.
@@ -223,8 +245,8 @@ describe('the orders of an account on a convention’s page', () => {
 
   it('offer nothing for an order that expired or was canceled', async () => {
     api.list.mockResolvedValue([
-      order('GQNE222222', { status: 'expired', bought: null }),
-      order('CANCE22222', { status: 'canceled', bought: null }),
+      order('GQNE222222', { status: 'expired', resendable: false, bought: null }),
+      order('CANCE22222', { status: 'canceled', resendable: false, bought: null }),
     ])
     view()
 

@@ -772,6 +772,24 @@ describe('an unfinished checkout', () => {
     expect(loadDraft('convention-a', '2026')).not.toBeNull()
   })
 
+  // A sign-out clears it, also one this tab never saw: a tab that was asleep, or restored, when
+  // its session ended reads nothing of the account it showed. A visitor's goes on under the
+  // account that signs in.
+  it('is its account’s alone, while a visitor’s goes on under the account that signs in', () => {
+    saveDraft('convention-a', '2026', filled({ step: 'summary' }), 'account-a')
+
+    expect(loadDraft('convention-a', '2026', undefined, 'account-a')).toEqual(
+      filled({ step: 'summary' }),
+    )
+    expect(loadDraft('convention-a', '2026')).toBeNull()
+    expect(loadDraft('convention-a', '2026', undefined, 'account-b')).toBeNull()
+
+    saveDraft('convention-a', '2026', filled({ step: 'merch' }))
+    expect(loadDraft('convention-a', '2026', undefined, 'account-a')).toEqual(
+      filled({ step: 'merch' }),
+    )
+  })
+
   it('reads nothing from what is not a checkout', () => {
     window.sessionStorage.setItem('opos-checkout:convention-a:2026', '{"step":12}')
     expect(loadDraft('convention-a', '2026')).toBeNull()

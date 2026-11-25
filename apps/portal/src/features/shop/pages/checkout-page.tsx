@@ -183,9 +183,11 @@ function Checkout({
   const money = useMoney(offer.currency)
   const shop = `/conventions/${tenantSlug}/${editionSlug}/shop`
   const signedIn = account !== null
+  /** The account the checkout is entered under and kept for: a visitor's is nobody's. */
+  const accountId = account?.id ?? null
 
   const [begun] = useState(() => {
-    const kept = loadDraft(tenantSlug, editionSlug, extending?.id)
+    const kept = loadDraft(tenantSlug, editionSlug, extending?.id, accountId)
     const start = extending
       ? {
           // "Buy more" has a checkout of its own, kept apart from the edition's.
@@ -231,8 +233,8 @@ function Checkout({
 
   // Kept in the tab on every change, so a reload resumes on the same step with the same data.
   useEffect(() => {
-    if (draft) saveDraft(tenantSlug, editionSlug, draft)
-  }, [draft, tenantSlug, editionSlug])
+    if (draft) saveDraft(tenantSlug, editionSlug, draft, accountId)
+  }, [draft, tenantSlug, editionSlug, accountId])
 
   const step = draft?.step
   useEffect(() => {
@@ -404,6 +406,12 @@ function Checkout({
     // An order of merchandise alone needs at least one item.
     if (current === 'merch' && emptyMerchOnly) return
     if (current === 'summary') {
+      // What the first step asks holds when the order is placed too. A checkout that reached
+      // the Summary without it, as one kept from before the edition asked for it, goes back.
+      if (steps.includes('holder') && Object.keys(issues).length > 0) {
+        setTried((left) => new Set(left).add('holder'))
+        return go('holder')
+      }
       const missing = summaryIssues(offer, draft, totalMinor)
       if (missing.consents.length > 0 || missing.provider || missing.guardian) return
       if ('problem' in quote) return

@@ -431,27 +431,48 @@ function tab<T>(act: (storage: Storage) => T): T | null {
   }
 }
 
-/** The checkout of the edition this tab holds, or null: anything that is not one is ignored. */
+/**
+ * A checkout as the tab keeps it: with the account it was entered under, null for a visitor's
+ * and for one kept before the account was noted.
+ */
+const keptSchema = draftSchema.extend({ accountId: z.string().nullable().default(null) })
+
+/**
+ * The checkout of the edition this tab holds for `accountId`, the account it shows, null for a
+ * visitor; anything that is not a checkout is ignored. One entered under an account is that
+ * account's alone: a sign-out clears it, and a tab that did not see the sign-out, asleep or
+ * restored after its session ended, reads nothing of it. A visitor's is read by whoever signs
+ * in, who goes on with what was entered.
+ */
 export function loadDraft(
   tenantSlug: string,
   editionSlug: string,
   extendsOrderId?: string,
+  accountId: string | null = null,
 ): Draft | null {
   const stored = tab((storage) => storage.getItem(keyOf(tenantSlug, editionSlug, extendsOrderId)))
   if (!stored) return null
   try {
-    const draft = draftSchema.safeParse(JSON.parse(stored))
-    return draft.success ? draft.data : null
+    const kept = keptSchema.safeParse(JSON.parse(stored))
+    if (!kept.success) return null
+    const { accountId: enteredUnder, ...draft } = kept.data
+    return enteredUnder === null || enteredUnder === accountId ? draft : null
   } catch {
     return null
   }
 }
 
-export function saveDraft(tenantSlug: string, editionSlug: string, draft: Draft) {
+/** Keeps the checkout in the tab, as entered under `accountId`: null for a visitor. */
+export function saveDraft(
+  tenantSlug: string,
+  editionSlug: string,
+  draft: Draft,
+  accountId: string | null = null,
+) {
   tab((storage) =>
     storage.setItem(
       keyOf(tenantSlug, editionSlug, draft.extending?.orderId),
-      JSON.stringify(draft),
+      JSON.stringify({ ...draft, accountId }),
     ),
   )
 }

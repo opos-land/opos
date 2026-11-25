@@ -235,6 +235,72 @@ describe('CheckoutPage', () => {
     expect(screen.getByLabelText<HTMLInputElement>(/name or nickname/).value).toBe('Jan Kowal')
   })
 
+  // C19: a sign-out clears the checkout, also one the tab did not see, as when it was asleep or
+  // restored after its session ended. What an account entered is shown to nobody else.
+  it('begins anew in a tab that kept the checkout of an account it no longer shows', async () => {
+    const theirs = kept({
+      step: 'summary',
+      holderName: 'Jan Kowal',
+      email: '',
+      emailConfirmation: '',
+      asVisitor: false,
+    })
+    saveDraft('convention-a', '2027', theirs, account.id)
+    view()
+
+    expect(await stepHeading('Ticket holder')).toBeDefined()
+    press('Continue without an account')
+    expect(screen.getByLabelText<HTMLInputElement>(/name or nickname/).value).toBe('')
+    cleanup()
+
+    saveDraft('convention-a', '2027', theirs, account.id)
+    const other = { ...account, id: 'account-2', firstName: 'Ewa', lastName: 'Nowak' }
+    useSession.setState({ status: 'ready', account: other as never })
+    view()
+
+    expect(await stepHeading('Ticket holder')).toBeDefined()
+    expect(screen.getByLabelText<HTMLInputElement>(/name or nickname/).value).toBe('Ewa Nowak')
+  })
+
+  // C3: signing in keeps everything already entered, and the checkout is the account's from then.
+  it('goes on with what a visitor entered once they sign in, as the account’s own', async () => {
+    saveDraft('convention-a', '2027', kept({ step: 'add-ons' }))
+    useSession.setState({ status: 'ready', account: account as never })
+    view()
+
+    expect(await stepHeading('Add-ons')).toBeDefined()
+    fireEvent.click(screen.getByRole('checkbox', { name: /Sleeping room/ }))
+    expect(loadDraft('convention-a', '2027')).toBeNull()
+    expect(loadDraft('convention-a', '2027', undefined, account.id)).toMatchObject({
+      holderName: 'Ada',
+      addOnIds: [ids.room],
+    })
+  })
+
+  // What the first step asks holds again when the order is placed: a checkout that reaches
+  // the Summary without it goes back there, with the field marked, and places nothing.
+  it('returns a buyer whose first step does not hold from the Summary, and places nothing', async () => {
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({
+        step: 'summary',
+        email: '',
+        emailConfirmation: '',
+        consentIds: [ids.terms],
+        providerConsent: true,
+      }),
+    )
+    view()
+    await stepHeading('Summary')
+
+    press('Order and pay')
+
+    expect(await stepHeading('Ticket holder')).toBeDefined()
+    expect(screen.getAllByText('Fill in this field.')).toHaveLength(2)
+    expect(api.place).not.toHaveBeenCalled()
+  })
+
   it('stops a signed-in buyer whose account email the provider cannot take, and says so', async () => {
     const long = `${'a'.repeat(39)}@example.test`
     useSession.setState({ status: 'ready', account: { ...account, email: long } as never })

@@ -15,7 +15,8 @@ const without = <T,>(list: readonly T[], index: number) => list.filter((_, at) =
 /**
  * The option axes of an item, such as its cut and its size, with the values of each, saved as a
  * whole list. Saving axes that take variants away asks first in a modal: once an axis is added or
- * removed no variant fits the axes any more, and a removed value takes the variants that held it.
+ * removed no variant fits the axes any more, and a removed value takes the variants that held it
+ * and its size chart. A value whose label is cleared is removed as well.
  */
 export function AxesEditor({ item, canWrite }: { item: MerchandiseItem; canWrite: boolean }) {
   const { t } = useLingui()

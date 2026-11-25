@@ -199,6 +199,45 @@ describe('the axes of an item, as their editor holds them', () => {
     // An item with no variant has none to lose.
     expect(reshapes(shirt(), [fields[0]!])).toBe(false)
   })
+
+  it('take the variants of a value whose label is cleared, as the request leaves it out', () => {
+    const item = shirt([variant('v1', ['w', 's'])])
+    const [cut, size] = axesFields(item)
+    const cleared = [cut!, { ...size!, values: [{ id: 's', label: ' ' }, size!.values[1]!] }]
+
+    expect(axesBody(cleared)).toMatchObject({ axes: [{}, { values: [{ id: 'l', label: 'L' }] }] })
+    expect(reshapes(item, cleared)).toBe(true)
+    // A new row left empty is no value yet: nothing goes with it.
+    expect(reshapes(item, [cut!, { ...size!, values: [...size!.values, { label: '' }] }])).toBe(
+      false,
+    )
+  })
+
+  it('take the size chart of a value that goes, of an item with no variant too', () => {
+    const chart = { fileId: 'chart-w', width: 400, height: 300 }
+    const item: MerchandiseItem = {
+      ...shirt(),
+      axes: [
+        {
+          id: 'cut',
+          name: 'Cut',
+          values: [{ ...value('w', "Women's"), sizeChart: chart }, value('m', "Men's")],
+        },
+        shirt().axes[1]!,
+      ],
+    }
+    const [cut, size] = axesFields(item)
+
+    expect(reshapes(item, [cut!, size!])).toBe(false)
+    // The value without a chart goes with nothing.
+    expect(reshapes(item, [{ ...cut!, values: [cut!.values[0]!] }, size!])).toBe(false)
+    expect(reshapes(item, [{ ...cut!, values: [cut!.values[1]!] }, size!])).toBe(true)
+    expect(
+      reshapes(item, [{ ...cut!, values: [{ id: 'w', label: '' }, cut!.values[1]!] }, size!]),
+    ).toBe(true)
+    // An axis that goes takes its values, and their size charts.
+    expect(reshapes(item, [size!])).toBe(true)
+  })
 })
 
 describe('an image chosen for an item', () => {

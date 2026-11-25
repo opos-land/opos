@@ -316,6 +316,23 @@ describe('the axes of an item', () => {
     expect(updateItem.mock.calls[0]![0]).toMatchObject({ body: { axes: [{ id: 'cut' }] } })
   })
 
+  it('ask in a modal before saving a value whose label was cleared, which goes', async () => {
+    view('shirt')
+    await waitFor(() => expect(field('Value 1 of axis 2').value).toBe('S'))
+
+    type('Value 1 of axis 2', '')
+    press('Save the axes')
+
+    const dialog = await screen.findByRole('alertdialog')
+    expect(within(dialog).getByText('Save the axes and remove variants?')).toBeDefined()
+    expect(updateItem).not.toHaveBeenCalled()
+    await confirm('Save the axes')
+    await waitFor(() => expect(updateItem).toHaveBeenCalledTimes(1))
+    expect(updateItem.mock.calls[0]![0]).toMatchObject({
+      body: { axes: [{ id: 'cut' }, { id: 'size', values: [{ id: 'l', label: 'L' }] }] },
+    })
+  })
+
   it('refuse an axis left without a name, and send nothing', async () => {
     view('shirt')
     await waitFor(() => expect(field('Name of axis 1').value).toBe('Cut'))

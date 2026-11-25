@@ -123,17 +123,23 @@ export function axesBody(
 }
 
 /**
- * Whether saving these axes takes variants away: every one once an axis is added or removed, and
- * those that held a value once the value is removed. An item with no variant loses none.
+ * Whether saving these axes takes away what the screen cannot bring back: every variant once an
+ * axis is added or removed, those that held a value once the value is removed, and the size chart
+ * of a value that goes. A value goes as the request drops it: left out, or its label left empty.
+ * An item with no variant loses none, and a value without a size chart goes with nothing else.
  */
 export function reshapes(item: MerchandiseItem, fields: readonly AxisFields[]): boolean {
-  if (item.variants.length === 0) return false
   const keptAxes = new Set(fields.flatMap((axis) => axis.id ?? []))
+  const keptValues = new Set(
+    fields.flatMap((axis) =>
+      axis.values.flatMap((entry) => (entry.label.trim() ? (entry.id ?? []) : [])),
+    ),
+  )
+  const charted = item.axes.flatMap((axis) => axis.values.filter((value) => value.sizeChart))
+  if (charted.some((value) => !keptValues.has(value.id))) return true
+  if (item.variants.length === 0) return false
   if (fields.some((axis) => axis.id === undefined)) return true
   if (item.axes.some((axis) => !keptAxes.has(axis.id))) return true
-  const keptValues = new Set(
-    fields.flatMap((axis) => axis.values.flatMap((entry) => entry.id ?? [])),
-  )
   return item.variants.some((variant) => variant.valueIds.some((id) => !keptValues.has(id)))
 }
 

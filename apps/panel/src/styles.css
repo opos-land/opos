@@ -12,11 +12,11 @@
  * served from the application's own origin (docs/ARCHITECTURE.md, Frontends); JetBrains Mono and
  * Source Serif 4 stand in for the theme's Menlo and Georgia, which no package carries.
  *
- * Where the theme's text falls short of 4.5:1 it departs from it, keeping hue and chroma: the blue
- * of buttons, of the sidebar's primary and of the light theme's links and accent text is darker,
- * the red is darker in the light theme and lighter in the dark one, and the dark theme's muted
- * text is lighter. `text-primary` reads `--primary-text`, which keeps the theme's bright blue in
- * the dark theme.
+ * Where the theme's text falls short of 4.5:1 it departs from it, keeping hue and chroma: text on
+ * the blue fills is black, as it stays readable on their hover; the light theme's links and accent
+ * text take a deeper blue, which `text-primary` reads from `--primary-text`; the red is darker in
+ * the light theme and lighter in the dark one, readable on its own tint; and the dark theme's muted
+ * text is lighter.
  */
 
 @custom-variant dark (&:is(.dark *));
@@ -89,16 +89,16 @@
   --card-foreground: oklch(0.1884 0.0128 248.5103);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.1884 0.0128 248.5103);
-  --primary: oklch(0.54 0.1606 244.9955);
-  --primary-foreground: oklch(1 0 0);
-  --primary-text: var(--primary);
+  --primary: oklch(0.6723 0.1606 244.9955);
+  --primary-foreground: oklch(0 0 0);
+  --primary-text: oklch(0.54 0.1606 244.9955);
   --secondary: oklch(0.1884 0.0128 248.5103);
   --secondary-foreground: oklch(1 0 0);
   --muted: oklch(0.9222 0.0013 286.3737);
   --muted-foreground: oklch(0.1884 0.0128 248.5103);
   --accent: oklch(0.9392 0.0166 250.8453);
   --accent-foreground: oklch(0.51 0.1606 244.9955);
-  --destructive: oklch(0.57 0.2376 25.7658);
+  --destructive: oklch(0.46 0.2376 25.7658);
   --border: oklch(0.9317 0.0118 231.6594);
   --input: oklch(0.9809 0.0025 228.7836);
   --ring: oklch(0.6818 0.1584 243.354);
@@ -110,8 +110,8 @@
   --radius: 1.3rem;
   --sidebar: oklch(0.9784 0.0011 197.1387);
   --sidebar-foreground: oklch(0.1884 0.0128 248.5103);
-  --sidebar-primary: oklch(0.54 0.1606 244.9955);
-  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-primary: oklch(0.6723 0.1606 244.9955);
+  --sidebar-primary-foreground: oklch(0 0 0);
   --sidebar-accent: oklch(0.9392 0.0166 250.8453);
   --sidebar-accent-foreground: oklch(0.51 0.1606 244.9955);
   --sidebar-border: oklch(0.9271 0.0101 238.5177);
@@ -125,16 +125,16 @@
   --card-foreground: oklch(0.8853 0 0);
   --popover: oklch(0 0 0);
   --popover-foreground: oklch(0.9328 0.0025 228.7857);
-  --primary: oklch(0.54 0.1607 245.011);
-  --primary-foreground: oklch(1 0 0);
-  --primary-text: oklch(0.6692 0.1607 245.011);
+  --primary: oklch(0.6692 0.1607 245.011);
+  --primary-foreground: oklch(0 0 0);
+  --primary-text: var(--primary);
   --secondary: oklch(0.9622 0.0035 219.5331);
   --secondary-foreground: oklch(0.1884 0.0128 248.5103);
   --muted: oklch(0.209 0 0);
   --muted-foreground: oklch(0.61 0.0078 247.9662);
   --accent: oklch(0.1928 0.0331 242.5459);
   --accent-foreground: oklch(0.6692 0.1607 245.011);
-  --destructive: oklch(0.635 0.2376 25.7658);
+  --destructive: oklch(0.745 0.2376 25.7658);
   --border: oklch(0.2674 0.0047 248.0045);
   --input: oklch(0.302 0.0288 244.8244);
   --ring: oklch(0.6818 0.1584 243.354);
@@ -145,8 +145,8 @@
   --chart-5: oklch(0.5919 0.2186 10.5826);
   --sidebar: oklch(0.2097 0.008 274.5332);
   --sidebar-foreground: oklch(0.8853 0 0);
-  --sidebar-primary: oklch(0.54 0.1607 245.011);
-  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-primary: oklch(0.6818 0.1584 243.354);
+  --sidebar-primary-foreground: oklch(0 0 0);
   --sidebar-accent: oklch(0.1928 0.0331 242.5459);
   --sidebar-accent-foreground: oklch(0.6692 0.1607 245.011);
   --sidebar-border: oklch(0.3795 0.022 240.5943);

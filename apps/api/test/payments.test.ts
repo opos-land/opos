@@ -8,7 +8,7 @@ import {
 } from '@opos/contract'
 import request from 'supertest'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import { ROUTE_RATE_LIMITS } from '../src/common/rate-limit/route-rate-limit'
+import { ROUTE_RATE_LIMITS, RouteRateLimiter } from '../src/common/rate-limit/route-rate-limit'
 import { loadEnv } from '../src/config/env'
 import { STAND_IN_TOKEN } from '../src/modules/checkout/bot-check'
 import {
@@ -877,5 +877,54 @@ describe('the pay page of the fake provider', () => {
     await page('0198c1a0-0000-7000-8000-000000000001').expect(404)
     await page('0198c1a0-0000-7000-8000-000000000001/paid').expect(404)
     await page(`${attemptId}/free`).expect(404)
+  })
+})
+
+// docs/ARCHITECTURE.md, API conventions: a provider tells of every convention's payments from a
+// few addresses of its own, and many at once when a sale opens.
+describe('the notifications of a provider', () => {
+  let limited: NestExpressApplication
+  /** The default limit of this API: anything counted against it is refused at once. */
+  const DEFAULT = 3
+
+  beforeAll(async () => {
+    limited = await createApp({}, [], { limit: DEFAULT, ttl: 60_000 })
+    await limited.listen(0, '127.0.0.1')
+  })
+
+  afterAll(async () => {
+    await limited.close()
+  })
+
+  it('skip the default limit, and count against their address under a limit of their own', async () => {
+    const s = await shop()
+    const placed = await s.place()
+    const attemptId = await s.started(placed)
+    const body = fake().pay(attemptId)
+    const ip = '203.0.113.70'
+    const tell = (path: string, told: object, from = ip) =>
+      request(limited.getHttpServer())
+        .post(`/payments/fake/notifications/${path}`)
+        .set('X-Forwarded-For', from)
+        .send(told)
+    for (let told = 0; told <= DEFAULT; told += 1) {
+      await tell(attemptId, body).expect(200)
+      await tell(`${attemptId}/additional`, {}).expect(404)
+    }
+    expect((await s.order(placed.orderId)).status).toBe('paid')
+
+    const { limit } = ROUTE_RATE_LIMITS.providerNotifications
+    const limiter = limited.get(RouteRateLimiter)
+    for (let told = 2 * (DEFAULT + 1); told < limit; told += 1) {
+      await limiter.consume('providerNotifications', `ip:${ip}`)
+    }
+
+    for (const res of [await tell(attemptId, body), await tell(`${attemptId}/additional`, {})]) {
+      expect(res.status).toBe(429)
+      expect(res.body).toMatchObject({ code: 'request.rate-limited' })
+      expect(Number(res.headers['retry-after'])).toBeGreaterThan(0)
+    }
+    // Another address of the provider is still heard.
+    await tell(attemptId, body, '203.0.113.71').expect(200)
   })
 })

@@ -1,4 +1,5 @@
 import { Controller } from '@nestjs/common'
+import { SkipThrottle } from '@nestjs/throttler'
 import { contract, RESULT_TOKEN_HEADER } from '@opos/contract'
 import { Implement, implement } from '@orpc/nest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
@@ -59,6 +60,7 @@ export class PaymentsController {
   }
 
   @Implement(contract.payments.notification)
+  @SkipThrottle()
   notification() {
     return implement(contract.payments.notification).handler(({ input }) =>
       this.take(input.params, input.body, false),
@@ -66,6 +68,7 @@ export class PaymentsController {
   }
 
   @Implement(contract.payments.additionalNotification)
+  @SkipThrottle()
   additionalNotification() {
     return implement(contract.payments.additionalNotification).handler(({ input }) =>
       this.take(input.params, input.body, true),
@@ -78,12 +81,17 @@ export class PaymentsController {
    * signature holds, which the module judges with the credentials of the tenant's own account.
    * An attempt that is not there, another provider's, a suspended convention's and a notification
    * whose signature does not hold all answer as an unknown address, and change nothing.
+   *
+   * Its routes skip the default rate limit, which the few addresses a provider tells every
+   * convention's payments from would run into when a sale opens, and count here against the
+   * client address under a limit of their own.
    */
   private async take(
     address: { provider: string; attemptId: string },
     body: unknown,
     additional: boolean,
   ) {
+    await this.limiter.consume('providerNotifications', `ip:${this.context.clientAddress()}`)
     const found = await this.global.paymentAttempt(address.attemptId)
     if (!found || found.provider !== address.provider) throw notFound('address')
     const { tenantId } = found

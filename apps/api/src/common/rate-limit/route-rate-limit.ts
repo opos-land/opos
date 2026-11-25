@@ -7,8 +7,9 @@ import { type RateLimit } from './rate-limit'
  * The endpoints with a limit of their own, on top of the default. Each one counts in
  * its handler, once the route's guards and permission check have passed, against the tracker it
  * names. A scanner's routes skip the default and count in their guard instead, before anything
- * of the request is read. A limit counts against what the request proves, and against the client
- * address only where it proves nothing or guesses (docs/ARCHITECTURE.md, API conventions).
+ * of the request is read; a provider's notifications skip it too, for a limit of their own. A
+ * limit counts against what the request proves, and against the client address only where it
+ * proves nothing or guesses (docs/ARCHITECTURE.md, API conventions).
  */
 export const ROUTE_RATE_LIMITS = {
   /** Sign-up, resend, sign-in, verify, forgot and Google: one counter, per client address. */
@@ -38,6 +39,12 @@ export const ROUTE_RATE_LIMITS = {
    * asks the provider about every earlier attempt of the order, from the address OPOS shares.
    */
   paymentAttemptsOfOrder: { limit: 20, ttl: 3_600_000 },
+  /**
+   * What a payment provider tells of an attempt, per client address, in place of the default
+   * limit: a provider tells of every convention's payments from a few addresses of its own, and
+   * of many at once when a sale opens.
+   */
+  providerNotifications: { limit: 1200, ttl: 60_000 },
   /** Resending an order's confirmation, per order: each one is an email to its buyer. */
   confirmationResends: { limit: 5, ttl: 3_600_000 },
   /**

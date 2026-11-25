@@ -324,7 +324,9 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   guess is counted once it is known to be one
   ([0095](adr/0095-count-a-rate-limit-against-what-a-request-proves.md)). The routes a scanner
   calls under its token skip the default limit, which the scanners and the visitors behind one
-  address would share. The counters live in the memory of each API process.
+  address would share. So do the routes that take a payment provider's notifications, which a
+  provider sends for every convention from a few addresses: they count against the client
+  address under a limit of their own. The counters live in the memory of each API process.
 - A log line written on purpose names no token, password or email address; an unexpected error is
   logged whole, never sent in the body.
 

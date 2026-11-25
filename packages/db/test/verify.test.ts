@@ -494,7 +494,9 @@ describe('verifyDatabase', () => {
       ['orders', 'number'],
       ['orders', 'result_token_hash'],
       ['orders', 'placement_key_hash'],
-      ['payment_attempts', 'order_id'],
+      // An attempt to ask about again is found by its order's identifier: what its provider
+      // said of a payment stays in its tenant.
+      ['payment_attempts', 'paid_amount_minor'],
       ['payment_attempts', 'information'],
       ['order_emails', 'recipient'],
       ['order_emails', 'kind'],

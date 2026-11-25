@@ -526,6 +526,20 @@
       "when": 1795645365844,
       "tag": "0074_order_placement_key_privileges",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1795647321301,
+      "tag": "0075_payment_attempt_recheck",
+      "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1795647322591,
+      "tag": "0076_payment_attempt_recheck_privileges",
+      "breakpoints": true
     }
   ]
 }

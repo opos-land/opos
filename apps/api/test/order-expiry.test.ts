@@ -12,6 +12,7 @@ import {
   addEdition,
   addTicketType,
   closeTenantDb,
+  connectAccount,
   connectFake,
   deleteCreatedTenants,
   makeShopReady,
@@ -237,5 +238,206 @@ describe('the expiry of orders', () => {
       expect(await s.stored(placed)).toMatchObject({ status, holds: true })
     }
     expect(await s.emails()).toEqual([])
+  })
+})
+
+// A payment its provider settled may leave no trace when the answer is lost on its way and the
+// provider repeats nothing: for an order that expired nothing else would find it. Each attempt of
+// an expired order nobody confirmed is asked about at its provider once more, an hour after the
+// hold ended, and a payment found is taken as any late one is.
+describe('asking again about the attempts of an expired order', () => {
+  const HOUR = 60
+  const recheck = (s: { t: { id: string } }, limit?: number) =>
+    app.get(OrderExpiry).recheck(new Date(), { tenantId: s.t.id, limit })
+  type Shop = Awaited<ReturnType<typeof shop>>
+
+  /** An order that expired with an attempt nobody paid, its hold ended `minutes` ago. */
+  async function expired(s: Shop, { minutes = HOUR + 1, email = 'buyer@example.test' } = {}) {
+    const placed = await s.place(email)
+    const attemptId = await s.started(placed)
+    await s.endHold(placed)
+    await expire(s)
+    await setColumn('orders', placed.orderId, 'hold_ends_at', ago(minutes))
+    return { placed, attemptId }
+  }
+  const attempt = async (s: Shop, id: string) => (await s.attempts()).find((row) => row.id === id)!
+
+  it('takes a payment found at the provider an hour after the hold ended: the order is paid', async () => {
+    const s = await shop()
+    const { placed, attemptId } = await expired(s)
+    // Paid at the provider, whose notification left no trace.
+    fake().pay(attemptId)
+
+    expect(await recheck(s)).toEqual({ taken: 1, unpaid: 0, waiting: 0 })
+
+    expect(await s.stored(placed)).toMatchObject({ status: 'paid', holds: true })
+    const stored = await attempt(s, attemptId)
+    expect(stored).toMatchObject({
+      status: 'paid',
+      paid_amount_minor: 10000,
+      money_with: 'convention',
+    })
+    expect(stored.provider_reference).toMatch(/^FAKE-/)
+    expect(stored.confirmed_at).not.toBeNull()
+    expect(stored.rechecked_at).not.toBeNull()
+    expect(await s.emails()).toContainEqual(['order-confirmation', 'buyer@example.test'])
+  })
+
+  it('sends the order to review when what it held is gone meanwhile', async () => {
+    const s = await shop('demo', 1)
+    const { placed, attemptId } = await expired(s)
+    await s.place('next@example.test')
+    fake().pay(attemptId)
+
+    expect(await recheck(s)).toEqual({ taken: 1, unpaid: 0, waiting: 0 })
+
+    expect(await s.stored(placed)).toMatchObject({
+      status: 'needs-review',
+      review_cause: 'unavailable',
+      holds: false,
+    })
+    expect(await attempt(s, attemptId)).toMatchObject({ status: 'paid', money_with: 'convention' })
+    expect(await s.emails()).toContainEqual(['payment-under-review', 'buyer@example.test'])
+  })
+
+  it('asks once: an attempt found unpaid is marked and not asked about again', async () => {
+    const s = await shop()
+    const { placed, attemptId } = await expired(s)
+
+    expect(await recheck(s)).toEqual({ taken: 0, unpaid: 1, waiting: 0 })
+    const stored = await attempt(s, attemptId)
+    expect(stored).toMatchObject({ status: 'ended', confirmed_at: null })
+    expect(stored.rechecked_at).not.toBeNull()
+
+    // What the provider would say now is not asked for.
+    fake().pay(attemptId)
+    expect(await recheck(s)).toEqual({ taken: 0, unpaid: 0, waiting: 0 })
+    expect(await s.stored(placed)).toMatchObject({ status: 'expired' })
+  })
+
+  it('asks about no attempt within the first hour after the hold ended', async () => {
+    const s = await shop()
+    const { placed, attemptId } = await expired(s, { minutes: HOUR - 5 })
+    fake().pay(attemptId)
+
+    expect(await recheck(s)).toEqual({ taken: 0, unpaid: 0, waiting: 0 })
+
+    expect(await s.stored(placed)).toMatchObject({ status: 'expired' })
+    expect(await attempt(s, attemptId)).toMatchObject({ rechecked_at: null })
+  })
+
+  it('leaves an attempt whose provider is out of reach for the next run, for 24 hours at most', async () => {
+    const s = await shop()
+    const { placed, attemptId } = await expired(s)
+    fake().pay(attemptId)
+    await connectFake(s.t.id, FAKE_ACCOUNT.stateUnavailable)
+
+    expect(await recheck(s)).toEqual({ taken: 0, unpaid: 0, waiting: 1 })
+    expect(await attempt(s, attemptId)).toMatchObject({ rechecked_at: null })
+
+    // A day after the hold ended nobody asks any more.
+    await setColumn('orders', placed.orderId, 'hold_ends_at', ago(24 * HOUR + 1))
+    await connectFake(s.t.id, 'demo')
+    expect(await recheck(s)).toEqual({ taken: 0, unpaid: 0, waiting: 0 })
+    expect(await s.stored(placed)).toMatchObject({ status: 'expired' })
+
+    // Within the day the next run finds the provider back.
+    await setColumn('orders', placed.orderId, 'hold_ends_at', ago(23 * HOUR))
+    expect(await recheck(s)).toEqual({ taken: 1, unpaid: 0, waiting: 0 })
+    expect(await s.stored(placed)).toMatchObject({ status: 'paid' })
+  })
+
+  // The provider counts the payment as made, and settling it does not answer: nothing is written,
+  // and the attempt stays to ask about.
+  it('leaves an attempt whose payment could not be settled for the next run', async () => {
+    const s = await shop()
+    const { placed, attemptId } = await expired(s)
+    fake().pay(attemptId)
+    await connectFake(s.t.id, FAKE_ACCOUNT.settleUnavailable)
+
+    expect(await recheck(s)).toEqual({ taken: 0, unpaid: 0, waiting: 1 })
+    expect(await s.stored(placed)).toMatchObject({ status: 'expired' })
+    expect(await attempt(s, attemptId)).toMatchObject({ confirmed_at: null, rechecked_at: null })
+
+    await connectFake(s.t.id, 'demo')
+    expect(await recheck(s)).toEqual({ taken: 1, unpaid: 0, waiting: 0 })
+    expect(await s.stored(placed)).toMatchObject({ status: 'paid' })
+  })
+
+  // The job reads a page at a time, each after the last attempt of the one before.
+  it('asks about an attempt behind one that has to wait', async () => {
+    const s = await shop()
+    const waiting = await expired(s, { minutes: 3 * HOUR })
+    const behind = await expired(s, { email: 'other@example.test' })
+    fake().pay(waiting.attemptId)
+    await connectFake(s.t.id, FAKE_ACCOUNT.settleUnavailable)
+
+    expect(await recheck(s, 1)).toEqual({ taken: 0, unpaid: 1, waiting: 1 })
+
+    expect(await attempt(s, waiting.attemptId)).toMatchObject({ rechecked_at: null })
+    expect((await attempt(s, behind.attemptId)).rechecked_at).not.toBeNull()
+  })
+
+  // The account the attempt started with gave way to one of another provider: nobody is left to
+  // ask, as when the expiry finds it so.
+  it('asks nobody about an attempt whose provider the convention no longer holds', async () => {
+    const s = await shop()
+    const { placed, attemptId } = await expired(s)
+    fake().pay(attemptId)
+    await connectAccount(s.t.id, 'przelewy24', {
+      merchantId: '1',
+      posId: '1',
+      crc: 'c',
+      apiKey: 'k',
+    })
+
+    expect(await recheck(s)).toEqual({ taken: 0, unpaid: 1, waiting: 0 })
+
+    expect(await s.stored(placed)).toMatchObject({ status: 'expired' })
+    expect((await attempt(s, attemptId)).rechecked_at).not.toBeNull()
+  })
+
+  it('asks only about an attempt nobody confirmed, of an order that expired', async () => {
+    const s = await shop()
+    // A payment confirmed late, by its notification, was taken already.
+    const late = await expired(s)
+    await request(app.getHttpServer())
+      .post(`/payments/fake/notifications/${late.attemptId}`)
+      .send(fake().pay(late.attemptId))
+      .expect(200)
+    // An order the expiry has not reached past its hold is the expiry's own to ask about.
+    const waiting = await s.place('waiting@example.test')
+    const open = await s.started(waiting)
+    await setColumn('orders', waiting.orderId, 'hold_ends_at', ago(HOUR + 1))
+
+    expect(await recheck(s)).toEqual({ taken: 0, unpaid: 0, waiting: 0 })
+
+    expect(await attempt(s, open)).toMatchObject({ status: 'started', rechecked_at: null })
+    expect(await attempt(s, late.attemptId)).toMatchObject({ status: 'paid', rechecked_at: null })
+  })
+
+  it('passes by the attempts of a suspended convention, and asks once it is restored', async () => {
+    const s = await shop()
+    const { attemptId } = await expired(s)
+
+    await suspend(s.t.id)
+    expect(await recheck(s)).toEqual({ taken: 0, unpaid: 0, waiting: 0 })
+    expect(await attempt(s, attemptId)).toMatchObject({ rechecked_at: null })
+
+    await restore(s.t.id)
+    expect(await recheck(s)).toEqual({ taken: 0, unpaid: 1, waiting: 0 })
+  })
+
+  // Safe with several API processes: the order's lock lets one of them take the payment.
+  it('takes a payment once when it runs twice at the same moment', async () => {
+    const s = await shop()
+    const { placed, attemptId } = await expired(s)
+    fake().pay(attemptId)
+
+    await Promise.all([recheck(s), recheck(s), recheck(s)])
+
+    expect(await s.stored(placed)).toMatchObject({ status: 'paid' })
+    const confirmations = (await s.emails()).filter(([kind]) => kind === 'order-confirmation')
+    expect(confirmations).toEqual([['order-confirmation', 'buyer@example.test']])
   })
 })

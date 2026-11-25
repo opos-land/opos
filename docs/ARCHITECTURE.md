@@ -119,22 +119,23 @@ and after every restore.
 **Cross-tenant queries** run only in
 [GlobalDbService](../apps/api/src/common/database/global-db.service.ts):
 
-| Query                                  | Bound                                                                                                                                                           |
-| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| a tenant by slug                       | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address                                                   |
-| `GET /me/memberships`                  | the session's account; expired memberships left out, and the editions of a suspended tenant                                                                     |
-| `GET /me/schedule`                     | the session's own likes; published editions only, of tenants not suspended                                                                                      |
-| `GET /public/editions`                 | publication: the published editions of tenants not suspended, with the columns anyone reads of each one convention at a time                                    |
-| `DELETE /me`                           | the session's account; answers only whether it is a tenant's last head                                                                                          |
-| the sweep of files                     | the API's own job; the identifiers, owners and kinds of files, and whether a feature's row points at one                                                        |
-| a payment attempt by its identifier    | the address of a provider's notification; it answers the tenant and the provider alone, and nothing counts before the provider's signature holds                |
-| the orders whose hold ended            | the API's own job; identifiers and the end of the hold a page continues from alone, of tenants not suspended                                                    |
-| the emails of orders that are due      | the API's own job; identifiers alone, of tenants not suspended                                                                                                  |
-| a scanner by a hash                    | the pairing code or the token the caller sent, by its hash; it answers the scanner and its tenant alone, and the device is judged in that tenant's transaction  |
-| an order link by a hash                | the token the caller sent, by its hash; it answers the link's tenant alone, and the link and its order are read in that tenant's transaction                    |
-| the editions whose reminder may be due | the API's own job; identifiers, the tenant's time zone and the start a page continues from alone, of published editions of tenants not suspended                |
-| a published profile by its identifier  | the account's own publication: the public name and what the profile's page shows, of a profile published and not taken down, and nothing that names the account |
-| whose avatar a file is                 | the avatar is public from its upload; it answers the account to the API alone, which then serves the file                                                       |
+| Query                                   | Bound                                                                                                                                                           |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| a tenant by slug                        | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address                                                   |
+| `GET /me/memberships`                   | the session's account; expired memberships left out, and the editions of a suspended tenant                                                                     |
+| `GET /me/schedule`                      | the session's own likes; published editions only, of tenants not suspended                                                                                      |
+| `GET /public/editions`                  | publication: the published editions of tenants not suspended, with the columns anyone reads of each one convention at a time                                    |
+| `DELETE /me`                            | the session's account; answers only whether it is a tenant's last head                                                                                          |
+| the sweep of files                      | the API's own job; the identifiers, owners and kinds of files, and whether a feature's row points at one                                                        |
+| a payment attempt by its identifier     | the address of a provider's notification; it answers the tenant and the provider alone, and nothing counts before the provider's signature holds                |
+| the orders whose hold ended             | the API's own job; identifiers and the end of the hold a page continues from alone, of tenants not suspended                                                    |
+| the payment attempts to ask about again | the API's own job; identifiers and the end of the hold a page continues from alone, of expired orders of tenants not suspended                                  |
+| the emails of orders that are due       | the API's own job; identifiers alone, of tenants not suspended                                                                                                  |
+| a scanner by a hash                     | the pairing code or the token the caller sent, by its hash; it answers the scanner and its tenant alone, and the device is judged in that tenant's transaction  |
+| an order link by a hash                 | the token the caller sent, by its hash; it answers the link's tenant alone, and the link and its order are read in that tenant's transaction                    |
+| the editions whose reminder may be due  | the API's own job; identifiers, the tenant's time zone and the start a page continues from alone, of published editions of tenants not suspended                |
+| a published profile by its identifier   | the account's own publication: the public name and what the profile's page shows, of a profile published and not taken down, and nothing that names the account |
+| whose avatar a file is                  | the avatar is public from its upload; it answers the account to the API alone, which then serves the file                                                       |
 
 A new one is bound by the session's account or its confirmed email address, a secret the caller
 proved (a signature, a link or device token), the API's own job, or publication: an edition's,
@@ -311,7 +312,9 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   behind an advisory lock, so one process sweeps at a time, removing, once older than 24 hours,
   a file's row nothing points at and an object no row explains; the expiry of orders every
   minute and the outbox of their emails every quarter of a minute, each claiming a row under a
-  lock another process skips; the reminders before an edition every five minutes, each queued
+  lock another process skips; with the expiry, the question asked once more about the payment
+  attempts of expired orders, which two processes may each ask while the order's lock lets one
+  take the payment; the reminders before an edition every five minutes, each queued
   under a lock of its edition's shop row, so a second process finds it gone out; the removal of
   the profile reports closed twelve months before, daily, which two processes do once. A job finds its
   rows across tenants by identifiers alone, passes a suspended tenant's by, and acts on each in
@@ -734,7 +737,14 @@ steps of [adding a feature](#adding-a-feature).
   ([0093](adr/0093-change-a-provider-account-under-a-payment-only-where-the-payment-loses-nothing.md)).
   An order being placed and a change of the account share one lock of the tenant's account. The
   expiry of orders asks the account the convention holds now, and expires an order whose attempt
-  that account does not know. The orders awaiting
+  that account does not know. After each run it asks the provider once more about each payment
+  attempt of an expired order that nobody confirmed, from an hour after the end of the hold and
+  for 24 hours from it at most, so that a payment settled with its answer lost is found. A
+  payment the provider reports goes through the three steps of a confirmation, as a late one;
+  the attempt is marked once the provider answered and is not asked about again, and nothing is
+  written before the answer, so no state stands between the steps
+  ([0104](adr/0104-ask-the-provider-once-more-about-each-payment-attempt-of-an-expired-order.md)).
+  The orders awaiting
   payment in an edition are counted for the buyer the request proves: those on the account that
   places the order, or for a visitor those under the email that are on no account, so that an
   order anyone places under an email never counts against its account. Each count runs under a

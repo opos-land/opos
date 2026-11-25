@@ -509,6 +509,47 @@ describe('the state of an attempt at Przelewy24', () => {
     expect(new Date(String(attempt!.paid_at)).toISOString()).toBe('2026-05-01T08:30:00.000Z')
   })
 
+  // The order expired, its buyer paid a moment later, and the answer of the verification was
+  // lost on its way: Przelewy24 counts the transaction as verified and repeats no notification.
+  // Asked again an hour after the hold, it tells of the payment, which is taken as a late one.
+  it('finds the payment of an expired order whose verification left no trace', async () => {
+    const s = await shop()
+    const placed = await s.place()
+    const attemptId = await s.started(placed)
+    await setColumn(
+      'orders',
+      placed.orderId,
+      'hold_ends_at',
+      new Date(Date.now() - MINUTE).toISOString(),
+    )
+    await app.get(OrderExpiry).run(new Date(), { tenantId: s.t.id })
+    expect(await s.stored(placed)).toMatchObject({ status: 'expired' })
+    p24.verificationDown = true
+    await notify(attemptId, p24.pay(attemptId)).expect(503)
+    p24.transaction(attemptId)!.status = 2
+    p24.verificationDown = false
+    expect(await s.attempts()).toMatchObject([{ status: 'ended', confirmed_at: null }])
+    await setColumn(
+      'orders',
+      placed.orderId,
+      'hold_ends_at',
+      new Date(Date.now() - 61 * MINUTE).toISOString(),
+    )
+
+    const result = await app.get(OrderExpiry).recheck(new Date(), { tenantId: s.t.id })
+
+    expect(result).toEqual({ taken: 1, unpaid: 0, waiting: 0 })
+    expect(await s.stored(placed)).toMatchObject({ status: 'paid' })
+    const [attempt] = await s.attempts()
+    expect(attempt).toMatchObject({
+      status: 'paid',
+      paid_amount_minor: 10000,
+      money_with: 'convention',
+    })
+    expect(attempt!.provider_reference).not.toBeNull()
+    expect(attempt!.confirmed_at).not.toBeNull()
+  })
+
   it('expires an order nobody paid, and leaves one whose provider does not answer', async () => {
     const s = await shop()
     const [unpaid, unknown] = [await s.place(), await s.place('other@example.test')]

@@ -481,10 +481,19 @@ export const paymentAttempts = pgTable(
     failureCode: text(),
     failureMessage: text(),
     information: jsonb().$type<Record<string, string>>(),
+    /**
+     * When the provider was asked about it once more after its order expired: an attempt nobody
+     * confirmed is asked about once, and this says it was.
+     */
+    recheckedAt: timestamp({ withTimezone: true }),
     ...timestamps,
   },
   (t) => [
     index('payment_attempts_tenant_order_idx').on(t.tenantId, t.orderId),
+    // What the job that asks again reads: the attempts nobody confirmed that were not asked about.
+    index('payment_attempts_to_recheck_idx')
+      .on(t.tenantId, t.orderId)
+      .where(sql`${t.confirmedAt} is null and ${t.recheckedAt} is null`),
     foreignKey({
       name: 'payment_attempts_order_fk',
       columns: [t.orderId, t.tenantId, t.editionId],

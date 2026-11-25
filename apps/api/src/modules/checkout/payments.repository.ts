@@ -55,7 +55,10 @@ export type StoredAttempt = typeof paymentAttempts.$inferSelect
 export type Gone =
   { kind: 'ticket-type' | 'add-on' | 'variant'; id: string } | { kind: 'discount-code' }
 
-/** What a provider's module said of an attempt, as the attempt keeps it. */
+/**
+ * What a provider's module said of an attempt, as the attempt keeps it, and when the provider was
+ * asked about it again after its order expired.
+ */
 export type AttemptChanges = Partial<
   Pick<
     StoredAttempt,
@@ -69,6 +72,7 @@ export type AttemptChanges = Partial<
     | 'failureCode'
     | 'failureMessage'
     | 'information'
+    | 'recheckedAt'
   >
 >
 

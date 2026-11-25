@@ -509,6 +509,47 @@ export class GlobalDbService {
   }
 
   /**
+   * The job that asks a provider again: the payment attempts nobody confirmed and nobody asked
+   * about again, of the expired orders whose hold ended after `from` and by `to`, the longest
+   * ended first, of the tenants that are not suspended, a page at a time. Identifiers and the
+   * moment a page continues from alone: each attempt is judged again in its own tenant.
+   */
+  attemptsToAskAgain(
+    { from, to }: { from: Date; to: Date },
+    { limit = 200, tenantId, after }: JobScope & { after?: { holdEndsAt: Date; id: string } } = {},
+  ): Promise<{ id: string; tenantId: string; holdEndsAt: Date }[]> {
+    return this.db
+      .select({
+        id: paymentAttempts.id,
+        tenantId: paymentAttempts.tenantId,
+        holdEndsAt: sql<Date>`${orders.holdEndsAt}`.mapWith(orders.holdEndsAt),
+      })
+      .from(paymentAttempts)
+      .innerJoin(
+        orders,
+        and(eq(orders.id, paymentAttempts.orderId), eq(orders.tenantId, paymentAttempts.tenantId)),
+      )
+      .innerJoin(tenants, eq(tenants.id, paymentAttempts.tenantId))
+      .where(
+        and(
+          isNull(paymentAttempts.confirmedAt),
+          isNull(paymentAttempts.recheckedAt),
+          eq(orders.status, 'expired'),
+          gt(orders.holdEndsAt, from),
+          lte(orders.holdEndsAt, to),
+          isNull(tenants.suspendedAt),
+          tenantId === undefined ? undefined : eq(paymentAttempts.tenantId, tenantId),
+          // The page after the last attempt of the one before, in the order they are read in.
+          after === undefined
+            ? undefined
+            : sql`(${orders.holdEndsAt}, ${paymentAttempts.id}) > (${after.holdEndsAt.toISOString()}::timestamptz, ${after.id}::uuid)`,
+        ),
+      )
+      .orderBy(asc(orders.holdEndsAt), asc(paymentAttempts.id))
+      .limit(limit)
+  }
+
+  /**
    * The outbox of the orders' emails: those not sent yet that are due, the longest due first, of
    * the tenants that are not suspended. Identifiers alone: each is taken in its own tenant.
    */

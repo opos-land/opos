@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createEdition, createTenant, createUser, inTenant, migrator } from './db'
+import { globalReads } from '../src/verify'
+import { createEdition, createTenant, createUser, global, inTenant, migrator } from './db'
 
 // Orders and what they hold (docs/specs/0004-checkout-and-orders.md): an order with its lines,
 // answers, consents, QR code, payment attempts, emails and links. Every row is its tenant's and
@@ -480,6 +481,76 @@ describe('payment_attempts', () => {
       information: { transaction: '123' },
       paid_amount_minor: null,
     })
+  })
+
+  // An attempt of an expired order nobody confirmed is asked about at its provider once more,
+  // and marked when it was: the application role writes that moment within its tenant.
+  it('is marked once its provider was asked again after its order expired', async () => {
+    const at = await place()
+    const expired = await order(at, { status: 'expired', holds: false })
+    const id = await attempt(at, expired, { status: 'ended' })
+
+    await inTenant(
+      at.tenant,
+      (sql) => sql`update payment_attempts set rechecked_at = now() where id = ${id}`,
+    )
+
+    const [row] = await migrator<{ rechecked_at: Date | null }[]>`
+      select rechecked_at from payment_attempts where id = ${id}
+    `
+    expect(row!.rechecked_at).toBeInstanceOf(Date)
+  })
+
+  // The job that asks again finds its attempts across tenants, by identifiers and the moments
+  // that say whether one is still to ask: nothing a provider said of a payment.
+  it('is found across tenants while nobody confirmed it or asked again, by identifiers alone', async () => {
+    const at = await place()
+    const expired = await order(at, {
+      status: 'expired',
+      holds: false,
+      hold_ends_at: '2026-01-01T00:00:00Z',
+    })
+    const [open, asked, confirmed] = [
+      await attempt(at, expired, { status: 'ended' }),
+      await attempt(at, expired, { status: 'ended', rechecked_at: new Date() }),
+      await attempt(at, expired, { status: 'paid', confirmed_at: new Date() }),
+    ]
+
+    const found = await global<{ id: string; tenant_id: string }[]>`
+      select a.id, a.tenant_id from payment_attempts a
+      join orders o on o.id = a.order_id and o.tenant_id = a.tenant_id
+      where a.id in ${global([open, asked, confirmed])} and o.status = 'expired'
+        and a.confirmed_at is null and a.rechecked_at is null
+    `
+
+    expect(found).toEqual([{ id: open, tenant_id: at.tenant }])
+    const reads = globalReads
+      .filter((read) => read.startsWith('payment_attempts.'))
+      .map((read) => read.split('.')[1])
+    expect(reads.sort()).toEqual([
+      'confirmed_at',
+      'id',
+      'order_id',
+      'provider',
+      'rechecked_at',
+      'tenant_id',
+    ])
+    for (const column of [
+      'status',
+      'paid_amount_minor',
+      'paid_at',
+      'provider_reference',
+      'failure_message',
+      'information',
+    ]) {
+      await expect(
+        global.unsafe(`select ${column} from payment_attempts limit 1`),
+        column,
+      ).rejects.toThrow(/permission denied/)
+    }
+    await expect(
+      global.unsafe('update payment_attempts set rechecked_at = now() where false'),
+    ).rejects.toThrow(/permission denied/)
   })
 })
 

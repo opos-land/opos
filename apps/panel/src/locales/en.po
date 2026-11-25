@@ -24,6 +24,10 @@ msgstr "{count, plural, one {# order needs review: its payment arrived and could
 msgid "{count, plural, one {Permissions in the edition} other {Permissions in the editions}}"
 msgstr "{count, plural, one {Permissions in the edition} other {Permissions in the editions}}"
 
+#: src/features/scanner/pages/edition-scanner-page.tsx
+msgid "{ends}, a day after the edition’s last day"
+msgstr "{ends}, a day after the edition’s last day"
+
 #: src/features/program/components/speakers-editor.tsx
 msgid "{limit, plural, one {An item can have up to # speaker.} other {An item can have up to # speakers.}}"
 msgstr "{limit, plural, one {An item can have up to # speaker.} other {An item can have up to # speakers.}}"
@@ -1756,8 +1760,8 @@ msgid "Last used"
 msgstr "Last used"
 
 #: src/features/scanner/pages/new-scanner-page.tsx
-msgid "Left empty, the scanner’s access ends a day after the edition’s last day, and no later than your own access."
-msgstr "Left empty, the scanner’s access ends a day after the edition’s last day, and no later than your own access."
+msgid "Left empty, the scanner’s access ends a day after the edition’s last day, also when that day is changed later, and no later than your own access."
+msgstr "Left empty, the scanner’s access ends a day after the edition’s last day, also when that day is changed later, and no later than your own access."
 
 #: src/features/discounts/pages/discount-codes-page.tsx
 msgid "Let it run again"

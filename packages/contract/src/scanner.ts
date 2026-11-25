@@ -37,7 +37,13 @@ export const scannerSchema = z.object({
   /** Whether a phone spent its pairing code. */
   paired: z.boolean(),
   lastUsedAt: timestamp.nullable(),
+  /**
+   * When its access ends: the end its org set or, with none, `SCANNER_DAYS_AFTER_EDITION` after
+   * the last day its edition has at the moment the scanner is read.
+   */
   expiresAt: timestamp,
+  /** Whether its org set no end: `expiresAt` then moves with the edition's last day. */
+  followsEdition: z.boolean(),
   revokedAt: timestamp.nullable(),
 })
 
@@ -108,6 +114,10 @@ export const pairedScannerSchema = z.object({
   conventionName: z.string(),
   /** The convention's time zone: the scanner shows every moment in it, never in the phone's. */
   timezone: z.string(),
+  /**
+   * When its access ends, as that stood when the phone was paired. The phone judges nothing by
+   * it: the end of a scanner that follows its edition moves, and the API judges every request.
+   */
   expiresAt: timestamp,
 })
 

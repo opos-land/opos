@@ -828,6 +828,11 @@ steps of [adding a feature](#adding-a-feature).
   that moment answers that it is stopped, under an error code of its own, and the phone keeps
   its token, which works again once the org can
   ([0096](adr/0096-pair-the-phone-that-opens-a-pairing-link-and-forget-a-scanner-only-on-a-lasting-refusal.md)).
+  A scanner's end is a day after the last day of its edition, or the earlier end its org set:
+  it is computed from the edition in every query that judges or tells it, never read from the
+  scanner's row alone, so a change of an edition's dates writes nothing to its scanners, no role
+  changes a scanner's end, and the phone judges none
+  ([0097](adr/0097-read-a-scanners-end-from-its-editions-last-day-at-every-check.md)).
   It is judged there by the secret the phone sent, the token or the
   pairing code, which the scanner must still hold: a new pairing code replaces both, and the hash
   that found the scanner across tenants was read a moment before. The guard counts every request

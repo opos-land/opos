@@ -51,7 +51,8 @@ export class ScannerService {
    * Enables a scanner of the edition for the org of the request, and answers its pairing code:
    * the only time the code is told. It runs under the tenant's write lock, which judged the org
    * again: the scanner ends a day after the edition's last day unless the org sets less, and
-   * never later than the org's own access.
+   * never later than the org's own access. With no earlier end to keep, none is written: the
+   * scanner follows its edition, and its end is read from the edition's last day from then on.
    */
   async enable(editionId: string, body: CreateScanner, now = new Date()): Promise<EnabledScanner> {
     const membership = this.context.membership()
@@ -59,7 +60,8 @@ export class ScannerService {
     if (!membership || !editionEnd) throw notFound('edition')
     const latest = new Date(editionEnd.getTime() + SCANNER_DAYS_AFTER_EDITION * DAY)
     const own = membership.expiresAt
-    let expiresAt = own && own < latest ? own : latest
+    // An org whose own access ends earlier enables no scanner past that end.
+    let expiresAt = own && own < latest ? own : null
     if (body.expiresAt !== undefined) {
       const asked = new Date(body.expiresAt)
       if (asked > latest) {
@@ -68,7 +70,9 @@ export class ScannerService {
       if (own && asked > own) throw scannerOutlivesOrg()
       expiresAt = asked
     }
-    if (expiresAt <= now) throw invalidField('expiresAt', 'The scanner would have ended already')
+    if ((expiresAt ?? latest) <= now) {
+      throw invalidField('expiresAt', 'The scanner would have ended already')
+    }
     if ((await this.scanners.enabled(editionId, now)) >= MAX_SCANNERS) {
       throw scannerLimitReached(MAX_SCANNERS)
     }

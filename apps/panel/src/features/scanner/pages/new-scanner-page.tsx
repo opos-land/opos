@@ -99,8 +99,8 @@ export function NewScannerPage() {
               label={<Trans>Ends earlier (optional)</Trans>}
               hint={
                 <Trans>
-                  Left empty, the scanner’s access ends a day after the edition’s last day, and no
-                  later than your own access.
+                  Left empty, the scanner’s access ends a day after the edition’s last day, also
+                  when that day is changed later, and no later than your own access.
                 </Trans>
               }
             >

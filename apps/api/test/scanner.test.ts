@@ -238,6 +238,53 @@ describe('a scanner', () => {
     ).toMatchObject(revoked)
   })
 
+  // A scanner whose org set no end follows its edition: it works until a day after the
+  // edition's last day, wherever that day is moved after the scanner was enabled.
+  it('follows its edition when its org set no end: it works until a day after the last day the edition has now', async () => {
+    const g = await gate()
+    const order = await g.paid()
+    const follows = await addScanner(g.t.id, g.edition, { expiresAt: null })
+    await scan(follows.token, order.code).expect(200)
+    const lastDay = (at: number) =>
+      setColumn('editions', g.edition, 'ends_at', new Date(at).toISOString())
+
+    // The edition began long ago, and its last day was the day before yesterday.
+    await setColumn(
+      'editions',
+      g.edition,
+      'starts_at',
+      new Date(Date.now() - 30 * DAY).toISOString(),
+    )
+    await lastDay(Date.now() - 2 * DAY)
+    expect((await scan(follows.token, order.code).expect(401)).body).toMatchObject(revoked)
+    // An end an org set is only ever an earlier one: a scanner whose own end is later ends a
+    // day after the edition's last day too.
+    expect((await scan(g.token, order.code).expect(401)).body).toMatchObject(revoked)
+
+    // The edition is prolonged: its last day was half a day ago, and the scanners work again.
+    await lastDay(Date.now() - DAY / 2)
+    await scan(follows.token, order.code).expect(200)
+    await scan(g.token, order.code).expect(200)
+    // An earlier end of its own holds whatever the edition's dates are.
+    const early = await addScanner(g.t.id, g.edition, {
+      expiresAt: new Date(Date.now() - 60_000).toISOString(),
+    })
+    expect((await scan(early.token, order.code).expect(401)).body).toMatchObject(revoked)
+  })
+
+  it('tells a phone it pairs the end it has by its edition now', async () => {
+    const g = await gate()
+    const code = 'follows-code-'.padEnd(43, 'x')
+    await addScanner(g.t.id, g.edition, { pairingCode: code, expiresAt: null })
+    // A week later than the edition ended when the scanner was enabled.
+    const ends = new Date('2027-06-10T12:00:00.000Z')
+    await setColumn('editions', g.edition, 'ends_at', ends.toISOString())
+
+    const res = await pair(code).expect(200)
+
+    expect((res.body as PairedScanner).expiresAt).toBe(new Date(ends.getTime() + DAY).toISOString())
+  })
+
   it('reads nothing of a suspended convention', async () => {
     const g = await gate()
     const order = await g.paid()

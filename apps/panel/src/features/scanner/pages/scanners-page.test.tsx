@@ -45,6 +45,7 @@ const scanner = (name: string, fields: object = {}) => ({
   paired: true,
   lastUsedAt: '2026-06-05T09:00:00.000Z',
   expiresAt: '2099-06-08T16:00:00.000Z',
+  followsEdition: false,
   revokedAt: null,
   orgStanding: 'writes',
   ...fields,

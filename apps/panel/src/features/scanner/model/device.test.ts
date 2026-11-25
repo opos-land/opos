@@ -43,13 +43,20 @@ describe('the device', () => {
     expect(readDevice()).toBeNull()
   })
 
-  it('is nobody for a stored value that is no device, and for one that has ended', () => {
+  it('is nobody for a stored value that is no device', () => {
     localStorage.setItem('opos.scanner', '{"token": 1}')
     expect(readDevice()).toBeNull()
     localStorage.setItem('opos.scanner', 'not json')
     expect(readDevice()).toBeNull()
+  })
 
-    saveDevice({ ...device, expiresAt: '2020-01-01T00:00:00.000Z' })
-    expect(readDevice()).toBeNull()
+  // The end a phone was told when it was paired is the one the scanner had then: the end of a
+  // scanner that follows its edition moves with the edition's dates, and the API judges it at
+  // every request. The phone forgets its scanner when the API says it is none.
+  it('stays the scanner past the end it was told when it was paired', () => {
+    const told = { ...device, expiresAt: '2020-01-01T00:00:00.000Z' }
+    saveDevice(told)
+
+    expect(readDevice()).toEqual(told)
   })
 })

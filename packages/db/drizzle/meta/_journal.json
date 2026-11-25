@@ -505,6 +505,13 @@
       "when": 1795361713818,
       "tag": "0071_optional_holder_name",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1795641753907,
+      "tag": "0072_scanner_follows_edition",
+      "breakpoints": true
     }
   ]
 }

@@ -39,7 +39,12 @@ export const scannerDevices = pgTable(
     pairedAt: timestamp({ withTimezone: true }),
     /** Empty until a phone is paired. */
     tokenHash: text(),
-    expiresAt: timestamp({ withTimezone: true }).notNull(),
+    /**
+     * The end its org set, set once. Empty for a scanner that follows its edition: its access
+     * then ends a day after the edition's last day, as that day stands whenever the end is read
+     * (docs/PRODUCT.md, 7. Modules).
+     */
+    expiresAt: timestamp({ withTimezone: true }),
     lastUsedAt: timestamp({ withTimezone: true }),
     revokedAt: timestamp({ withTimezone: true }),
     ...timestamps,

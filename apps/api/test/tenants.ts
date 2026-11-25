@@ -583,7 +583,8 @@ export async function addScanner(
   values: {
     name?: string
     membershipId?: string | null
-    expiresAt?: string
+    /** Null for a scanner whose org set no end: it follows its edition. Left out, a far end. */
+    expiresAt?: string | null
     revoked?: boolean
     /** Not paired yet: no token, and a pairing code still to spend. */
     pairingCode?: string
@@ -606,7 +607,8 @@ export async function addScanner(
       ${hashOf(values.pairingCode ?? randomUUID())},
       ${values.pairingExpiresAt ?? sql`now() + interval '15 minutes'`},
       ${paired ? sql`now()` : null}, ${paired ? hashOf(token) : null},
-      ${values.expiresAt ?? '2099-01-01T00:00:00Z'}, ${values.revoked ? sql`now()` : null})
+      ${values.expiresAt === undefined ? '2099-01-01T00:00:00Z' : values.expiresAt},
+      ${values.revoked ? sql`now()` : null})
     returning id
   `)
   return { id: row!.id, token }

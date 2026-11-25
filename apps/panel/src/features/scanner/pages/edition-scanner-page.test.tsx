@@ -52,6 +52,7 @@ const scanner = (name: string, fields: object = {}) => ({
   paired: true,
   lastUsedAt: '2026-06-05T09:00:00.000Z',
   expiresAt: '2099-06-08T16:00:00.000Z',
+  followsEdition: false,
   revokedAt: null,
   orgStanding: 'writes',
   ...fields,
@@ -124,6 +125,19 @@ describe('the page of a scanner', () => {
     expect(about.getByText('head@convention-a.test')).toBeDefined()
     expect(about.getByText('at 2026-06-05T09:00:00.000Z')).toBeDefined()
     expect(about.getByText('at 2099-06-08T16:00:00.000Z')).toBeDefined()
+  })
+
+  // A scanner whose organizer set no end follows its edition: the page says where the date
+  // comes from, since it moves when the edition's dates do.
+  it('says that the end follows the edition for a scanner with no end of its own', async () => {
+    state.tickets = 'read'
+    readScanner.mockResolvedValue(gate({ followsEdition: true }))
+    view()
+
+    const about = within(await screen.findByRole('region', { name: 'Scanner' }))
+    expect(
+      about.getByText('at 2099-06-08T16:00:00.000Z, a day after the edition’s last day'),
+    ).toBeDefined()
   })
 
   it('tells what the scanner handed out, and lists the orders it marked last with a link to each', async () => {

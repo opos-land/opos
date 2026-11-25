@@ -1369,7 +1369,7 @@ async function seedTenant(spec: SeedTenant) {
 
     // The scanners of an edition (docs/specs/0007-scanner.md, Seed), enabled by the head. A
     // phone was paired with each long ago, under a code and a token nobody holds: the seed opens
-    // no device.
+    // no device. None is given an end of its own: each follows its edition.
     for (const edition of spec.editions) {
       const editionId = editionIds.get(edition.slug)!
       for (const scanner of edition.shop?.scanners ?? []) {
@@ -1391,7 +1391,6 @@ async function seedTenant(spec: SeedTenant) {
           pairingExpiresAt: new Date(pairedAt.getTime() + 15 * 60 * 1000),
           pairedAt,
           tokenHash: secret(),
-          expiresAt: new Date(edition.endsAt.getTime() + DAY),
           revokedAt: scanner.revoked ? new Date(Date.now() - DAY) : null,
         })
       }

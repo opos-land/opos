@@ -1202,8 +1202,9 @@ describe('db:seed shop', () => {
   )
 
   // docs/specs/0007-scanner.md, Seed: two scanners, one of them revoked, their pairing codes spent.
+  // Neither was given an end of its own: each follows its edition.
   it(
-    'gives the selling edition two scanners that open no device',
+    'gives the selling edition two scanners that open no device and follow its dates',
     { timeout: 120_000 },
     async () => {
       const run = runSeed('local')
@@ -1218,10 +1219,12 @@ describe('db:seed shop', () => {
           paired: boolean
           enabled: boolean
           pairing_open: boolean
+          follows_edition: boolean
         }[]
       >`
       select name, revoked_at is not null as revoked, paired_at is not null as paired,
-        enabled_by_membership_id is not null as enabled, pairing_expires_at > now() as pairing_open
+        enabled_by_membership_id is not null as enabled, pairing_expires_at > now() as pairing_open,
+        expires_at is null as follows_edition
       from scanner_devices where edition_id = ${edition} order by name
     `
       expect(scanners).toEqual([
@@ -1231,6 +1234,7 @@ describe('db:seed shop', () => {
           paired: true,
           enabled: true,
           pairing_open: false,
+          follows_edition: true,
         },
         {
           name: 'Stoisko z gadżetami',
@@ -1238,6 +1242,7 @@ describe('db:seed shop', () => {
           paired: true,
           enabled: true,
           pairing_open: false,
+          follows_edition: true,
         },
       ])
     },

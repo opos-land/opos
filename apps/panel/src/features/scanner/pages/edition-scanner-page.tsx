@@ -111,6 +111,7 @@ function About({ scanner, at }: { scanner: ScannerDetail; at: number }) {
   const { t } = useLingui()
   const time = useTenantTime()
   const stateOf = useScannerState()
+  const ends = time.format(scanner.expiresAt)
   return (
     <Section title={<Trans>Scanner</Trans>}>
       {/* Why a scanner that is neither revoked nor ended reads nothing, for a reader too. */}
@@ -148,7 +149,13 @@ function About({ scanner, at }: { scanner: ScannerDetail; at: number }) {
             name: <Trans>Last used</Trans>,
             value: scanner.lastUsedAt ? time.format(scanner.lastUsedAt) : t`Never`,
           },
-          { key: 'ends', name: <Trans>Access ends</Trans>, value: time.format(scanner.expiresAt) },
+          {
+            key: 'ends',
+            name: <Trans>Access ends</Trans>,
+            // With no end of its own the scanner follows its edition: the date moves when the
+            // edition's last day does.
+            value: scanner.followsEdition ? t`${ends}, a day after the edition’s last day` : ends,
+          },
         ]}
       />
     </Section>

@@ -1096,6 +1096,10 @@ msgid "The two-factor authentication of this account has changed since the admin
 msgstr "The two-factor authentication of this account has changed since the administrator role was granted. Ask for the role to be granted again."
 
 #: src/errors.ts
+msgid "The variants of this merchandise item have changed since this page read them. Check them as they are now and save your changes again."
+msgstr "The variants of this merchandise item have changed since this page read them. Check them as they are now and save your changes again."
+
+#: src/errors.ts
 msgid "There is no room for more files. Remove the ones you no longer need."
 msgstr "There is no room for more files. Remove the ones you no longer need."
 

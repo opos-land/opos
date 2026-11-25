@@ -77,6 +77,14 @@ export function variantsPlan(
   }
 }
 
+/**
+ * The variants the form was filled with, each hidden or shown, as saving them tells the API: it
+ * refuses the list once the item has other variants by then, which someone else added, deleted,
+ * hid or showed since. The stock is no part of it: `stockWrites` leaves another's number alone.
+ */
+export const knownVariants = (item: MerchandiseItem): NonNullable<PutVariants['known']> =>
+  item.variants.map(({ id, hidden }) => ({ id, hidden }))
+
 /** The variant of the item that holds exactly these values, once the API answered the item. */
 export const variantOf = (item: MerchandiseItem, valueIds: readonly string[]) =>
   item.variants.find((variant) => keyOf(variant.valueIds) === keyOf(valueIds))

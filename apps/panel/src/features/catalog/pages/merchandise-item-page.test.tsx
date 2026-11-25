@@ -1,5 +1,6 @@
 import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
+import { ORPCError } from '@orpc/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
@@ -415,6 +416,8 @@ describe('the variants of an item', () => {
           { valueIds: ['w', 's'], hidden: false },
           { valueIds: ['m', 'l'], hidden: false },
         ],
+        // The variants the form was filled with, for the API to refuse a list built on others.
+        known: [{ id: 'ws', hidden: false }],
       },
     })
     // The stock of the variant that kept its number is not set again.
@@ -439,6 +442,53 @@ describe('the variants of an item', () => {
     await waitFor(() => expect(notifySuccess).toHaveBeenCalledTimes(1))
     expect(putVariants).toHaveBeenCalledTimes(1)
     expect(putStock).not.toHaveBeenCalled()
+  })
+
+  it('is filled anew with the variants as they are once the API refuses a list built on others', async () => {
+    view('shirt')
+    await waitFor(() => expect(field("Women's · S: stock").value).toBe('12'))
+    // Someone else added a variant since the form was filled, which the API tells by its refusal.
+    putVariants.mockRejectedValue(
+      new ORPCError('catalog.variants-changed', { status: 409, message: 'changed' }),
+    )
+    readItems.mockResolvedValue([
+      mug,
+      { ...shirt, variants: [variant('ws', ['w', 's'], 12), variant('ms', ['m', 's'], 3)] },
+    ])
+
+    fireEvent.click(box("Men's · L: exists"))
+    type("Women's · S: stock", '99')
+    press('Save the variants and their stock')
+
+    await waitFor(() => expect(box("Men's · S: exists").getAttribute('aria-checked')).toBe('true'))
+    expect(field("Men's · S: stock").value).toBe('3')
+    // What the form held is gone with the reading it was built on: nothing of it was saved.
+    expect(box("Men's · L: exists").getAttribute('aria-checked')).toBe('false')
+    expect(field("Women's · S: stock").value).toBe('12')
+    expect(putVariants).toHaveBeenCalledTimes(1)
+    expect(putStock).not.toHaveBeenCalled()
+    expect(notifySuccess).not.toHaveBeenCalled()
+  })
+
+  it('is saved again only once the item is read again: a save names the variants it was filled with', async () => {
+    view('shirt')
+    await waitFor(() => expect(field("Women's · S: stock").value).toBe('12'))
+    let answer!: (items: object[]) => void
+    readItems.mockReturnValue(new Promise((resolve) => (answer = resolve)))
+    const save = () => screen.getByRole('button', { name: 'Save the variants and their stock' })
+
+    fireEvent.click(box("Men's · L: exists"))
+    press('Save the variants and their stock')
+
+    // The save is done and told, and the variants it made are not read yet.
+    await waitFor(() => expect(notifySuccess).toHaveBeenCalledTimes(1))
+    expect(save().matches(':disabled')).toBe(true)
+    answer([
+      mug,
+      { ...shirt, variants: [variant('ws', ['w', 's'], 12), variant('ml', ['m', 'l'], 0)] },
+    ])
+    await waitFor(() => expect(save().matches(':disabled')).toBe(false))
+    expect(box("Men's · L: exists").getAttribute('aria-checked')).toBe('true')
   })
 
   it('marks a variant unlimited, which holds no number', async () => {

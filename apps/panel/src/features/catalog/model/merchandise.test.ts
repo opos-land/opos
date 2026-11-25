@@ -9,6 +9,7 @@ import {
   imageProblem,
   itemBody,
   itemFields,
+  knownVariants,
   stockWrites,
   takenByAxes,
   variantRows,
@@ -126,6 +127,16 @@ describe('what saving the variants asks for', () => {
     }))
 
     expect(variantsPlan(many)).toEqual({ problem: 'limit' })
+  })
+
+  it('says which variants the form was filled with, each hidden or shown, and no stock', () => {
+    const read = shirt([variant('v1', ['w', 's'], 12), variant('v2', ['m', 'l'], null, true)])
+
+    expect(knownVariants(read)).toEqual([
+      { id: 'v1', hidden: false },
+      { id: 'v2', hidden: true },
+    ])
+    expect(knownVariants(shirt())).toEqual([])
   })
 })
 

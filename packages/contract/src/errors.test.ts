@@ -66,6 +66,10 @@ describe('errorCodes', () => {
     expect(errorCodes).toContain(code)
   })
 
+  it('lists the code of a list of variants built on a reading the item has moved on from', () => {
+    expect(errorCodes).toContain('catalog.variants-changed')
+  })
+
   // What placing an order refuses of a cart (docs/specs/0004-checkout-and-orders.md).
   it.each(['order.unavailable', 'order.total-changed', 'order.total-too-high'])(
     'lists %s of a cart that is not placed as it stands',

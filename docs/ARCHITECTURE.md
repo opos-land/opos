@@ -691,6 +691,11 @@ steps of [adding a feature](#adding-a-feature).
   a whole. A ticket type has one price at a moment or none: an exclusion constraint keeps its
   tiers apart, and the API refuses them first by a code of its own
   ([0046](adr/0046-keep-the-price-tiers-of-a-ticket-type-apart-with-an-exclusion-constraint.md)).
+  The variants of a merchandise item that exist are put as a whole list too. A request that
+  names the variants its list was built on, each hidden or shown, is refused by a code of its
+  own once the item has others, so a form filled before someone else's change deletes no variant
+  of theirs, makes none again and hides or shows none; the panel always names them
+  ([0103](adr/0103-refuse-a-list-of-variants-built-on-variants-the-item-no-longer-has.md)).
   A statement by identifier names the parent it acts within, whoever calls it. A change that
   writes several add-ons, a new place or a deletion, first locks the edition's add-ons by
   identifier, as an order locks those of its cart, and a deletion of a merchandise item first

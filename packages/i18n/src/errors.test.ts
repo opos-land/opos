@@ -178,6 +178,16 @@ describe('errorMessage', () => {
     )
   })
 
+  it('says in Polish that the variants changed under a form, and what to do', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage('catalog.variants-changed')).not.toBe(unknownError)
+    expect(i18n._(errorMessage('catalog.variants-changed'))).toBe(
+      'Warianty tego gadżetu zmieniły się, odkąd ta strona je wczytała. Sprawdź, jak wyglądają teraz, i zapisz swoje zmiany ponownie.',
+    )
+  })
+
   it('says that a convention is suspended, with the glossary rendering', async () => {
     const i18n = setupI18n()
     await activateLocale(i18n, 'pl')

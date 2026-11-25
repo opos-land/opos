@@ -77,6 +77,7 @@ export const errorCodes = [
   'ticket-type.tiers-overlap',
   'catalog.in-use',
   'catalog.below-held',
+  'catalog.variants-changed',
   'consent.in-use',
   'consent.accepted',
   'shop.payments-under-way',

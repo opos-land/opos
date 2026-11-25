@@ -38,20 +38,32 @@ export function ScannerPage() {
   const pairing = useRef(false)
 
   useEffect(() => {
-    const code = codeFromHash(window.location.hash)
-    if (!code || pairing.current) return
-    pairing.current = true
-    // The code leaves the address before it is spent: it stays in no history.
-    window.history.replaceState(null, '', window.location.pathname)
-    // A phone that is a scanner already stays the one it is.
-    if (readDevice()) return
-    pairScanner(code).then(
-      (paired) => {
-        saveDevice(paired)
-        setDevice(paired)
-      },
-      (error: unknown) => setFailure(error),
-    )
+    const open = () => {
+      const code = codeFromHash(window.location.hash)
+      if (!code) return
+      // The code leaves the address before it is spent: it stays in no history.
+      window.history.replaceState(null, '', window.location.pathname)
+      // A phone that is a scanner already stays the one it is, and one code is spent at a time.
+      if (pairing.current || readDevice()) return
+      pairing.current = true
+      setFailure(null)
+      pairScanner(code)
+        .then(
+          (paired) => {
+            saveDevice(paired)
+            setDevice(paired)
+          },
+          (error: unknown) => setFailure(error),
+        )
+        .finally(() => {
+          pairing.current = false
+        })
+    }
+    open()
+    // A link opened in the tab that shows this page already changes the part after the `#` alone,
+    // and loads no page anew.
+    window.addEventListener('hashchange', open)
+    return () => window.removeEventListener('hashchange', open)
   }, [])
 
   const revoked = useCallback(() => {

@@ -208,6 +208,7 @@ describe('RouteRateLimiter', () => {
       discountCodeTries: { limit: 30, ttl: 3_600_000 },
       salesExports: { limit: 30, ttl: 3_600_000 },
       orderLinkOpens: { limit: 60, ttl: 3_600_000 },
+      orderLinkOpensOfLink: { limit: 120, ttl: 3_600_000 },
       orderLinkRenewals: { limit: 10, ttl: 3_600_000 },
       scannerPairings: { limit: 30, ttl: 3_600_000 },
       scannerScans: { limit: 6000, ttl: 3_600_000 },

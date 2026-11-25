@@ -795,7 +795,11 @@ steps of [adding a feature](#adding-a-feature).
   and in the body of a request, never in a path or a query; its routes name no tenant, so every
   read behind them filters on the tenant the link's hash answered
   ([0063](adr/0063-open-an-order-link-by-a-token-after-the-hash-found-across-tenants.md)).
-  What a link opens carries no email address and nothing of the ticket holder. Asking for a
+  What a link opens carries no email address and nothing of the ticket holder. An opening counts
+  against the link, by the hash of its token, once the token finds its order, and against the
+  client address when it finds nothing; an address out of those is refused before a token is
+  looked up, so the buyers behind one address each open their own
+  ([0095](adr/0095-count-a-rate-limit-against-what-a-request-proves.md)). Asking for a
   fresh link answers alike for any token, and queues one at most once an hour for an order; the
   email that carries it hands the order over, and is withdrawn like a confirmation when the order
   has left its address. The routes of an account's own orders are tenant routes that ask for no

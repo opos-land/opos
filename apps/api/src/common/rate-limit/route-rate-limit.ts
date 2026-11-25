@@ -47,8 +47,16 @@ export const ROUTE_RATE_LIMITS = {
   discountCodeTries: { limit: 30, ttl: 3_600_000 },
   /** The files of an edition's sales, per account: they hold names and email addresses. */
   salesExports: { limit: 30, ttl: 3_600_000 },
-  /** `POST /public/order-links/open`, per client address: a token is guessed by nobody. */
+  /**
+   * `POST /public/order-links/open` with a token that opens nothing, per client address: a token
+   * is guessed by nobody. A token that opens its order spends nothing of its address.
+   */
   orderLinkOpens: { limit: 60, ttl: 3_600_000 },
+  /**
+   * `POST /public/order-links/open` with a token that opens its order, per link, by the hash of
+   * its token: the attendees behind a venue's address each open their own.
+   */
+  orderLinkOpensOfLink: { limit: 120, ttl: 3_600_000 },
   /** `POST /public/order-links/renew`, per client address. */
   orderLinkRenewals: { limit: 10, ttl: 3_600_000 },
   /** `POST /scanner/pair`, per client address: a pairing code is guessed by nobody. */

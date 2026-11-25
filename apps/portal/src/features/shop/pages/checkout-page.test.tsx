@@ -900,6 +900,44 @@ describe('CheckoutPage', () => {
     expect(screen.getByText(/picked up at the convention/)).toBeDefined()
   })
 
+  // An order of merchandise alone is its items: once the shop offers none of those chosen, the
+  // Summary has no order to show, and asks for an item as the Merch step does.
+  it('offers no order of merchandise alone to place once the shop took out all of it', async () => {
+    api.offer.mockResolvedValue(offer({ items: offer().items.filter(({ id }) => id !== ids.pin) }))
+    const alone = kept({
+      ticketTypeId: null,
+      ageBand: null,
+      answers: {},
+      items: [{ variantId: ids.pinVariant, quantity: 1 }],
+      step: 'summary',
+    })
+    saveDraft('convention-a', '2027', alone)
+    view('?ticketType=none')
+    await stepHeading('Summary')
+
+    expect(screen.getByText(/no longer offers something you had chosen/)).toBeDefined()
+    expect(screen.getByRole('alert').textContent).toBe('Add at least one item to order.')
+    expect(screen.queryByRole('rowheader', { name: 'Total due' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Order/ })).toBeNull()
+    press('Back')
+    expect(await stepHeading('Merch')).toBeDefined()
+
+    // With no merchandise left to offer there is no step to go back to: the shop is the way.
+    cleanup()
+    api.offer.mockResolvedValue(offer({ items: [], merchOnly: false }))
+    saveDraft('convention-a', '2027', alone)
+    view('?ticketType=none')
+    await stepHeading('Summary')
+
+    const alert = screen.getByRole('alert')
+    expect(alert.textContent).toMatch(/Merchandise cannot be ordered without a ticket now\./)
+    expect(
+      within(alert).getByRole('link', { name: 'Choose a ticket type in the shop.' }),
+    ).toBeDefined()
+    expect(screen.queryByRole('rowheader', { name: 'Total due' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Order/ })).toBeNull()
+  })
+
   // Picking another ticket type: the buyer says whether to keep the merchandise, and add-ons
   // the new one does not offer are removed, with a notice.
   it('asks what becomes of the merchandise when another ticket type is picked', async () => {

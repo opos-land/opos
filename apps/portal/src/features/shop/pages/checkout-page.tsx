@@ -376,7 +376,13 @@ function Checkout({
   const issues = holderIssues(offer, draft, account?.email ?? null)
   const locale = isLocale(i18n.locale) ? i18n.locale : activeLocale()
   const here = `${location.pathname}${location.search}`
+  /**
+   * An order of merchandise alone with no item, as one the shop took all the items out of: the
+   * Merch step asks for one, and the Summary has no order to show.
+   */
   const emptyMerchOnly = merchOnly && !draft.extending && draft.items.length === 0
+  /** Such an order with no item to add either: the offer sells no merchandise alone now. */
+  const noMerchAlone = emptyMerchOnly && !offer.merchOnly
   /** "Buy more" with nothing chosen: there is nothing to order. */
   const nothingMore =
     draft.extending !== null && draft.addOnIds.length === 0 && draft.items.length === 0
@@ -540,7 +546,7 @@ function Checkout({
               change={change}
             />
           )}
-          {current === 'summary' && problem?.kind === 'merch-only' && (
+          {current === 'summary' && (problem?.kind === 'merch-only' || noMerchAlone) && (
             <p className="text-destructive" role="alert">
               <Trans>
                 Merchandise cannot be ordered without a ticket now.{' '}
@@ -559,7 +565,7 @@ function Checkout({
                 </Trans>
               </p>
             )}
-          {current === 'summary' && !problem && (
+          {current === 'summary' && !problem && !emptyMerchOnly && (
             <>
               {newTotal !== null && (
                 <Notice>
@@ -588,11 +594,12 @@ function Checkout({
               )}
             </>
           )}
-          {current === 'merch' && emptyMerchOnly && tried.has('merch') && (
-            <p className="text-destructive" role="alert">
-              <Trans>Add at least one item to order.</Trans>
-            </p>
-          )}
+          {emptyMerchOnly &&
+            (current === 'merch' ? tried.has('merch') : current === 'summary' && !noMerchAlone) && (
+              <p className="text-destructive" role="alert">
+                <Trans>Add at least one item to order.</Trans>
+              </p>
+            )}
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
             {index > 0 ? (
               <Button type="button" variant="outline" onClick={() => go(steps[index - 1]!)}>
@@ -605,7 +612,7 @@ function Checkout({
               <Button type="submit">
                 <Trans>Next</Trans>
               </Button>
-            ) : problem ? (
+            ) : problem || emptyMerchOnly ? (
               // Nothing to place while a part of the order cannot be had: the page says which.
               <span />
             ) : (

@@ -188,6 +188,21 @@ describe('errorMessage', () => {
     )
   })
 
+  // The code answers a write that waited too long for its convention and one Postgres ended for
+  // another to go on, on any route: the sentence names no convention, since a route may have none.
+  it('says in Polish that a write gave way to another change, whatever it was changing', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage('request.busy')).not.toBe(unknownError)
+    expect(i18n._(errorMessage('request.busy'))).toBe(
+      'Nie można tego teraz zapisać, bo trwa inna zmiana. Spróbuj ponownie za chwilę.',
+    )
+    expect(errorMessage('request.busy').message).toBe(
+      'This cannot be saved right now, because another change is under way. Try again in a moment.',
+    )
+  })
+
   it('says that a convention is suspended, with the glossary rendering', async () => {
     const i18n = setupI18n()
     await activateLocale(i18n, 'pl')

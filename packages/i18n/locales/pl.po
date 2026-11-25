@@ -1132,6 +1132,10 @@ msgid "This can be done only with a paid order."
 msgstr "To można zrobić tylko z opłaconym zamówieniem."
 
 #: src/errors.ts
+msgid "This cannot be saved right now, because another change is under way. Try again in a moment."
+msgstr "Nie można tego teraz zapisać, bo trwa inna zmiana. Spróbuj ponownie za chwilę."
+
+#: src/errors.ts
 msgid "This change would delete something an order holds. Hide it instead: it leaves the offer and stays on its orders."
 msgstr "Ta zmiana usunęłaby coś, co jest już w zamówieniu. Zamiast usuwać, ukryj tę pozycję: zniknie z oferty, a w zamówieniach pozostanie."
 
@@ -1146,10 +1150,6 @@ msgstr "Ten konwent ma już edycję o tym adresie."
 #: src/errors.ts
 msgid "This convention has orders, which are kept for at least five years. It cannot be deleted."
 msgstr "Ten konwent ma zamówienia, które przechowujemy co najmniej pięć lat. Nie można go usunąć."
-
-#: src/errors.ts
-msgid "This convention is being changed right now. Try again in a moment."
-msgstr "Ten konwent jest właśnie zmieniany. Spróbuj ponownie za chwilę."
 
 #: src/errors.ts
 msgid "This convention is suspended. Contact the OPOS administrators to learn more."

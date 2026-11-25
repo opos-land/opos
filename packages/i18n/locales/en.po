@@ -1132,6 +1132,10 @@ msgid "This can be done only with a paid order."
 msgstr "This can be done only with a paid order."
 
 #: src/errors.ts
+msgid "This cannot be saved right now, because another change is under way. Try again in a moment."
+msgstr "This cannot be saved right now, because another change is under way. Try again in a moment."
+
+#: src/errors.ts
 msgid "This change would delete something an order holds. Hide it instead: it leaves the offer and stays on its orders."
 msgstr "This change would delete something an order holds. Hide it instead: it leaves the offer and stays on its orders."
 
@@ -1146,10 +1150,6 @@ msgstr "This convention already has an edition with this address."
 #: src/errors.ts
 msgid "This convention has orders, which are kept for at least five years. It cannot be deleted."
 msgstr "This convention has orders, which are kept for at least five years. It cannot be deleted."
-
-#: src/errors.ts
-msgid "This convention is being changed right now. Try again in a moment."
-msgstr "This convention is being changed right now. Try again in a moment."
 
 #: src/errors.ts
 msgid "This convention is suspended. Contact the OPOS administrators to learn more."

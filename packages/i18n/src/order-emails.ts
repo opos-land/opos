@@ -48,7 +48,7 @@ export interface ConfirmationData extends OrderOf {
   qrCode: string
   qrCodeCid: string
   orderLink: string
-  /** For an email with an account: where its owner signs in to see the order. */
+  /** For the address of the account the order is on: where its owner signs in to see it. */
   signInLink: string | null
   /** The seller's details; null while the convention's are not complete. */
   seller: {

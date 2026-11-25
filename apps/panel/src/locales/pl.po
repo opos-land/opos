@@ -3234,7 +3234,7 @@ msgstr "Stan magazynowy"
 
 #: src/features/scanner/components/scanner-state.ts
 msgid "Stopped: its organizer cannot manage tickets now"
-msgstr "Zatrzymany: jego organizator nie może teraz zarządzać biletami"
+msgstr "Zatrzymany: jego organizator nie może teraz zarządzać akredytacjami"
 
 #: src/features/scanner/components/scanner-state.ts
 msgid "Stopped: its organizer left the team"
@@ -4108,7 +4108,7 @@ msgstr "Ten skaner już nie działa: jego dostęp został cofnięty albo wygasł
 
 #: src/features/scanner/pages/edition-scanner-page.tsx
 msgid "This scanner reads and marks nothing for now: the organizer who enabled it cannot manage the tickets of this edition at the moment, because their access has ended or their tickets permission was lowered. The scanner works again, on the phone that holds it, as soon as that organizer can."
-msgstr "Ten skaner na razie niczego nie odczyta ani nie oznaczy: organizator, który go włączył, nie może w tej chwili zarządzać biletami tej edycji, bo jego dostęp wygasł albo obniżono mu uprawnienie do biletów. Skaner zacznie znowu działać, na telefonie, który jest teraz skanerem, gdy tylko ten organizator odzyska dostęp."
+msgstr "Ten skaner na razie niczego nie odczyta ani nie oznaczy: organizator, który go włączył, nie może w tej chwili zarządzać akredytacjami tej edycji, bo jego dostęp wygasł albo obniżono mu uprawnienie do akredytacji. Skaner zacznie znowu działać, na telefonie, który jest teraz skanerem, gdy tylko ten organizator znów będzie mógł nimi zarządzać."
 
 #: src/features/scanner/pages/edition-scanner-page.tsx
 msgid "This scanner reads and marks nothing, for good: the organizer who enabled it left the team. Revoke it and enable a new scanner."

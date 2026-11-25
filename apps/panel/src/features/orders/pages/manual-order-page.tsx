@@ -94,7 +94,7 @@ export function ManualOrderPage() {
   const ready = lines.length > 0 && (!offer.ticketType || draft.ageBand !== '')
   const submit = (event: FormEvent) => {
     event.preventDefault()
-    record.mutate({ params: { editionId }, body: manualOrderBody(draft) })
+    record.mutate({ params: { editionId }, body: manualOrderBody(catalog, draft, now) })
   }
 
   return (

@@ -128,7 +128,7 @@ and after every restore.
 | `DELETE /me`                           | the session's account; answers only whether it is a tenant's last head                                                                                          |
 | the sweep of files                     | the API's own job; the identifiers, owners and kinds of files, and whether a feature's row points at one                                                        |
 | a payment attempt by its identifier    | the address of a provider's notification; it answers the tenant and the provider alone, and nothing counts before the provider's signature holds                |
-| the orders whose hold ended            | the API's own job; identifiers alone, of tenants not suspended                                                                                                  |
+| the orders whose hold ended            | the API's own job; identifiers and the end of the hold a page continues from alone, of tenants not suspended                                                    |
 | the emails of orders that are due      | the API's own job; identifiers alone, of tenants not suspended                                                                                                  |
 | a scanner by a hash                    | the pairing code or the token the caller sent, by its hash; it answers the scanner and its tenant alone, and the device is judged in that tenant's transaction  |
 | an order link by a hash                | the token the caller sent, by its hash; it answers the link's tenant alone, and the link and its order are read in that tenant's transaction                    |

@@ -68,8 +68,36 @@ describe('searchOf', () => {
     }
   })
 
-  // Words differ in length as the groups of a code do not: a name with a number in it, or beside
-  // an order's number, is searched by, whatever its letters and digits add up to.
+  // A code is typed as the hand goes: a few groups, then the rest in one piece. Whatever the
+  // lengths of its pieces, a text that adds up to a code is one, and never travels as it is.
+  it('sends the hash of a QR code typed in pieces of any length, never the code', async () => {
+    const hashed = await searchOf('ABCD2345EFGH6723IJKL4567MNOP2345')
+
+    expect(hashed).toHaveProperty('qrCodeHash')
+    for (const text of [
+      'ABCD 2345 EFGH 6723 IJKL4567MNOP2345',
+      'ABCD2345EF GH6723IJKL4567MNOP2345',
+      'AB CD23 45EF GH67 23IJ KL45 67MN OP23 45',
+      // A phone's keyboard starts the text with a capital.
+      'Abcd 2345 efgh 6723 ijkl4567mnop2345',
+    ]) {
+      expect(await searchOf(text)).toEqual(hashed)
+    }
+  })
+
+  it('sends nothing of a QR code typed in pieces of any length with a mistake in it', async () => {
+    for (const text of [
+      'ABCD 2345 EFGH 6723 IJKL4567MNOP234',
+      'ABCD2345EF GH6723IJKL4567MNOP23456',
+      'Abcd 2345 efgh 6723 ijkl4567mnop234',
+    ]) {
+      expect(await searchOf(text)).toEqual({ refused: 'qr-code' })
+    }
+  })
+
+  // Words are written as a code is not: with capitals inside the text, at the start of each
+  // name. A name with a number in it, or beside an order's number, is searched by, whatever its
+  // letters and digits add up to.
   it('sends several words with a digit among them as they are typed: words are no groups', async () => {
     for (const text of [
       // 32 characters a code could hold, once its spaces are gone.

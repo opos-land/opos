@@ -7,6 +7,10 @@ import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from 'node:cr
 // demo account's with the same key, which is why this sits beside the schema.
 
 const VERSION = 'v1'
+// The nonce and the tag a value is sealed with, in bytes. A value opens with these alone: GCM by
+// itself takes a tag cut down to 4 bytes, which leaves 32 bits to guess instead of 128.
+const NONCE_BYTES = 12
+const TAG_BYTES = 16
 
 /** The 32 bytes that seal, derived from a secret of the environment of at least 32 characters. */
 export function sealingKey(secret: string): Buffer {
@@ -27,8 +31,8 @@ export const orderQrCodeOf = (tenantId: string, qrCodeId: string) =>
  * tag, as text. `owner` is authenticated with it and stored nowhere.
  */
 export function seal(key: Buffer, text: string, owner: string): string {
-  const iv = randomBytes(12)
-  const cipher = createCipheriv('aes-256-gcm', key, iv)
+  const iv = randomBytes(NONCE_BYTES)
+  const cipher = createCipheriv('aes-256-gcm', key, iv, { authTagLength: TAG_BYTES })
   cipher.setAAD(Buffer.from(owner, 'utf8'))
   const sealed = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()])
   return [VERSION, iv, sealed, cipher.getAuthTag()]
@@ -41,8 +45,10 @@ export function open(key: Buffer, value: string, owner: string): string {
   const [version, iv, sealed, tag, ...rest] = value.split('.')
   try {
     if (version !== VERSION || !iv || !sealed || !tag || rest.length > 0) throw new Error('shape')
-    const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(iv, 'base64url'))
-    decipher.setAuthTag(Buffer.from(tag, 'base64url'))
+    const [nonce, whole] = [Buffer.from(iv, 'base64url'), Buffer.from(tag, 'base64url')]
+    if (nonce.length !== NONCE_BYTES || whole.length !== TAG_BYTES) throw new Error('shape')
+    const decipher = createDecipheriv('aes-256-gcm', key, nonce, { authTagLength: TAG_BYTES })
+    decipher.setAuthTag(whole)
     decipher.setAAD(Buffer.from(owner, 'utf8'))
     return Buffer.concat([
       decipher.update(Buffer.from(sealed, 'base64url')),

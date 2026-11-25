@@ -754,13 +754,15 @@ steps of [adding a feature](#adding-a-feature).
   to, and no search finds an alert by an address.
 - **Discount codes.** A code's terms never leave the API. The offer names no code: the portal
   asks the quote for the price of the cart with the code a buyer entered, and the API prices it
-  with the contract's one function. Every code that cannot be used answers the quote alike, and
-  a quote that tries a code counts against a rate limit of its own for the client's address
-  ([0062](adr/0062-keep-a-discount-codes-terms-in-the-api-and-refuse-every-unusable-code-alike.md));
-  an order whose code cannot be used counts against the same limit, and an address that limit
-  blocks places no order with a code. No more of an address's orders with a code are placed at
-  once than it has tries left, so placing them, one by one or together, is no other way to try
-  codes. An order that uses its code counts against nothing.
+  with the contract's one function. Every code that cannot be used answers the quote alike
+  ([0062](adr/0062-keep-a-discount-codes-terms-in-the-api-and-refuse-every-unusable-code-alike.md)).
+  A quote or an order whose code cannot be used counts against a rate limit of its own for the
+  client's address, and an address that limit blocks prices no cart and places no order with a
+  code. No more of an address's quotes and orders with a code run at once than it has tries
+  left, so sending them, one by one or together, is no other way to try codes. A quote or an
+  order that uses its code counts against nothing: the buyers behind one address use a code as
+  often as they buy
+  ([0095](adr/0095-count-a-rate-limit-against-what-a-request-proves.md)).
   A code is looked up within the edition the request names. An order names its code, and what
   the code took off is a line of the order below zero, the only one. A use is an order that
   holds: it is counted under the lock of the code's row, the last lock an order takes

@@ -1,5 +1,5 @@
 import { Controller, Inject } from '@nestjs/common'
-import { contract, placeOrderSchema, priceCart, SHOP_CURRENCY } from '@opos/contract'
+import { contract, placeOrderSchema, priceCart, type Quote, SHOP_CURRENCY } from '@opos/contract'
 import { Implement, implement } from '@orpc/nest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
@@ -10,6 +10,7 @@ import {
   botCheckFailed,
   cartRefusal,
   discountCodeRefused,
+  quoteRefusedForDiscountCode,
   refusedForDiscountCode,
 } from './checkout.errors'
 import { Discounts } from './discounts.service'
@@ -60,28 +61,37 @@ export class ShopPublicController {
       const address = this.context.clientAddress()
       await this.limiter.consume('shopQuotes', `ip:${address}`)
       const { discountCode, ...cart } = input.body
-      if (discountCode !== undefined) {
-        await this.limiter.consume('discountCodeTries', `ip:${address}`)
-      }
-      const priced = await this.convention.within(input.params.slug, async (tenant) => {
-        const edition = await this.editions.edition(input.params.editionSlug)
-        const offer = await this.offers.of(tenant.id, edition.id)
-        if (discountCode === undefined) return priceCart(offer, cart)
-        const code = await this.discounts.usable(edition.id, discountCode, new Date())
-        // What cannot be had of the cart is told first, as it is without a code.
-        const plain = priceCart(offer, cart)
-        if ('problem' in plain) return plain
-        if (!code || !(await this.discounts.hasUse(edition.id, code.id))) {
-          throw discountCodeRefused()
+      const price = async (): Promise<Quote> => {
+        const priced = await this.convention.within(input.params.slug, async (tenant) => {
+          const edition = await this.editions.edition(input.params.editionSlug)
+          const offer = await this.offers.of(tenant.id, edition.id)
+          if (discountCode === undefined) return priceCart(offer, cart)
+          const code = await this.discounts.usable(edition.id, discountCode, new Date())
+          // What cannot be had of the cart is told first, as it is without a code.
+          const plain = priceCart(offer, cart)
+          if ('problem' in plain) return plain
+          if (!code || !(await this.discounts.hasUse(edition.id, code.id))) {
+            throw discountCodeRefused()
+          }
+          return priceCart(offer, cart, code)
+        })
+        if ('problem' in priced) {
+          throw priced.problem.kind === 'discount-code'
+            ? discountCodeRefused()
+            : cartRefusal(priced.problem)
         }
-        return priceCart(offer, cart, code)
-      })
-      if ('problem' in priced) {
-        throw priced.problem.kind === 'discount-code'
-          ? discountCodeRefused()
-          : cartRefusal(priced.problem)
+        return { currency: SHOP_CURRENCY, ...priced }
       }
-      return { currency: SHOP_CURRENCY, ...priced }
+      if (discountCode === undefined) return price()
+      // A code that is refused is a try of one, counted with an order's; one that can be used
+      // is none. An address out of tries is refused before its code is looked at, and quotes
+      // sent together are counted as those sent one by one.
+      return this.limiter.counting(
+        'discountCodeTries',
+        `ip:${address}`,
+        price,
+        quoteRefusedForDiscountCode,
+      )
     })
   }
 

@@ -48,8 +48,8 @@ export const ROUTE_RATE_LIMITS = {
   /** Resending an order's confirmation, per order: each one is an email to its buyer. */
   confirmationResends: { limit: 5, ttl: 3_600_000 },
   /**
-   * A quote that tries a discount code, and an order whose code cannot be used: one counter, per
-   * client address. A code is guessed by nobody, and an order that uses its code spends nothing.
+   * A quote and an order whose discount code cannot be used: one counter, per client address. A
+   * code is guessed by nobody, and a quote or an order that uses its code spends nothing.
    */
   discountCodeTries: { limit: 30, ttl: 3_600_000 },
   /** The files of an edition's sales, per account: they hold names and email addresses. */

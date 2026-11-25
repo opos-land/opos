@@ -77,6 +77,10 @@ export const alreadyPaid = () =>
 export const discountCodeRefused = () =>
   new ApiError(409, 'discount-code.refused', 'The discount code cannot be used for this order')
 
+/** Whether a quote was refused for its discount code, which cannot be used. */
+export const quoteRefusedForDiscountCode = (error: unknown) =>
+  error instanceof ApiError && error.code === 'discount-code.refused'
+
 /** "Buy more" adds to the account's own paid order of the same edition, and to no other. */
 export const notExtendable = () =>
   new ApiError(409, 'order.not-extendable', 'Nothing can be added to this order')

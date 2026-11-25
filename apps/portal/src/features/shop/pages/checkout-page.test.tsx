@@ -4,7 +4,7 @@ import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { ORPCError } from '@orpc/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSession } from '../../../shared/lib/session'
@@ -375,6 +375,30 @@ describe('CheckoutPage', () => {
     // The order is placed: the checkout is forgotten, and its result page opens with the token.
     expect(loadDraft('convention-a', '2027')).toBeNull()
     expect(window.sessionStorage.getItem('opos-order-result:order-1')).toBe('token-1')
+  })
+
+  // The provider's page takes a moment to open, and the checkout is still on the screen
+  // meanwhile: its order is placed, and another press places no second one.
+  it('places no second order while the browser leaves for the provider', async () => {
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({ step: 'summary', consentIds: [ids.terms], providerConsent: true }),
+    )
+    view()
+    await stepHeading('Summary')
+
+    press('Order and pay')
+    await waitFor(() => expect(api.leave).toHaveBeenCalled())
+    // The placing has ended; only the page that leaves is awaited.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)))
+    const order = screen.getByRole<HTMLButtonElement>('button', { name: 'Order and pay' })
+    fireEvent.submit(order.closest('form')!)
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)))
+
+    expect(api.place).toHaveBeenCalledTimes(1)
+    expect(api.leave).toHaveBeenCalledTimes(1)
+    expect(order.disabled).toBe(true)
   })
 
   // docs/specs/0008-discount-codes.md, K1: a valid code appears as a line of its own, and the

@@ -384,6 +384,9 @@ function Checkout({
   // account or to sign in or create one.
   const gate = current === 'holder' && !signedIn && !draft.asVisitor
 
+  /** The order is being placed, or is placed and the page is about to be left. */
+  const placing = place.isPending || place.isSuccess
+
   const go = (to: StepId) => {
     setRanOut(null)
     change({ step: to })
@@ -406,6 +409,9 @@ function Checkout({
       if ('problem' in quote) return
       // Never at a price the buyer has not seen: the code's is still being asked.
       if (discount.pending) return
+      // One order a checkout: none while it is being placed, and none once it is, while the
+      // browser still leaves for the provider or for the result.
+      if (placing) return
       setNewTotal(null)
       place.mutate({ draft, totalMinor, withCode: applied })
       return
@@ -595,7 +601,7 @@ function Checkout({
               // Nothing to place while a part of the order cannot be had: the page says which.
               <span />
             ) : (
-              <Button type="submit" disabled={place.isPending || discount.pending}>
+              <Button type="submit" disabled={placing || discount.pending}>
                 {totalMinor > 0 ? (
                   <Trans>Order and pay</Trans>
                 ) : (

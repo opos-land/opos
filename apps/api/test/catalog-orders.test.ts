@@ -387,6 +387,39 @@ describe('a change that needs two of the rows an order takes', () => {
   })
 })
 
+// The fixed order of the locks keeps the routes out of each other's way; a transaction that takes
+// them another way round still can meet one. Postgres then ends one of the two for the other to go
+// on, and the request it ends is told to come again, not that the service failed.
+describe('a write Postgres ends for another transaction to go on', () => {
+  it('is busy for a moment: 503 request.busy with Retry-After, and nothing of it written', async () => {
+    const c = await convention()
+    const pin = await addMerchandiseItem(c.t.id, c.edition, { stock: 5 })
+    const other = await openTransaction()
+    try {
+      // The other way round: the item first, which the deletion takes after the variants.
+      await other.sql`select id from merchandise_items where id = ${pin.id} for update`
+      const answer = Promise.resolve(c.as('delete', `/merchandise-items/${pin.id}`))
+      // The deletion holds the variant by now and waits for the item.
+      await sleep(300)
+      // Each now waits for a row the other holds. The deletion waited first, so it is the one
+      // Postgres ends once it looks for a deadlock.
+      await other.sql`
+        select id from merchandise_variants where id = ${pin.variantId} for update
+      `
+      const res = await answer
+
+      expect(res.status).toBe(503)
+      expect(res.body).toMatchObject({ code: 'request.busy' })
+      expect(res.headers['retry-after']).toBe('1')
+    } finally {
+      await other.rollback()
+    }
+    expect(await storedRows('merchandise_items', c.t.id)).toHaveLength(1)
+    // The same request, sent again, passes.
+    await c.as('delete', `/merchandise-items/${pin.id}`).expect(204)
+  })
+})
+
 describe('what else an order keeps in place', () => {
   it('keeps the consent it accepted: it is hidden, never deleted', async () => {
     const c = await convention()

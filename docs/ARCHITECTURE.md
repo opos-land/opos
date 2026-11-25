@@ -329,21 +329,25 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   address under a limit of their own. The counters live in the memory of each API process.
 - A log line written on purpose names no token, password or email address; an unexpected error is
   logged whole, never sent in the body.
+- A transaction Postgres ends for another to go on, the victim of a deadlock or one it could not
+  serialise, is no unexpected error on any route: all of it is rolled back, the answer is `503`
+  `request.busy` with `Retry-After`, as for a write that waited too long for its tenant, and the
+  log gets a warning that names the error, never the query.
 
-| Status | Meaning                                                                                                            | Default code                                                 |
-| ------ | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
-| `400`  | validation; `params.field` names the field                                                                         | `request.invalid`                                            |
-| `401`  | no valid session; a stale sign-in, `aal1` and Supabase Auth's refusals have their own                              | `session.invalid`                                            |
-| `403`  | insufficient permission; anti-escalation, `Origin` and a suspended tenant have their own                           | `permission.denied`                                          |
-| `404`  | absent or of another tenant                                                                                        | `request.not-found`                                          |
-| `409`  | an invariant or unique constraint, by constraint name; an owner's files over its limit                             | always specific                                              |
-| `410`  | an invitation expired or revoked                                                                                   | `invitation.expired`, `invitation.revoked`                   |
-| `413`  | a file over its kind's limit, or an image over 50 megapixels                                                       | `file.too-large`                                             |
-| `415`  | a body that is not JSON                                                                                            | `request.invalid`                                            |
-| `422`  | a file whose content is not what its type says, or not of its kind's types; credentials a payment provider refuses | `file.type-refused`, `provider.credentials-refused`          |
-| `429`  | rate limit, with `Retry-After`                                                                                     | `request.rate-limited`                                       |
-| `500`  | unexpected; no details in the body                                                                                 | `server.error`                                               |
-| `503`  | a write waiting too long; Supabase Auth, the bucket, imgproxy or a payment provider out of reach                   | `request.busy`, `server.unavailable`, `provider.unavailable` |
+| Status | Meaning                                                                                                                                     | Default code                                                 |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `400`  | validation; `params.field` names the field                                                                                                  | `request.invalid`                                            |
+| `401`  | no valid session; a stale sign-in, `aal1` and Supabase Auth's refusals have their own                                                       | `session.invalid`                                            |
+| `403`  | insufficient permission; anti-escalation, `Origin` and a suspended tenant have their own                                                    | `permission.denied`                                          |
+| `404`  | absent or of another tenant                                                                                                                 | `request.not-found`                                          |
+| `409`  | an invariant or unique constraint, by constraint name; an owner's files over its limit                                                      | always specific                                              |
+| `410`  | an invitation expired or revoked                                                                                                            | `invitation.expired`, `invitation.revoked`                   |
+| `413`  | a file over its kind's limit, or an image over 50 megapixels                                                                                | `file.too-large`                                             |
+| `415`  | a body that is not JSON                                                                                                                     | `request.invalid`                                            |
+| `422`  | a file whose content is not what its type says, or not of its kind's types; credentials a payment provider refuses                          | `file.type-refused`, `provider.credentials-refused`          |
+| `429`  | rate limit, with `Retry-After`                                                                                                              | `request.rate-limited`                                       |
+| `500`  | unexpected; no details in the body                                                                                                          | `server.error`                                               |
+| `503`  | a write waiting too long, or ended by Postgres for another to go on; Supabase Auth, the bucket, imgproxy or a payment provider out of reach | `request.busy`, `server.unavailable`, `provider.unavailable` |
 
 ## Frontends
 

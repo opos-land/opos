@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as FileUpload from '../../../shared/lib/file-upload'
 import { DocumentPage } from './document-page'
 
 const state = vi.hoisted(() => ({ tickets: 'none' }))
@@ -17,8 +18,19 @@ const createConsent = vi.hoisted(() => vi.fn())
 const updateConsent = vi.hoisted(() => vi.fn())
 const removeConsent = vi.hoisted(() => vi.fn())
 const notifyFailure = vi.hoisted(() => vi.fn())
+// What a test holds the reading of a chosen file by, to act while it lasts.
+const reading = vi.hoisted(() => ({ held: Promise.resolve() }))
 
 vi.mock('../../../shared/lib/notify', () => ({ notifyFailure }))
+vi.mock('../../../shared/lib/file-upload', async (original) => {
+  const actual = await original<typeof FileUpload>()
+  return {
+    toUpload: async (file: File) => {
+      await reading.held
+      return actual.toUpload(file)
+    },
+  }
+})
 vi.mock('../../tenants', () => ({
   atLeast: (held: string, needed: string) =>
     ['none', 'read', 'write'].indexOf(held) >= ['none', 'read', 'write'].indexOf(needed),
@@ -137,6 +149,7 @@ beforeEach(() => {
     write.mockReset().mockResolvedValue(undefined)
   }
   notifyFailure.mockReset()
+  reading.held = Promise.resolve()
 })
 
 afterEach(cleanup)
@@ -248,6 +261,30 @@ describe('the page of a document', () => {
 
     expect(await screen.findByRole('link', { name: 'Version 2' })).toBeDefined()
     expect(screen.getByLabelText<HTMLInputElement>('Title').value).toBe('Terms of the shop')
+  })
+
+  // A published version is never removed: a second press while the file is read publishes none.
+  it('publishes a version once, however often the button is pressed while its file is read', async () => {
+    state.tickets = 'write'
+    let release = () => {}
+    reading.held = new Promise((resolve) => {
+      release = resolve
+    })
+    view()
+    const publish = await screen.findByRole('button', { name: 'Publish the version' })
+    fireEvent.change(screen.getByLabelText('New version'), { target: { files: [pdf()] } })
+
+    fireEvent.click(publish)
+    fireEvent.click(publish)
+    expect(publish.hasAttribute('disabled')).toBe(true)
+    release()
+
+    await vi.waitFor(() => expect(publishVersion).toHaveBeenCalled())
+    // The field is emptied once the version is published: every reading is over by then.
+    await vi.waitFor(() =>
+      expect(screen.getByLabelText<HTMLInputElement>('New version').files).toHaveLength(0),
+    )
+    expect(publishVersion).toHaveBeenCalledTimes(1)
   })
 
   it('refuses a file that is no PDF beside its field, and sends nothing', async () => {

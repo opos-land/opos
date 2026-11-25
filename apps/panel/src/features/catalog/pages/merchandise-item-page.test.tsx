@@ -485,6 +485,19 @@ describe('the pictures of an item', () => {
     })
   })
 
+  it('are added once, however often the button is pressed while the image is read', async () => {
+    view('shirt')
+    const chooser = await screen.findByLabelText<HTMLInputElement>('New picture')
+    fireEvent.change(chooser, { target: { files: [png()] } })
+
+    press('Add the picture')
+    press('Add the picture')
+
+    await waitFor(() => expect(addPicture).toHaveBeenCalled())
+    await waitFor(() => expect(notifyFailure).not.toHaveBeenCalled())
+    expect(addPicture).toHaveBeenCalledTimes(1)
+  })
+
   it('are removed only once the modal is confirmed', async () => {
     view('shirt')
 

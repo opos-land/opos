@@ -161,6 +161,8 @@ function Changes({ document, list }: { document: EditionDocument; list: string }
   const [problem, setProblem] = useState<'type' | 'size' | null>(null)
   // A new key empties the file field once its file is sent.
   const [field, setField] = useState(0)
+  // From the press until the file is read and the request made: a second press sends nothing.
+  const [sending, setSending] = useState(false)
   const params = { editionId: document.editionId, documentId: document.id }
   const documentTitle = document.title
 
@@ -196,11 +198,16 @@ function Changes({ document, list }: { document: EditionDocument; list: string }
   }
   /** Reading the file comes before the mutation, so a file that cannot be read is told here. */
   const send = async () => {
-    if (!file) return
+    if (!file || sending) return
+    setSending(true)
     try {
-      publish.mutate({ params, body: { file: await toUpload(file) } })
+      const upload = await toUpload(file)
+      // The write tells its own failure, as every mutation does.
+      await publish.mutateAsync({ params, body: { file: upload } }).catch(() => undefined)
     } catch (error) {
       notifyFailure(error)
+    } finally {
+      setSending(false)
     }
   }
   const trimmed = title.trim()
@@ -232,7 +239,7 @@ function Changes({ document, list }: { document: EditionDocument; list: string }
             )}
           </FormField>
           <div>
-            <Button disabled={!file || publish.isPending} onClick={() => void send()}>
+            <Button disabled={!file || sending || publish.isPending} onClick={() => void send()}>
               <Trans>Publish the version</Trans>
             </Button>
           </div>

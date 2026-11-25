@@ -26,6 +26,8 @@ export function ImagePicker({
   const [problem, setProblem] = useState<'type' | 'size' | null>(null)
   // A new key empties the field once its file is sent.
   const [field, setField] = useState(0)
+  // From the press until the file is read and written: a second press sends nothing.
+  const [sending, setSending] = useState(false)
 
   const choose = (chosen: File | undefined) => {
     const found = chosen ? imageProblem(chosen) : null
@@ -34,12 +36,14 @@ export function ImagePicker({
   }
   /** Reading the file comes before the write, so a file that cannot be read is told here. */
   const send = async () => {
-    if (!file) return
+    if (!file || sending) return
+    setSending(true)
     let upload: UploadedFile
     try {
       upload = await toUpload(file)
     } catch (error) {
       notifyFailure(error)
+      setSending(false)
       return
     }
     try {
@@ -48,6 +52,8 @@ export function ImagePicker({
       setField((key) => key + 1)
     } catch {
       // The write told its own failure; the chosen file stays, to be sent again.
+    } finally {
+      setSending(false)
     }
   }
 
@@ -73,7 +79,11 @@ export function ImagePicker({
         )}
       </FormField>
       <div>
-        <Button variant="outline" disabled={!file || pending} onClick={() => void send()}>
+        <Button
+          variant="outline"
+          disabled={!file || pending || sending}
+          onClick={() => void send()}
+        >
           {submitLabel}
         </Button>
       </div>

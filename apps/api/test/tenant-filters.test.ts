@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { type TenantContextService } from '../src/common/als/tenant-context.service'
 import { AccessRepository } from '../src/common/permissions/access.repository'
 import { LogoRepository } from '../src/modules/branding/logo.repository'
+import { AddOnsRepository } from '../src/modules/catalog/add-ons.repository'
 import { MerchandiseRepository } from '../src/modules/catalog/merchandise.repository'
 import { DiscountsRepository } from '../src/modules/checkout/discounts.repository'
 import { MyOrdersRepository } from '../src/modules/buyer-orders/my-orders.repository'
@@ -17,6 +18,8 @@ import { InvitationsRepository } from '../src/modules/tenants/invitations.reposi
 import { deleteCreatedAccounts } from './auth'
 import { createHash, randomUUID } from 'node:crypto'
 import {
+  addAddOn,
+  addAddOnPicture,
   addDocument,
   addEdition,
   addEditionAccess,
@@ -130,6 +133,21 @@ describe('a file of merchandise that is for everyone', () => {
       expect(await find(a.id, fileId)).toBeUndefined()
       expect(await find(b.id, fileId)).toEqual({ kind, fileId, editionId: editionOfB })
     }
+  })
+})
+
+describe('the picture of an add-on that is for everyone', () => {
+  it("finds no picture of another tenant in this tenant's transaction", async () => {
+    await setPublished(editionOfB, true)
+    const addOn = await addAddOn(b.id, editionOfB)
+    const fileId = await addAddOnPicture(b.id, editionOfB, addOn)
+    const find = (tenantId: string) =>
+      withoutRls(a.id, (tx) =>
+        new AddOnsRepository(contextOf(tx)).shownPictureFile(tenantId, fileId),
+      )
+
+    expect(await find(a.id)).toBeUndefined()
+    expect(await find(b.id)).toEqual({ fileId, editionId: editionOfB })
   })
 })
 

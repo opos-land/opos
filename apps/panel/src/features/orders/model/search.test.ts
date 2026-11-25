@@ -23,6 +23,40 @@ describe('searchOf', () => {
     expect(await searchOf(code.toLowerCase())).toEqual(await searchOf(code))
   })
 
+  // Read out at the desk, a code is typed as it is heard: in groups, with spaces or hyphens.
+  it('sends the hash of a QR code typed in groups, as of the code unbroken', async () => {
+    const code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+    const hashed = await searchOf(code)
+
+    expect(await searchOf('ABCD EFGH IJKL MNOP QRST UVWX YZ23 4567')).toEqual(hashed)
+    expect(await searchOf('abcd-efgh-ijkl-mnop-qrst-uvwx-yz23-4567')).toEqual(hashed)
+    expect(await searchOf(' ABCDEFGHIJKLMNOP  QRSTUVWXYZ234567 ')).toEqual(hashed)
+  })
+
+  it('sends nothing of a QR code typed in groups with a mistake in it, or among other words', async () => {
+    for (const text of [
+      // A character missing, one too many, and one a code never holds.
+      'ABCD EFGH IJKL MNOP QRST UVWX YZ23 456',
+      'ABCD-EFGH-IJKL-MNOP-QRST-UVWX-YZ23-45678',
+      'ABCD EFGH IJKL MNOP QRST UVWX YZ23 4561',
+      'The QR code: ABCDEFGHIJKLMNOPQRSTUVWXYZ234567',
+      'code ABCD-EFGH-IJKL-MNOP-QRST-UVWX-YZ23-4567',
+    ]) {
+      expect(await searchOf(text)).toEqual({ refused: 'qr-code' })
+    }
+  })
+
+  it('sends a name of several words as it is typed, however long: a name has no digit', async () => {
+    for (const name of [
+      'Hubert Blaine Wolfeschlegelsteinhausenbergerdorff',
+      // 32 letters a code could hold, once its spaces are gone.
+      'Christopher Montgomery Wellingtons',
+      'Anna-Maria Skłodowska-Curie de Saint-Exupéry',
+    ]) {
+      expect(await searchOf(name)).toEqual({ q: name })
+    }
+  })
+
   // A code with a character missing or mistyped is still a secret: it is not sent as a text
   // to search names by, where it would travel in the address.
   it('sends nothing of a text that looks like a QR code with a mistake in it', async () => {

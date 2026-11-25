@@ -443,6 +443,68 @@ describe('the emails of order management', () => {
     expect(await mailTo(old)).toHaveLength(1)
   })
 
+  // Every email to the buyer is written from the order as it stands when it is sent: one still
+  // queued for the address the order has left would tell that address the order as its new
+  // holder has it. Only the notice of the change itself goes there.
+  it('send nothing more of an order to the address it left, whatever was queued for it', async () => {
+    const s = await shop('en')
+    const [old, moved] = [buyer(), buyer()]
+    const placed = await s.place(old, { holderName: 'Grace Hopper' })
+    await s.pay(placed)
+    expect(await send(s)).toMatchObject({ sent: 1, failed: 0 })
+    const agent = request(app.getHttpServer())
+    const org = (method: 'put' | 'patch', part: string, body: object) =>
+      agent[method](`/editions/${s.edition}/orders/${placed.orderId}/${part}`)
+        .use(session(s.t.head.token))
+        .set('X-Tenant-Slug', s.t.slug)
+        .send(body)
+        .expect(200)
+    // The notice of a corrected name still waits when the org moves the order and names the
+    // ticket holder it passed to.
+    await org('patch', 'holder', { holderName: 'Grace Hoper' })
+    await org('put', 'email', { email: moved })
+    await org('patch', 'holder', { holderName: 'Alan Turing' })
+    // Whatever else was queued for the old address before the order left it.
+    const waiting = [
+      'order-variant-changed',
+      'order-expired',
+      'payment-under-review',
+      'payment-not-needed',
+      'order-declined',
+      'order-canceled',
+    ]
+    for (const kind of waiting) {
+      await queueOrderEmail(s.t.id, s.edition, placed.orderId, kind, old)
+    }
+    // An email to an org goes to the org's own address, never the order's: it is not judged so.
+    await queueOrderEmail(s.t.id, s.edition, placed.orderId, 'needs-review', s.t.head.email)
+
+    // The notice to each address, the new holder's name to the new one, and the org's alert.
+    expect(await send(s)).toMatchObject({ sent: 4, failed: 0 })
+
+    const toOld = await mailTo(old, 2)
+    expect(toOld.map((mail) => mail.Subject).sort()).toEqual(
+      [
+        `Your order ${placed.number} for ${s.name} is paid`,
+        `Your order ${placed.number} for ${s.name} was moved to another email address`,
+      ].sort(),
+    )
+    for (const mail of toOld) expect(mail.Text).not.toContain('Alan Turing')
+    const toNew = await mailTo(moved, 2)
+    expect(toNew.some((mail) => mail.Text.includes('Ticket holder: Alan Turing'))).toBe(true)
+    expect(await mailTo(s.t.head.email)).toHaveLength(1)
+    const queuedForOld = (await s.emails()).filter(
+      (row) => row.recipient === old && row.sent_at === null,
+    )
+    expect(queuedForOld.map((row) => row.kind).sort()).toEqual(
+      ['order-holder-changed', ...waiting].sort(),
+    )
+    for (const row of queuedForOld) expect(row.withdrawn_at).not.toBeNull()
+    // Withdrawn, they are not tried again.
+    expect(await send(s)).toMatchObject({ sent: 0, failed: 0 })
+    expect(await mailTo(old, 2)).toHaveLength(2)
+  })
+
   // A confirmation says the order is paid and hands its QR code over: of an order canceled
   // before it went out, neither is true any more.
   it('send no confirmation and no QR code of an order canceled before they went out', async () => {

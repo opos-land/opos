@@ -6,7 +6,7 @@ import {
   type OnApplicationShutdown,
 } from '@nestjs/common'
 import { open, orderQrCodeOf, sealingKey } from '@opos/db/sealed'
-import { HANDING_OVER_EMAIL_KINDS } from '@opos/contract'
+import { ORG_EMAIL_KINDS } from '@opos/contract'
 import { type Locale } from '@opos/i18n'
 import {
   needsReviewEmail,
@@ -59,6 +59,16 @@ const QR_CODE_CID = 'qr-code@opos'
 
 /** What writing an email answers when the email is not to be sent. */
 const WITHDRAWN = 'withdrawn'
+
+/**
+ * The emails that go to another address than the order's: those to the orgs who settle it, and
+ * the notice of a changed email to the address the order left. Every other email is the
+ * buyer's, at the address the order has.
+ */
+const NOT_TO_THE_ORDERS_ADDRESS: readonly ClaimedEmail['kind'][] = [
+  ...ORG_EMAIL_KINDS,
+  'order-email-replaced',
+]
 
 /** The emails that say an order is paid and carry its QR code. */
 const OF_A_PAID_ORDER: readonly ClaimedEmail['kind'][] = [
@@ -213,10 +223,11 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
 
   /**
    * The email as it is sent: to whom, in what language, saying what. It is written from the
-   * order as it stands now, so one that hands the order over, with its QR code and a link, goes
-   * only to the address the order has: queued for an address the order has left since, it is
-   * withdrawn instead. So is one that says the order is paid, with its QR code, once the order
-   * no longer is. What it hands the order over with is added to `handedOver`.
+   * order as it stands now, so an email to the buyer goes only to the address the order has:
+   * queued for an address the order has left since, it is withdrawn instead, whatever it says.
+   * That address is told of the change alone. So is withdrawn one that says the order is paid,
+   * with its QR code, once the order no longer is. What it hands the order over with is added
+   * to `handedOver`.
    */
   private async compose(
     email: ClaimedEmail,
@@ -225,7 +236,7 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
   ): Promise<Composed | typeof WITHDRAWN> {
     const order = await this.emails.order(email.orderId)
     if (!order) throw new Error('The order of the email is not there')
-    const left = HANDING_OVER_EMAIL_KINDS.includes(email.kind) && email.recipient !== order.email
+    const left = !NOT_TO_THE_ORDERS_ADDRESS.includes(email.kind) && email.recipient !== order.email
     const noLongerPaid = OF_A_PAID_ORDER.includes(email.kind) && order.status !== 'paid'
     if (left || noLongerPaid) {
       await this.emails.withdraw(email.id, now)

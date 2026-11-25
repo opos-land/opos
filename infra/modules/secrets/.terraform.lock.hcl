@@ -40,7 +40,7 @@ provider "registry.opentofu.org/hashicorp/random" {
 
 provider "registry.opentofu.org/scaleway/scaleway" {
   version     = "2.92.1"
-  constraints = "2.91.0"
+  constraints = "2.92.1"
   hashes = [
     "h1:27xFjNvL2f/jUmatG9zIqZBwiUlZ00XymFN7F0468sk=",
     "h1:7WUzeMxwCQkWi3LqbmS4Z992VjdSlg6uUuFD+iAjloY=",

@@ -120,8 +120,8 @@ describe('styles.css', () => {
     const light = block(':root')
     const themes = { light, dark: { ...light, ...block('.dark') } }
 
-    /** The relative luminance of an `oklch(L C h)` token. */
-    const luminance = (tokens: Record<string, string>, name: string) => {
+    /** The linear sRGB channels of an `oklch(L C h)` token. */
+    const linear = (tokens: Record<string, string>, name: string) => {
       let value = tokens[name] ?? ''
       for (let reference; (reference = /^var\(--([\w-]+)\)$/.exec(value));)
         value = tokens[reference[1] ?? ''] ?? ''
@@ -136,35 +136,60 @@ describe('styles.css', () => {
         l - 0.0894841775 * a - 1.291485548 * b,
       ].map((x) => x ** 3)
       const [x = 0, y = 0, z = 0] = lms
-      const rgb = [
+      return [
         4.0767416621 * x - 3.3077115913 * y + 0.2309699292 * z,
         -1.2684380046 * x + 2.6097574011 * y - 0.3413193965 * z,
         -0.0041960863 * x - 0.7034186147 * y + 1.707614701 * z,
       ].map((channel) => Math.min(1, Math.max(0, channel)))
-      const [r = 0, g = 0, bl = 0] = rgb
-      return 0.2126 * r + 0.7152 * g + 0.0722 * bl
     }
 
+    const encode = (u: number) => (u <= 0.0031308 ? 12.92 * u : 1.055 * u ** (1 / 2.4) - 0.055)
+    const decode = (u: number) => (u <= 0.04045 ? u / 12.92 : ((u + 0.055) / 1.055) ** 2.4)
+
+    /**
+     * The relative luminance of a token, or of `token/percent`: the token at that opacity over the
+     * background, as a utility such as `hover:bg-primary/80` paints it.
+     */
+    const luminance = (tokens: Record<string, string>, surface: string) => {
+      const [name = '', percent] = surface.split('/')
+      let rgb = linear(tokens, name)
+      if (percent !== undefined) {
+        const alpha = Number(percent) / 100
+        const under = linear(tokens, 'background')
+        rgb = rgb.map((u, i) => decode(alpha * encode(u) + (1 - alpha) * encode(under[i] ?? 0)))
+      }
+      const [r = 0, g = 0, b = 0] = rgb
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    }
+
+    // The translucent fills are those of shadcn/ui's buttons and badges and their hovers; a third
+    // entry names the one theme that paints the fill.
     const pairs = [
       ['foreground', 'background'],
       ['card-foreground', 'card'],
       ['popover-foreground', 'popover'],
       ['primary-foreground', 'primary'],
+      ['primary-foreground', 'primary/80'],
       ['primary-text', 'background'],
       ['primary-text', 'card'],
       ['secondary-foreground', 'secondary'],
+      ['secondary-foreground', 'secondary/80'],
       ['muted-foreground', 'background'],
       ['muted-foreground', 'muted'],
       ['accent-foreground', 'accent'],
       ['destructive', 'background'],
       ['destructive', 'card'],
+      ['destructive', 'destructive/10', 'light'],
+      ['destructive', 'destructive/20'],
+      ['destructive', 'destructive/30', 'dark'],
       ['sidebar-foreground', 'sidebar'],
       ['sidebar-primary-foreground', 'sidebar-primary'],
       ['sidebar-accent-foreground', 'sidebar-accent'],
     ]
     const short: string[] = []
     for (const [theme, tokens] of Object.entries(themes)) {
-      for (const [text = '', surface = ''] of pairs) {
+      for (const [text = '', surface = '', only = theme] of pairs) {
+        if (only !== theme) continue
         const [high, low] = [luminance(tokens, text), luminance(tokens, surface)].sort(
           (p, q) => q - p,
         )

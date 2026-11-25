@@ -15,8 +15,8 @@
   },
   "dependencies": {
     "@base-ui/react": "catalog:",
-    "@fontsource-variable/inter": "catalog:",
     "@fontsource-variable/jetbrains-mono": "catalog:",
+    "@fontsource-variable/open-sans": "catalog:",
     "@fontsource-variable/source-serif-4": "catalog:",
     "@hookform/resolvers": "^5.9.2",
     "@lingui/core": "catalog:",

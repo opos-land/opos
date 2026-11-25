@@ -59,7 +59,10 @@ export class SalesRepository {
       .groupBy(orders.status) as Promise<{ status: Held; orders: number; totalMinor: number }[]>
   }
 
-  /** What the lines of the orders that hold take of the catalog, by status. */
+  /**
+   * What the lines of the orders that hold take of the catalog, by status. An order that needs
+   * review having expired took nothing again: it holds nothing, as the shop counts it.
+   */
   held(editionId: string) {
     return this.context
       .tx()
@@ -72,7 +75,13 @@ export class SalesRepository {
       })
       .from(orderLines)
       .innerJoin(orders, eq(orders.id, orderLines.orderId))
-      .where(and(eq(orders.editionId, editionId), inArray(orders.status, [...HELD])))
+      .where(
+        and(
+          eq(orders.editionId, editionId),
+          inArray(orders.status, [...HELD]),
+          eq(orders.holds, true),
+        ),
+      )
       .groupBy(
         orders.status,
         orderLines.ticketTypeId,

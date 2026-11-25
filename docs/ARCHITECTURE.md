@@ -97,10 +97,11 @@ and after every restore.
   sweep alone removes an account's file nothing points at.
   Another account is read only in a tenant transaction, through a tenant table, by a confirmed
   email behind a write permission and a rate limit of the tenant, or by the confirmed email of
-  an order as it is paid and of the recipient of an order's email as it is written, for its
-  language alone, which answers nothing to anyone; by its own publication, as the profile it
-  published and the avatar it uploaded, which answer its public name and never its identifier
-  or its email address
+  an order as it is paid and of the recipient of an order's email as it is written, which
+  answer nothing to anyone: the recipient's account is read for its language and for whether
+  the order is on it, and these shape the email to that address alone; by its own publication,
+  as the profile it published and the avatar it uploaded, which answer its public name and never
+  its identifier or its email address
   ([0071](adr/0071-let-anyone-read-the-profile-an-account-published.md)); or behind
   `@RequireAdmin`, as a tenant's head, as an account an entry of the log names, as an account
   whose profile was reported or taken down, or by its email address for a new tenant's first

@@ -196,6 +196,9 @@ test('a paid order is canceled through the modal, and what it held returns', asy
   const order = await buy(request, s, { email })
   await pay(request, order)
   await shopShows(page, s, 'sold out')
+  // The buyer has the confirmation by now: one still waiting when its order is canceled is
+  // withdrawn, and the cancellation is then the only email.
+  await waitForMail(email, 1, 60_000)
 
   await openOrders(page, s)
   await openOrder(page, order.number)

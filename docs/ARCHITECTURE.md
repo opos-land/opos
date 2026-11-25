@@ -131,7 +131,7 @@ and after every restore.
 | the emails of orders that are due      | the API's own job; identifiers alone, of tenants not suspended                                                                                                  |
 | a scanner by a hash                    | the pairing code or the token the caller sent, by its hash; it answers the scanner and its tenant alone, and the device is judged in that tenant's transaction  |
 | an order link by a hash                | the token the caller sent, by its hash; it answers the link's tenant alone, and the link and its order are read in that tenant's transaction                    |
-| the editions whose reminder may be due | the API's own job; identifiers and the tenant's time zone alone, of published editions of tenants not suspended                                                 |
+| the editions whose reminder may be due | the API's own job; identifiers, the tenant's time zone and the start a page continues from alone, of published editions of tenants not suspended                |
 | a published profile by its identifier  | the account's own publication: the public name and what the profile's page shows, of a profile published and not taken down, and nothing that names the account |
 | whose avatar a file is                 | the avatar is public from its upload; it answers the account to the API alone, which then serves the file                                                       |
 

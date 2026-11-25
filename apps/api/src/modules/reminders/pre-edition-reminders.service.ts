@@ -13,6 +13,10 @@ import { RemindersRepository } from './reminders.repository'
 /** How often the job looks for editions whose reminder is due. */
 const REMINDERS_EVERY_MS = 5 * 60_000
 
+/** How many editions one page of a run holds, and how many pages a run reads at most. */
+const REMINDERS_PAGE = 100
+const MAX_PAGES = 50
+
 /** What one run did: the editions whose reminder it queued, and the emails that made. */
 export interface RemindersResult {
   editions: number
@@ -52,22 +56,34 @@ export class PreEditionReminders implements OnApplicationBootstrap, OnApplicatio
     clearTimeout(this.timer)
   }
 
-  /** One run over the editions whose reminder is due at `now`. */
+  /**
+   * One run over the editions whose reminder is due at `now`, a page at a time, each page after
+   * the last edition of the one before: an edition whose day has not come, or has passed, holds
+   * no other edition back, of its own tenant or of another.
+   */
   async run(now = new Date(), scope: JobScope = {}): Promise<RemindersResult> {
     const result: RemindersResult = { editions: 0, queued: 0 }
-    for (const found of await this.global.remindersPending(now, scope)) {
-      try {
-        const queued = await this.one(found, now)
-        if (queued !== undefined) {
-          result.editions += 1
-          result.queued += queued
+    const limit = scope.limit ?? REMINDERS_PAGE
+    let after: { startsAt: string; id: string } | undefined
+    for (let page = 0; page < MAX_PAGES; page += 1) {
+      const pending = await this.global.remindersPending(now, { ...scope, limit, after })
+      for (const found of pending) {
+        try {
+          const queued = await this.one(found, now)
+          if (queued !== undefined) {
+            result.editions += 1
+            result.queued += queued
+          }
+        } catch (error) {
+          // One edition that cannot be taken, such as one of a tenant suspended meanwhile, leaves
+          // the rest. Only the error's name reaches the log.
+          const name = error instanceof Error ? error.name : 'unknown failure'
+          this.logger.warn(`The reminder of the edition ${found.editionId} waits: ${name}`)
         }
-      } catch (error) {
-        // One edition that cannot be taken, such as one of a tenant suspended meanwhile, leaves
-        // the rest. Only the error's name reaches the log.
-        const name = error instanceof Error ? error.name : 'unknown failure'
-        this.logger.warn(`The reminder of the edition ${found.editionId} waits: ${name}`)
       }
+      const last = pending.at(-1)
+      if (!last || pending.length < limit) break
+      after = { startsAt: last.startsAt, id: last.editionId }
     }
     return result
   }

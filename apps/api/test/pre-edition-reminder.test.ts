@@ -8,6 +8,7 @@ import { deleteCreatedAccounts, testEmail } from './auth'
 import { deleteMail, waitForMail } from './mailpit'
 import { type OrderDesk, orderDesk } from './order-desk'
 import {
+  addEdition,
   addOrder,
   addQrCode,
   aQrCode,
@@ -270,6 +271,28 @@ describe('the reminder of an edition', () => {
     const sameDay = await desk()
     await paid(sameDay, 'ada@example.test')
     expect(await run(sameDay, new Date('2027-06-01T20:00:00Z'))).toMatchObject({ queued: 1 })
+  })
+
+  // The job reads the editions a page at a time, each page after the last edition of the one
+  // before: an edition whose day has not come holds no later one back.
+  it('goes out for an edition that starts after one whose reminder is not due yet', async () => {
+    const d = await desk()
+    const order = await paid(d, 'ada@example.test')
+    // It starts a day before the desk's, with its reminder a day later: the first the job finds.
+    const sooner = await addEdition(d.t.id, {
+      isPublished: true,
+      startsAt: '2027-06-03T08:00:00Z',
+      endsAt: '2027-06-05T18:00:00Z',
+    })
+    await setCatalogSettings(d.t.id, sooner, { reminderDaysBefore: 1 })
+    const pages = (now: Date) =>
+      app.get(PreEditionReminders).run(now, { tenantId: d.t.id, limit: 1 })
+
+    expect(await pages(DUE)).toEqual({ editions: 1, queued: 1 })
+
+    expect(await reminders(d)).toEqual([[order.id, 'ada@example.test']])
+    // The sooner one still waits for its own day, and then goes out to nobody: it sold nothing.
+    expect(await pages(new Date('2027-06-02T07:00:00Z'))).toEqual({ editions: 1, queued: 0 })
   })
 })
 

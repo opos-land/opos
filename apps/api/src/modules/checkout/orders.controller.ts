@@ -8,10 +8,15 @@ import { InTenant } from '../../common/decorators/require-tenant.decorator'
 import { notFound } from '../../common/errors/api-error'
 import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
 import { BotCheckPreparation } from './bot-check.preparation'
-import { botCheckFailed, refusedForDiscountCode } from './checkout.errors'
+import {
+  botCheckFailed,
+  quoteRefusedForDiscountCode,
+  refusedForDiscountCode,
+} from './checkout.errors'
 import { OrderPlacement } from './order-placement.service'
 import { PaymentAttempts } from './payment-attempts.service'
 import { OrdersRepository } from './orders.repository'
+import { Quotes } from './quotes.service'
 
 /**
  * The orders of a signed-in account in a convention
@@ -23,11 +28,52 @@ import { OrdersRepository } from './orders.repository'
 export class OrdersController {
   constructor(
     private readonly placement: OrderPlacement,
+    private readonly quotes: Quotes,
     private readonly orders: OrdersRepository,
     private readonly attempts: PaymentAttempts,
     private readonly limiter: RouteRateLimiter,
     private readonly context: TenantContextService,
   ) {}
+
+  /**
+   * The price of the account's cart, with the discount code the buyer entered. A cart that adds
+   * to the account's own paid order is priced as that order is added to, which the quote for
+   * anyone cannot tell: it knows no order.
+   */
+  @Implement(contract.checkout.quote)
+  @InTenant()
+  quote() {
+    return implement(contract.checkout.quote).handler(async ({ input }) => {
+      const address = this.context.clientAddress()
+      await this.limiter.consume('shopQuotes', `ip:${address}`)
+      const tenantId = this.context.tenant().id
+      const edition = await this.orders.publishedEdition(tenantId, input.params.editionId)
+      if (!edition) throw notFound('edition')
+      const account = this.context.account()
+      const { extendsOrderId, ...request } = input.body
+      const price = async () => {
+        const more =
+          extendsOrderId === undefined
+            ? undefined
+            : await this.placement.extended(
+                tenantId,
+                edition.id,
+                { email: account.email, accountId: account.id },
+                extendsOrderId,
+              )
+        return this.quotes.of(tenantId, edition.id, request, more?.extending)
+      }
+      if (request.discountCode === undefined) return price()
+      // A code that is refused is a try of one, counted with an order's and with the quote for
+      // anyone; one that can be used is none.
+      return this.limiter.counting(
+        'discountCodeTries',
+        `ip:${address}`,
+        price,
+        quoteRefusedForDiscountCode,
+      )
+    })
+  }
 
   @Implement(contract.checkout.placeOrder)
   @InTenant()

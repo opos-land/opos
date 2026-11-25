@@ -756,6 +756,10 @@ steps of [adding a feature](#adding-a-feature).
   asks the quote for the price of the cart with the code a buyer entered, and the API prices it
   with the contract's one function. Every code that cannot be used answers the quote alike
   ([0062](adr/0062-keep-a-discount-codes-terms-in-the-api-and-refuse-every-unusable-code-alike.md)).
+  The quote for anyone knows no order, so a "Buy more" cart is priced by the account's own
+  quote, a tenant route that asks for no membership: it reads the order added to as placing
+  does, locks nothing, and spends the tries of a code as the quote for anyone does
+  ([0098](adr/0098-price-a-buy-more-cart-with-its-discount-code-in-the-accounts-own-quote.md)).
   A quote or an order whose code cannot be used counts against a rate limit of its own for the
   client's address, and an address that limit blocks prices no cart and places no order with a
   code. No more of an address's quotes and orders with a code run at once than it has tries

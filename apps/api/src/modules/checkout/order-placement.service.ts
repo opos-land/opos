@@ -28,7 +28,7 @@ import { type StoredDiscount } from './discounts.repository'
 import { Discounts } from './discounts.service'
 import { OfferService } from './offer.service'
 import { OrderSettlement } from './order-settlement.service'
-import { OrdersRepository } from './orders.repository'
+import { type OwnOrder, OrdersRepository } from './orders.repository'
 
 const MINUTE = 60_000
 
@@ -61,22 +61,13 @@ export class OrderPlacement {
     at = new Date(),
   ): Promise<PlacedOrder> {
     const email = buyer.email.trim().toLowerCase()
-    // "Buy more" (docs/specs/0009-buyer-self-service.md, B1-B3): the account's own paid order
-    // of this edition, its row locked before any limit. Another account's order is not there.
-    let first: { id: string; holderName: string } | undefined
-    let extending: Extending | undefined
-    if (input.extendsOrderId !== undefined) {
-      if (!buyer.accountId) throw notExtendable()
-      const own = await this.orders.own(tenantId, buyer.accountId, input.extendsOrderId, true)
-      if (!own) throw notFound('order')
-      // An order whose email an org changed passed to another person: the account it stays on
-      // adds nothing to it, and so never comes by the QR code its new holder was sent.
-      if (own.editionId !== editionId || own.status !== 'paid' || own.email !== email) {
-        throw notExtendable()
-      }
-      first = own
-      extending = await this.orders.boughtWith(tenantId, own.id)
-    }
+    // "Buy more": the row of the order added to is locked before any limit.
+    const more =
+      input.extendsOrderId === undefined
+        ? undefined
+        : await this.extended(tenantId, editionId, buyer, input.extendsOrderId, true)
+    const first = more?.first
+    const extending = more?.extending
     // The limits next: what the offer then counts of them, no other order changes meanwhile.
     await this.orders.lockLimits(editionId, input.cart)
     const offer = await this.offers.of(tenantId, editionId, at)
@@ -154,6 +145,33 @@ export class OrderPlacement {
       totalMinor,
       resultToken,
     }
+  }
+
+  /**
+   * What "Buy more" adds to (docs/specs/0009-buyer-self-service.md, B1-B3): the account's own
+   * paid order of the edition, and what was bought on its QR code. Another account's order is
+   * not there. A quote reads it as placing does, which also locks its row.
+   */
+  async extended(
+    tenantId: string,
+    editionId: string,
+    buyer: Buyer,
+    orderId: string,
+    lock = false,
+  ): Promise<{ first: OwnOrder; extending: Extending }> {
+    if (!buyer.accountId) throw notExtendable()
+    const own = await this.orders.own(tenantId, buyer.accountId, orderId, lock)
+    if (!own) throw notFound('order')
+    // An order whose email an org changed passed to another person: the account it stays on
+    // adds nothing to it, and so never comes by the QR code its new holder was sent.
+    if (
+      own.editionId !== editionId ||
+      own.status !== 'paid' ||
+      own.email !== buyer.email.trim().toLowerCase()
+    ) {
+      throw notExtendable()
+    }
+    return { first: own, extending: await this.orders.boughtWith(tenantId, own.id) }
   }
 
   /**

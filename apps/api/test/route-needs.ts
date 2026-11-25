@@ -117,6 +117,7 @@ export const tenantRequirements: Record<string, Need> = {
   'scanners.create': tickets('write'),
   'scanners.renewPairing': tickets('write'),
   'scanners.revoke': tickets('write'),
+  'checkout.quote': anyAccount,
   'checkout.placeOrder': anyAccount,
   'checkout.startPaymentAttempt': anyAccount,
   // An account's own orders in the convention (docs/specs/0009-buyer-self-service.md).

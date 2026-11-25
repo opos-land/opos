@@ -38,9 +38,18 @@ vi.mock('../api/shop', () => ({
     queryKey: ['my-orders', slug],
     queryFn: () => api.mine(slug) as unknown,
   }),
-  discountQuoteOptions: (_: string, __: string, cart: object, discountCode: string) => ({
-    queryKey: ['quote', cart, discountCode],
-    queryFn: () => api.quote(cart, discountCode) as unknown,
+  discountQuoteOptions: (
+    _: object,
+    cart: object,
+    discountCode: string,
+    extendsOrderId?: string,
+  ) => ({
+    queryKey: ['quote', cart, discountCode, extendsOrderId ?? null],
+    // The order a "Buy more" checkout adds to is named only by such a checkout.
+    queryFn: () =>
+      (extendsOrderId === undefined
+        ? api.quote(cart, discountCode)
+        : api.quote(cart, discountCode, extendsOrderId)) as unknown,
   }),
   startPaymentAttempt: api.start,
 }))
@@ -1188,6 +1197,63 @@ describe('CheckoutPage, adding to a paid order', () => {
     expect(body).not.toHaveProperty('email')
     // Its own checkout is forgotten; the edition's other one is not touched.
     await waitFor(() => expect(loadDraft('convention-a', '2027', 'order-first')).toBeNull())
+  })
+
+  // A discount code lowers what is bought later as it lowers a first order: the shop prices the
+  // cart as an addition to the order, which only the account's own quote can.
+  it('takes a discount code: priced for the order it adds to, and placed with the code and that total', async () => {
+    api.quote.mockResolvedValue({
+      currency: 'PLN',
+      lines: [
+        {
+          kind: 'add_on',
+          addOnId: ids.workshop,
+          name: 'Painting workshop',
+          variant: [],
+          quantity: 1,
+          unitAmountMinor: 4000,
+          amountMinor: 4000,
+        },
+        {
+          kind: 'discount',
+          name: 'craft20',
+          variant: [],
+          quantity: 1,
+          unitAmountMinor: -800,
+          amountMinor: -800,
+        },
+      ],
+      totalMinor: 3200,
+    })
+    more()
+    await stepHeading('Add-ons')
+    fireEvent.click(screen.getByRole('checkbox', { name: /Painting workshop/ }))
+    press('Next')
+    await stepHeading('Merch')
+    press('Next')
+    await stepHeading('Summary')
+
+    type('Discount code', 'CRAFT20')
+    press('Apply the code')
+
+    expect(await screen.findByRole('rowheader', { name: 'Discount code CRAFT20' })).toBeDefined()
+    expect(api.quote).toHaveBeenCalledWith(
+      { ticket: null, addOnIds: [ids.workshop], items: [] },
+      'CRAFT20',
+      'order-first',
+    )
+    const total = screen.getByRole('rowheader', { name: 'Total due' }).closest('tr')!
+    expect(within(total).getByText(/32[.,]00/)).toBeDefined()
+    press('Select all required')
+    fireEvent.click(screen.getByRole('checkbox', { name: /terms of the provider/ }))
+    press('Order and pay')
+
+    await waitFor(() => expect(api.place).toHaveBeenCalled())
+    expect(api.place.mock.calls[0]![1]).toMatchObject({
+      extendsOrderId: 'order-first',
+      discountCode: 'CRAFT20',
+      expectedTotalMinor: 3200,
+    })
   })
 
   it('places nothing with nothing chosen, and says so at the Summary', async () => {

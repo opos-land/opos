@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  accountQuoteRequestSchema,
   attemptHeaders,
   BOT_CHECK_STAND_IN,
   cartSchema,
@@ -526,6 +527,29 @@ describe('a quote', () => {
     expect(
       quoteRequestSchema.safeParse({ ticket: null, discountCode: 'x'.repeat(61) }).success,
     ).toBe(false)
+  })
+
+  // "Buy more": an account names its own paid order, and its cart is priced as an addition to it.
+  it('takes the order an account adds to, and none from a visitor', () => {
+    const more = { ticket: null, addOnIds: [ROOM], discountCode: 'early10' }
+
+    expect(accountQuoteRequestSchema.parse({ ...more, extendsOrderId: STANDARD })).toEqual({
+      ...more,
+      items: [],
+      extendsOrderId: STANDARD,
+    })
+    expect(accountQuoteRequestSchema.parse(more)).not.toHaveProperty('extendsOrderId')
+    expect(accountQuoteRequestSchema.safeParse({ ...more, extendsOrderId: 'first' }).success).toBe(
+      false,
+    )
+    expect(quoteRequestSchema.safeParse({ ...more, extendsOrderId: STANDARD }).success).toBe(false)
+  })
+
+  it('is reached under the convention and the edition by anyone, and under the edition by an account', () => {
+    expect(contract.public.shopQuote['~orpc'].route.path).toBe(
+      '/public/tenants/{slug}/editions/{editionSlug}/shop/quote',
+    )
+    expect(contract.checkout.quote['~orpc'].route.path).toBe('/editions/{editionId}/shop/quote')
   })
 })
 

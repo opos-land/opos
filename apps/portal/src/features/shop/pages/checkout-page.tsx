@@ -258,10 +258,16 @@ function Checkout({
   }, [step])
 
   // A discount code is priced by the shop, which alone knows its terms: the Summary asks for
-  // the cart's price with the code, again whenever the cart or the code changes.
+  // the cart's price with the code, again whenever the cart or the code changes. "Buy more"
+  // names the order it adds to, so the cart is priced as it is then placed.
   const entered = draft?.discountCode.trim() ?? ''
   const coded = useQuery({
-    ...discountQuoteOptions(tenantSlug, editionSlug, draft ? cartOf(draft) : NO_CART, entered),
+    ...discountQuoteOptions(
+      { slug: tenantSlug, editionSlug, editionId },
+      draft ? cartOf(draft) : NO_CART,
+      entered,
+      draft?.extending?.orderId,
+    ),
     enabled: draft !== null && entered !== '',
     retry: false,
   })

@@ -211,6 +211,17 @@ export const quoteRequestSchema = cartSchema.extend({ discountCode: discountCode
 
 export type QuoteRequest = z.infer<typeof quoteRequestSchema>
 
+/**
+ * A cart an account prices. With "Buy more" it names the account's own paid order it adds to,
+ * and is priced as that order is added to: it sells no ticket, and is offered what the order's
+ * ticket type offers.
+ */
+export const accountQuoteRequestSchema = quoteRequestSchema.extend({
+  extendsOrderId: z.uuid().optional(),
+})
+
+export type AccountQuoteRequest = z.infer<typeof accountQuoteRequestSchema>
+
 /** The terms of a discount code, as pricing a cart needs them. Only the API holds them. */
 export interface DiscountTerms {
   code: string
@@ -595,6 +606,17 @@ export const startedAttemptSchema = z.object({ redirectUrl: z.url() })
 export type StartedAttempt = z.infer<typeof startedAttemptSchema>
 
 export const checkoutContract = {
+  quote: tenantRoute
+    .route({
+      method: 'POST',
+      path: '/editions/{editionId}/shop/quote',
+      summary:
+        "The lines and the total of the account's cart, with the line of a discount code where one is given; with the account's own paid order it adds to, priced as that order is added to; refused as the public quote refuses, or with order.not-extendable; any signed-in account",
+    })
+    .input(
+      z.object({ params: z.object({ editionId: z.string() }), body: accountQuoteRequestSchema }),
+    )
+    .output(quoteSchema),
   placeOrder: tenantRoute
     .route({
       method: 'POST',

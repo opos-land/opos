@@ -22,6 +22,7 @@ import { PaymentAttempts } from './payment-attempts.service'
 import { PaymentConfirmations } from './payment-confirmations.service'
 import { PaymentsController } from './payments.controller'
 import { PaymentsRepository } from './payments.repository'
+import { Quotes } from './quotes.service'
 import { ShopPublicController } from './shop.controller'
 
 /** Checkout and orders (docs/specs/0004-checkout-and-orders.md). */
@@ -35,6 +36,7 @@ import { ShopPublicController } from './shop.controller'
     Discounts,
     OrdersRepository,
     OrderPlacement,
+    Quotes,
     OrderSettlement,
     PaymentsRepository,
     PaymentConfirmations,

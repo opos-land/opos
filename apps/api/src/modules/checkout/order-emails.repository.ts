@@ -10,6 +10,7 @@ import {
   merchandiseOptionAxes,
   merchandiseOptionValues,
   merchandiseVariantValues,
+  orderAccounts,
   orderConsents,
   orderEmails,
   orderLines,
@@ -306,13 +307,20 @@ export class OrderEmailsRepository {
   }
 
   /**
-   * The language of the account whose confirmed address this is, or undefined when no account
-   * confirmed it: such an address is written to in the convention's language.
+   * The language of the account whose confirmed address this is, and whether the order is on
+   * that account, or undefined when no account confirmed the address: such an address is
+   * written to in the convention's language.
    */
-  async account(email: string): Promise<{ locale: string | null } | undefined> {
+  async account(
+    email: string,
+    orderId: string,
+  ): Promise<{ locale: string | null; holdsOrder: boolean } | undefined> {
     const [row] = await this.context
       .tx()
-      .select({ locale: accounts.locale })
+      .select({
+        locale: accounts.locale,
+        holdsOrder: sql<boolean>`exists (select 1 from ${orderAccounts} where ${orderAccounts.orderId} = ${orderId} and ${orderAccounts.accountId} = ${accounts.id})`,
+      })
       .from(accounts)
       .where(and(sql`lower(${accounts.email}) = ${email}`, isNotNull(accounts.emailConfirmedAt)))
     return row

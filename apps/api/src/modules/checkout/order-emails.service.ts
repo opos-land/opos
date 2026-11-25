@@ -82,7 +82,7 @@ interface Picture {
 /** Whom an email is written for: the language it is in, and where an account signs in. */
 interface Reader {
   locale: Locale
-  /** For an address with an account; null for one with none. */
+  /** For the address of the account the order is on; null for any other. */
   signInLink: string | null
 }
 
@@ -233,15 +233,17 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
     }
     const written = await this.written(email, order, now, handedOver)
     if (written === WITHDRAWN) return WITHDRAWN
-    const account = await this.emails.account(email.recipient)
+    const account = await this.emails.account(email.recipient, order.id)
     const locale = recipientLocale({ account: account?.locale, tenant: order.conventionLocale })
+    // The way to sign in is told only where signing in shows the order: on the account it is on.
+    const signInLink = account?.holdsOrder ? `${this.portalUrl}/login` : null
     // Whether an address has an account is told to nobody. What is kept of the email is so
     // written as for an address with none: in the convention's language, with no way to sign in.
     const keptLocale = recipientLocale({ tenant: order.conventionLocale })
     return {
       to: email.recipient,
       locale,
-      content: written.write({ locale, signInLink: account ? `${this.portalUrl}/login` : null }),
+      content: written.write({ locale, signInLink }),
       kept: {
         locale: keptLocale,
         content: written.write({ locale: keptLocale, signInLink: null }),

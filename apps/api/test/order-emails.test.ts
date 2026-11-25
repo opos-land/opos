@@ -231,6 +231,25 @@ describe('the confirmation of a paid order', () => {
     expect(mail!.Text).toMatch(/Sign in: \S+\/login/)
   })
 
+  // "Sign in to see the order among your orders" holds only for an order on that account: one an
+  // org moved to the address of an account stays off it.
+  it('offers no sign-in to an account the order is not on, in its language still', async () => {
+    const s = await shop()
+    const account = await createAccount({ locale: 'en' })
+    const placed = await s.place(buyer())
+    await s.pay(placed)
+    await send(s)
+    await setColumn('orders', placed.orderId, 'email', account.email)
+    await queueOrderEmail(s.t.id, s.edition, placed.orderId, 'order-confirmation', account.email)
+
+    expect(await send(s)).toMatchObject({ sent: 1, failed: 0 })
+
+    const [mail] = await mailTo(account.email)
+    expect(mail!.Subject).toMatch(/^Your order \S+ for .+ is paid$/)
+    expect(mail!.Text).toMatch(/See your order: \S+\/order#/)
+    expect(mail!.Text).not.toMatch(/Sign in|OPOS account/)
+  })
+
   it('is written in the convention’s language for an address with no account', async () => {
     const s = await shop('en')
     const to = buyer()

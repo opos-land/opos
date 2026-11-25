@@ -8,7 +8,7 @@ import { InTenant } from '../../common/decorators/require-tenant.decorator'
 import { notFound } from '../../common/errors/api-error'
 import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
 import { BotCheckPreparation } from './bot-check.preparation'
-import { botCheckFailed } from './checkout.errors'
+import { botCheckFailed, refusedForDiscountCode } from './checkout.errors'
 import { OrderPlacement } from './order-placement.service'
 import { PaymentAttempts } from './payment-attempts.service'
 import { OrdersRepository } from './orders.repository'
@@ -36,19 +36,27 @@ export class OrdersController {
     return implement(contract.checkout.placeOrder).handler(async ({ input }) => {
       const address = this.context.clientAddress()
       await this.limiter.consume('orderPlacements', `ip:${address}`)
-      // An order tries its code as a quote does: the tries of both are counted together.
+      // An address out of tries of a discount code is refused before its code is looked at.
       if (input.body.discountCode !== undefined) {
-        await this.limiter.consume('discountCodeTries', `ip:${address}`)
+        this.limiter.check('discountCodeTries', `ip:${address}`)
       }
       if (!this.context.prepared<boolean>()) throw botCheckFailed()
       const tenantId = this.context.tenant().id
       const edition = await this.orders.publishedEdition(tenantId, input.params.editionId)
       if (!edition) throw notFound('edition')
       const account = this.context.account()
-      return this.placement.place(tenantId, edition.id, input.body, {
-        email: account.email,
-        accountId: account.id,
-      })
+      try {
+        return await this.placement.place(tenantId, edition.id, input.body, {
+          email: account.email,
+          accountId: account.id,
+        })
+      } catch (error) {
+        // A code that cannot be used is a try of one, counted with a quote's; one used is none.
+        if (refusedForDiscountCode(error)) {
+          await this.limiter.spend('discountCodeTries', `ip:${address}`)
+        }
+        throw error
+      }
     })
   }
 

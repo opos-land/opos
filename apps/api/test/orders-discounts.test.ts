@@ -15,6 +15,7 @@ import {
   addTicketType,
   closeTenantDb,
   deleteCreatedTenants,
+  type Member,
   member,
   offerWith,
   setColumn,
@@ -71,6 +72,28 @@ const placeWith = (
       discountCode,
       expectedTotalMinor,
       ...more,
+    })
+/** The same order placed by a signed-in account, under its own email. */
+const placeAs = (
+  buyer: Member,
+  d: OrderDesk,
+  discountCode: string,
+  expectedTotalMinor: number,
+  ip: string,
+) =>
+  request(app.getHttpServer())
+    .post(`/editions/${d.edition}/shop/orders`)
+    .use(session(buyer.token))
+    .set('X-Tenant-Slug', d.t.slug)
+    .set('X-Forwarded-For', ip)
+    .send({
+      cart: { ticket: { ticketTypeId: d.standard } },
+      holderName: 'Ada Lovelace',
+      ageBand: 'adult',
+      providerConsentAccepted: true,
+      botCheckToken: STAND_IN_TOKEN,
+      discountCode,
+      expectedTotalMinor,
     })
 
 describe('a discount code at the Summary', () => {
@@ -145,40 +168,54 @@ describe('a discount code at the Summary', () => {
     await quote(d, {}, ip).expect(200)
   })
 
-  // An order tries its code as a quote does: placing one is no way around the limit.
+  // Placing an order is no way around the limit: one whose code cannot be used is a try as a
+  // quote's is, and an address out of tries is refused before its code is looked at.
   it('is tried only so often from one address by an order too, a visitor’s or an account’s', async () => {
     const d = await orderDesk(app)
+    await addDiscountCode(d.t.id, d.edition, { code: 'early10', ticketTypeIds: [d.standard] })
     const buyer = await member()
     const ip = from()
     const { limit } = ROUTE_RATE_LIMITS.discountCodeTries
     await quote(d, { discountCode: 'guess-in-a-quote' }, ip).expect(409)
-    for (let tried = 1; tried < limit; tried += 1) {
+    for (let tried = 2; tried < limit; tried += 1) {
       const res = await placeWith(d, `guess-${tried}`, 9000, {}, ip).expect(409)
       expect(res.body).toMatchObject(usedUp)
     }
+    const last = await placeAs(buyer, d, 'the-last-guess', 9000, ip).expect(409)
+    expect(last.body).toMatchObject(usedUp)
 
-    const visitor = await placeWith(d, 'one-more', 9000, {}, ip)
-    const account = await request(app.getHttpServer())
-      .post(`/editions/${d.edition}/shop/orders`)
-      .use(session(buyer.token))
-      .set('X-Tenant-Slug', d.t.slug)
-      .set('X-Forwarded-For', ip)
-      .send({
-        cart: { ticket: { ticketTypeId: d.standard } },
-        holderName: 'Ada Lovelace',
-        ageBand: 'adult',
-        providerConsentAccepted: true,
-        botCheckToken: STAND_IN_TOKEN,
-        discountCode: 'and-another',
-        expectedTotalMinor: 9000,
-      })
+    // A code that can be used is answered as one that cannot: nothing more is told of either.
+    const answers = [
+      await placeWith(d, 'one-more', 9000, {}, ip),
+      await placeAs(buyer, d, 'and-another', 9000, ip),
+      await placeWith(d, 'early10', 9000, {}, ip),
+      await placeAs(buyer, d, 'early10', 9000, ip),
+    ]
 
-    for (const res of [visitor, account]) {
+    for (const res of answers) {
       expect(res.status).toBe(429)
       expect(res.body).toMatchObject({ code: 'request.rate-limited' })
     }
     // An order with no code is still placed.
     await placeWith(d, undefined, 10000, {}, ip).expect(201)
+  })
+
+  // Using a code is no try of one: buyers behind one address use a code as often as they buy.
+  it('spends no try by an order whose code can be used, a visitor’s or an account’s', async () => {
+    const d = await orderDesk(app)
+    await addDiscountCode(d.t.id, d.edition, { code: 'early10', ticketTypeIds: [d.standard] })
+    const buyer = await member()
+    const ip = from()
+    const { limit } = ROUTE_RATE_LIMITS.discountCodeTries
+    for (let placed = 0; placed < limit; placed += 1) {
+      const email = `buyer-${placed}@example.test`
+      await placeWith(d, 'early10', 9000, { email, emailConfirmation: email }, ip).expect(201)
+    }
+    await placeAs(buyer, d, 'early10', 9000, ip).expect(201)
+
+    const res = await placeWith(d, 'nobody-knows', 9000, {}, ip).expect(409)
+
+    expect(res.body).toMatchObject(usedUp)
   })
 
   it('never lowers a ticket type excluded from discounts', async () => {

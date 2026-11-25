@@ -52,6 +52,53 @@ describe('RouteRateLimiter', () => {
     )
   })
 
+  it('refuses a blocked tracker by a check, which spends nothing', async () => {
+    const rateLimiter = limiter()
+    const { limit, ttl } = ROUTE_RATE_LIMITS.discountCodeTries
+    const check = (tracker: string) =>
+      refusal(() => Promise.resolve(rateLimiter.check('discountCodeTries', tracker)))
+
+    for (let i = 0; i < limit * 2; i++) expect(await check('ip:192.0.2.1')).toBeUndefined()
+    for (let i = 0; i < limit; i++) await rateLimiter.consume('discountCodeTries', 'ip:192.0.2.1')
+    expect(await check('ip:192.0.2.1')).toBeUndefined()
+    await refusal(() => rateLimiter.consume('discountCodeTries', 'ip:192.0.2.1'))
+    const error = await check('ip:192.0.2.1')
+
+    expect(error?.getStatus()).toBe(429)
+    expect(error?.code).toBe('request.rate-limited')
+    const retryAfter = Number(error?.headers?.['Retry-After'])
+    expect(retryAfter).toBeGreaterThan(0)
+    expect(retryAfter).toBeLessThanOrEqual(ttl / 1000)
+    expect(await check('ip:192.0.2.2')).toBeUndefined()
+  })
+
+  // A request counted once it was answered: none is left to refuse when the limit is reached.
+  it('refuses nothing by a spend, and blocks the tracker that spends the last of its limit', async () => {
+    const rateLimiter = limiter()
+    const { limit } = ROUTE_RATE_LIMITS.discountCodeTries
+    const check = () =>
+      refusal(() => Promise.resolve(rateLimiter.check('discountCodeTries', 'ip:192.0.2.1')))
+
+    for (let i = 1; i < limit; i++) {
+      expect(
+        await refusal(() => rateLimiter.spend('discountCodeTries', 'ip:192.0.2.1')),
+      ).toBeUndefined()
+    }
+    expect(await check()).toBeUndefined()
+    expect(
+      await refusal(() => rateLimiter.spend('discountCodeTries', 'ip:192.0.2.1')),
+    ).toBeUndefined()
+
+    expect((await check())?.code).toBe('request.rate-limited')
+    expect(
+      (await refusal(() => rateLimiter.consume('discountCodeTries', 'ip:192.0.2.1')))?.code,
+    ).toBe('request.rate-limited')
+    // Blocked already, a spend is still refused nothing.
+    expect(
+      await refusal(() => rateLimiter.spend('discountCodeTries', 'ip:192.0.2.1')),
+    ).toBeUndefined()
+  })
+
   it('sets the route limits', () => {
     expect(ROUTE_RATE_LIMITS).toEqual({
       authentication: { limit: 300, ttl: 300_000 },

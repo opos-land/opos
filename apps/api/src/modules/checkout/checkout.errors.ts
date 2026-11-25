@@ -14,6 +14,12 @@ export const orderUnavailable = (problem: Exclude<CartProblem, { kind: 'closed' 
     ...('id' in problem && { id: problem.id }),
   })
 
+/** Whether an order was refused for its discount code, which cannot be used. */
+export const refusedForDiscountCode = (error: unknown) =>
+  error instanceof ApiError &&
+  error.code === 'order.unavailable' &&
+  error.params?.kind === 'discount-code'
+
 /** The refusal a cart's problem stands for. */
 export const cartRefusal = (problem: CartProblem) =>
   problem.kind === 'closed' ? shopClosed() : orderUnavailable(problem)

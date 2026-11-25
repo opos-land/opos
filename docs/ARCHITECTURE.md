@@ -733,8 +733,9 @@ steps of [adding a feature](#adding-a-feature).
   with the contract's one function. Every code that cannot be used answers the quote alike, and
   a quote that tries a code counts against a rate limit of its own for the client's address
   ([0062](adr/0062-keep-a-discount-codes-terms-in-the-api-and-refuse-every-unusable-code-alike.md));
-  an order placed with a code counts against the same limit, so placing one is no other way to
-  try codes.
+  an order whose code cannot be used counts against the same limit, and an address that limit
+  blocks places no order with a code, so placing one is no other way to try codes. An order that
+  uses its code counts against nothing.
   A code is looked up within the edition the request names. An order names its code, and what
   the code took off is a line of the order below zero, the only one. A use is an order that
   holds: it is counted under the lock of the code's row, the last lock an order takes

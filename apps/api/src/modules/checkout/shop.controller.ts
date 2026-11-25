@@ -6,7 +6,12 @@ import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
 import { PublicConvention } from '../public/public-convention'
 import { PublicRepository } from '../public/public.repository'
 import { BOT_CHECK, type BotCheck } from './bot-check'
-import { botCheckFailed, cartRefusal, discountCodeRefused } from './checkout.errors'
+import {
+  botCheckFailed,
+  cartRefusal,
+  discountCodeRefused,
+  refusedForDiscountCode,
+} from './checkout.errors'
 import { Discounts } from './discounts.service'
 import { OfferService } from './offer.service'
 import { OrderPlacement } from './order-placement.service'
@@ -89,9 +94,9 @@ export class ShopPublicController {
     return implement(contract.public.placeOrder).handler(async ({ input }) => {
       const address = this.context.clientAddress()
       await this.limiter.consume('orderPlacements', `ip:${address}`)
-      // An order tries its code as a quote does: the tries of both are counted together.
+      // An address out of tries of a discount code is refused before its code is looked at.
       if (input.body.discountCode !== undefined) {
-        await this.limiter.consume('discountCodeTries', `ip:${address}`)
+        this.limiter.check('discountCodeTries', `ip:${address}`)
       }
       if (!(await this.botCheck.verify(input.body.botCheckToken, address))) throw botCheckFailed()
       // The address was typed twice and compared: what is left of the body is the order itself.
@@ -102,10 +107,18 @@ export class ShopPublicController {
           ),
         ),
       )
-      return this.convention.within(input.params.slug, async (tenant) => {
-        const edition = await this.editions.edition(input.params.editionSlug)
-        return this.placement.place(tenant.id, edition.id, order, { email: input.body.email })
-      })
+      try {
+        return await this.convention.within(input.params.slug, async (tenant) => {
+          const edition = await this.editions.edition(input.params.editionSlug)
+          return this.placement.place(tenant.id, edition.id, order, { email: input.body.email })
+        })
+      } catch (error) {
+        // A code that cannot be used is a try of one, counted with a quote's; one used is none.
+        if (refusedForDiscountCode(error)) {
+          await this.limiter.spend('discountCodeTries', `ip:${address}`)
+        }
+        throw error
+      }
     })
   }
 }

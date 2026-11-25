@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { ThrottlerStorage } from '@nestjs/throttler'
+import { ThrottlerStorage, type ThrottlerStorageService } from '@nestjs/throttler'
 import { ApiError } from '../errors/api-error'
 import { type RateLimit } from './rate-limit'
 
@@ -39,8 +39,8 @@ export const ROUTE_RATE_LIMITS = {
   /** Resending an order's confirmation, per order: each one is an email to its buyer. */
   confirmationResends: { limit: 5, ttl: 3_600_000 },
   /**
-   * A quote or an order that tries a discount code: one counter, per client address. A code is
-   * guessed by nobody.
+   * A quote that tries a discount code, and an order whose code cannot be used: one counter, per
+   * client address. A code is guessed by nobody, and an order that uses its code spends nothing.
    */
   discountCodeTries: { limit: 30, ttl: 3_600_000 },
   /** The files of an edition's sales, per account: they hold names and email addresses. */
@@ -61,10 +61,15 @@ export const ROUTE_RATE_LIMITS = {
 
 export type RouteRateLimitName = keyof typeof ROUTE_RATE_LIMITS
 
+const rateLimited = (retryAfterSeconds: number) =>
+  new ApiError(429, 'request.rate-limited', 'Too many requests', undefined, {
+    'Retry-After': String(retryAfterSeconds),
+  })
+
 /** Counts the endpoint limits in the default limit's in-memory storage, under their own keys. */
 @Injectable()
 export class RouteRateLimiter {
-  constructor(@Inject(ThrottlerStorage) private readonly storage: ThrottlerStorage) {}
+  constructor(@Inject(ThrottlerStorage) private readonly storage: ThrottlerStorageService) {}
 
   /** Spends one request of `tracker`; above the limit, 429 with Retry-After in seconds. */
   async consume(name: RouteRateLimitName, tracker: string) {
@@ -76,10 +81,27 @@ export class RouteRateLimiter {
       ttl,
       name,
     )
-    if (isBlocked) {
-      throw new ApiError(429, 'request.rate-limited', 'Too many requests', undefined, {
-        'Retry-After': String(timeToBlockExpire),
-      })
-    }
+    if (isBlocked) throw rateLimited(timeToBlockExpire)
+  }
+
+  /**
+   * Refuses a blocked `tracker` with the 429 `consume` answers it, and spends nothing: for a
+   * route that counts only its requests that fail, each with `spend` once it is answered.
+   */
+  check(name: RouteRateLimitName, tracker: string) {
+    const record = this.storage.storage.get(`${name}:${tracker}`)
+    if (!record?.isBlocked) return
+    const retryAfter = Math.ceil((record.blockExpiresAt - Date.now()) / 1000)
+    if (retryAfter > 0) throw rateLimited(retryAfter)
+  }
+
+  /**
+   * Spends one request of `tracker` for a request already answered, and refuses nothing. The
+   * tracker that spends the last request of its limit is blocked at once, where `consume` blocks
+   * the one that asks for one more: the next `check` or `consume` refuses it.
+   */
+  async spend(name: RouteRateLimitName, tracker: string) {
+    const { limit, ttl } = ROUTE_RATE_LIMITS[name]
+    await this.storage.increment(`${name}:${tracker}`, ttl, limit - 1, ttl, name)
   }
 }

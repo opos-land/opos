@@ -5,6 +5,7 @@ import {
   type Offer,
   type PlaceOrder,
   type PlaceVisitorOrder,
+  placeVisitorOrderSchema,
   priceCart,
 } from '@opos/contract'
 import { z } from 'zod'
@@ -236,7 +237,11 @@ export function fitToOffer(offer: Offer, draft: Draft): { draft: Draft; dropped:
 /** What is wrong with a field of the first step. */
 export type FieldIssue = 'required' | 'invalid' | 'mismatch' | 'too-long' | 'not-allowed'
 
-const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+/**
+ * The email of a visitor's order as the shop takes it: its own rule, so the first step refuses
+ * beside the field what the shop would refuse once the order is placed.
+ */
+const EMAIL = placeVisitorOrderSchema.shape.email
 
 /** The key of a custom field's answer among the fields of the first step. */
 export const answerField = (fieldId: string) => `answer:${fieldId}`
@@ -267,7 +272,7 @@ export function holderIssues(
     const email = draft.email.trim().toLowerCase()
     const confirmation = draft.emailConfirmation.trim().toLowerCase()
     if (email === '') issues.email = 'required'
-    else if (!EMAIL.test(email)) issues.email = 'invalid'
+    else if (!EMAIL.safeParse(email).success) issues.email = 'invalid'
     else if (offer.provider && email.length > offer.provider.maxEmailLength) {
       issues.email = 'too-long'
     }

@@ -1,4 +1,4 @@
-import { type MyOrder, type Offer } from '@opos/contract'
+import { type MyOrder, type Offer, placeVisitorOrderSchema } from '@opos/contract'
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   beginCheckout,
@@ -235,6 +235,31 @@ describe('the ticket holder step', () => {
     })
     const long = `${'a'.repeat(39)}@example.test`
     expect(issue({ email: long, emailConfirmation: long })).toEqual({ email: 'too-long' })
+  })
+
+  // An address the shop refuses is refused here, beside its field: placed with one, the order
+  // would come back from the Summary as invalid, with no field named.
+  it('takes an email exactly when the shop takes it for a visitor’s order', () => {
+    const emails = [
+      'ada@example.test',
+      'ada.lovelace+shop@mail.example.test',
+      'jan@gmail.com.',
+      'jan.@gmail.com',
+      'jan..k@gmail.com',
+      'jan@gmail.c',
+      'jan@gmail.com,',
+      'żaneta@poczta.pl',
+      'jan@poczta.żółw.pl',
+    ]
+    const taken = (email: string) =>
+      placeVisitorOrderSchema.shape.email.safeParse(email).success ? undefined : 'invalid'
+
+    for (const email of emails) {
+      const issues = holderIssues(offer(), filled({ email, emailConfirmation: email }), null)
+      expect(issues.email, email).toBe(taken(email))
+    }
+    expect(taken('ada@example.test')).toBeUndefined()
+    expect(taken('jan@gmail.com.')).toBe('invalid')
   })
 
   // A signed-in buyer's email is the account's: nothing is typed and nothing is checked of it.

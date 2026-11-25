@@ -227,6 +227,8 @@ function Checkout({
   const [newTotal, setNewTotal] = useState<number | null>(null)
   const heading = useRef<HTMLHeadingElement>(null)
   const form = useRef<HTMLFormElement>(null)
+  /** The order this checkout placed, once it has. */
+  const placedId = useRef<string | null>(null)
 
   const change = (changes: Partial<Draft>) =>
     setDraft((current) => (current ? { ...current, ...changes } : current))
@@ -275,6 +277,7 @@ function Checkout({
     // The page shows what came of it itself.
     meta: { success: false, failure: false },
     onSuccess: ({ placed, redirectUrl }) => {
+      placedId.current = placed.orderId
       if (redirectUrl) leaveTo(redirectUrl)
       else void navigate(`${shop}/result/${placed.orderId}`, { replace: true })
     },
@@ -307,6 +310,17 @@ function Checkout({
       notifyFailure(error)
     },
   })
+
+  // Back from the provider's page, a browser may show this page again out of its memory, as it
+  // was left: with its order placed and nothing more to do here. The order's result takes over.
+  useEffect(() => {
+    const shown = (event: PageTransitionEvent) => {
+      if (!event.persisted || placedId.current === null) return
+      void navigate(`${shop}/result/${placedId.current}`, { replace: true })
+    }
+    window.addEventListener('pageshow', shown)
+    return () => window.removeEventListener('pageshow', shown)
+  }, [navigate, shop])
 
   // Nothing chosen and nothing kept: the listing is where a checkout starts.
   if (!draft) return <Navigate to={shop} replace />

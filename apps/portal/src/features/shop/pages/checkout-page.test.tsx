@@ -467,6 +467,35 @@ describe('CheckoutPage', () => {
     expect(order.disabled).toBe(true)
   })
 
+  // Back from the provider's page, a browser may show the checkout again out of its memory, as
+  // it was left: its order is placed and its button stays off, so the order's result takes over.
+  it('opens the result of the placed order once the browser brings the page back', async () => {
+    const shown = (persisted: boolean) =>
+      act(() => {
+        window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted }))
+      })
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({ step: 'summary', consentIds: [ids.terms], providerConsent: true }),
+    )
+    view()
+    await stepHeading('Summary')
+
+    // A checkout brought back with no order placed goes on where it was.
+    shown(true)
+    expect(screen.getByRole('button', { name: 'Order and pay' })).toBeDefined()
+
+    press('Order and pay')
+    await waitFor(() => expect(api.leave).toHaveBeenCalled())
+    // A page shown as it loads was not brought back.
+    shown(false)
+    expect(screen.queryByText('The result')).toBeNull()
+
+    shown(true)
+    expect(await screen.findByText('The result')).toBeDefined()
+  })
+
   // docs/specs/0008-discount-codes.md, K1: a valid code appears as a line of its own, and the
   // total updates. The API alone knows a code's terms, so the Summary asks it for the price.
   it('takes a discount code at the Summary: its line, the new total, and the order placed with both', async () => {

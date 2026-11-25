@@ -22,6 +22,7 @@ import { AddOnsRepository } from '../catalog/add-ons.repository'
 import { MerchandiseRepository } from '../catalog/merchandise.repository'
 import { TicketTypesRepository } from '../catalog/ticket-types.repository'
 import { HELD, SalesRepository, SOLD } from './sales.repository'
+import { ticketHolderDetails } from './ticket-holders'
 
 /** The orders the ticket holder list holds: an order nobody paid for holds no ticket. */
 const LISTED: readonly OrderStatus[] = [...HELD, 'canceled']
@@ -173,19 +174,13 @@ export class SalesService {
   async ticketHolders(editionId: string, language: string | undefined) {
     const { i18n, moment } = await this.written(language)
     const fields = await this.sales.fields(editionId)
-    const addOns = await this.sales.addOnLines(editionId)
-    const answers = await this.sales.orderAnswers(editionId)
-    const carried = await this.sales.qrCodeOrders(editionId)
-    /** The orders whose add-ons a ticket's row lists: its own, and the paid ones on its code. */
-    const withTicket = (orderId: string) => {
-      const code = carried.find((row) => row.orderId === orderId)?.qrCodeId
-      return new Set([
-        orderId,
-        ...carried
-          .filter((row) => code && row.qrCodeId === code && isPaid(row.status))
-          .map((row) => row.orderId),
-      ])
-    }
+    const details = ticketHolderDetails({
+      fields,
+      addOns: await this.sales.addOnLines(editionId),
+      answers: await this.sales.orderAnswers(editionId),
+      carried: await this.sales.qrCodeOrders(editionId),
+      isPaid,
+    })
     const columns = ticketHolderColumns
     const header = [
       ...[columns.number, columns.status, columns.holder, columns.ageBand].map((c) => i18n._(c)),
@@ -195,27 +190,17 @@ export class SalesService {
       i18n._(columns.email),
       i18n._(columns.placed),
     ]
-    const rows = (await this.sales.ticketOrders(editionId, LISTED)).map((order) => {
-      const listed = withTicket(order.id)
-      return [
-        order.number,
-        i18n._(exportNames.orderStatus[order.status]),
-        order.holderName,
-        order.ageBand ? i18n._(exportNames.ageBand[order.ageBand]) : '',
-        order.ticketType,
-        addOns
-          .filter((line) => listed.has(line.orderId))
-          .map((line) => line.name)
-          .join(', '),
-        ...fields.map(
-          (field) =>
-            answers.find((row) => row.orderId === order.id && row.fieldId === field.id)?.answer ??
-            '',
-        ),
-        order.email ?? '',
-        moment(order.placedAt),
-      ]
-    })
+    const rows = (await this.sales.ticketOrders(editionId, LISTED)).map((order) => [
+      order.number,
+      i18n._(exportNames.orderStatus[order.status]),
+      order.holderName,
+      order.ageBand ? i18n._(exportNames.ageBand[order.ageBand]) : '',
+      order.ticketType,
+      details.addOns(order.id).join(', '),
+      ...details.answers(order.id),
+      order.email ?? '',
+      moment(order.placedAt),
+    ])
     return this.file(editionId, 'ticket-holders', [header, ...rows])
   }
 

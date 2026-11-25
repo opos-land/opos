@@ -76,7 +76,7 @@ export class ScannersController {
     return implement(contract.scanners.revoke).handler(async ({ input }) => {
       const { editionId, scannerId } = input.params
       await this.scanners.revoke(editionId, scannerId, new Date())
-      return this.scanners.get(editionId, scannerId)
+      return this.shown(await this.scanners.get(editionId, scannerId))
     })
   }
 }

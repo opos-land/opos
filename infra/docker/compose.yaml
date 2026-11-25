@@ -144,6 +144,30 @@ services:
       BASIC_AUTH_USER: ${BASIC_AUTH_USER:-opos}
       BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD:-}
       OPOS_COMMIT: ${SOURCE_COMMIT:-}
+      # The server that answers the portal's pages; while it does not, the portal serves its plain
+      # document
+      HEAD_UPSTREAM: portal-head:8081
+
+  # Answers the document of each of the portal's pages with that page's head: its title, its
+  # description and what the preview of a shared link shows, read from the API's public routes as
+  # anyone reads them. No host routes to it: the portal asks it on port 8081 inside the
+  # deployment's network, behind the portal's basic auth and under its headers. It holds no secret
+  # and no session, and reaches the API inside the network, past the proxy
+  portal-head:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+      target: head
+      args:
+        APP: portal
+        VITE_API_URL: ${API_URL:?}
+    restart: unless-stopped
+    environment:
+      PORT: '8081'
+      # The addresses a page and its pictures are known by outside the deployment
+      PORTAL_URL: ${PORTAL_URL:?}
+      API_URL: ${API_URL:?}
+      API_INTERNAL_URL: http://api:3001
 
   admin:
     build:

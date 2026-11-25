@@ -26,4 +26,24 @@ case "$OPOS_COMMIT" in
 esac
 export OPOS_COMMIT
 
+# The server that answers the portal's routes with their head filled in, as its host and port
+# inside the deployment's network (HEAD_UPSTREAM); an application without one, the panel and the
+# admin application among them, starts every route from its plain document. Caddy puts the value
+# into the Caddyfile as text, so it is a host and a port or nothing
+PAGES=static
+HEAD_UPSTREAM=${HEAD_UPSTREAM:-}
+case "$HEAD_UPSTREAM" in
+  '') ;;
+  *[!A-Za-z0-9.:-]* | *:*:* | :* | *:)
+    echo "HEAD_UPSTREAM is no host and port: $HEAD_UPSTREAM" >&2
+    exit 1
+    ;;
+  *:*) PAGES=head ;;
+  *)
+    echo "HEAD_UPSTREAM is no host and port: $HEAD_UPSTREAM" >&2
+    exit 1
+    ;;
+esac
+export PAGES HEAD_UPSTREAM
+
 exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile

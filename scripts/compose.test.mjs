@@ -96,12 +96,14 @@ const imgproxySettings = (text) =>
 const image = (text, name) => /^ {4}image: (\S+)$/m.exec(service(text, name))?.[1]
 
 // Coolify's proxy routes a host to the one port its service exposes: the domains of the deployment
-// name none (infra/modules/deployment). Mail's own port, 1025, and imgproxy's, which the API alone
-// asks, stay inside the deployment's network.
+// name none (infra/modules/deployment). Mail's own port, 1025, imgproxy's, which the API alone
+// asks, and that of the server beside the portal, which the portal alone asks, stay inside the
+// deployment's network.
 const PORTS = {
   api: ['3001'],
   panel: ['8080'],
   portal: ['8080'],
+  'portal-head': [],
   admin: ['8080'],
   mail: ['8025'],
   imgproxy: [],
@@ -136,9 +138,30 @@ describe('the compose file of a deployment', () => {
       'mail',
       'panel',
       'portal',
+      'portal-head',
       'tools',
     ])
     assert.ok(services.api.includes('DATABASE_URL'))
+  })
+
+  // The server beside the portal reads what the API tells anyone: it is handed the addresses it
+  // writes into a head and reaches the API at, and nothing that opens anything
+  // (docs/adr/0091-fill-the-head-of-the-portals-pages-on-a-server-beside-it.md)
+  it('hands the server beside the portal addresses alone, and the portal the way to it', () => {
+    assert.deepEqual(services['portal-head'], ['PORT', 'PORTAL_URL', 'API_URL', 'API_INTERNAL_URL'])
+    assert.match(service(compose, 'portal'), /^ {6}HEAD_UPSTREAM: portal-head:8081$/m)
+    assert.match(service(compose, 'portal-head'), /^ {6}PORT: '8081'$/m)
+    for (const name of ['panel', 'admin']) {
+      assert.ok(!services[name].includes('HEAD_UPSTREAM'), name)
+    }
+  })
+
+  it('catches a secret given to the server beside the portal', () => {
+    const leaked = compose.replace(
+      '      API_INTERNAL_URL: http://api:3001\n',
+      '      API_INTERNAL_URL: http://api:3001\n      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY:?}\n',
+    )
+    assert.ok(environments(leaked)['portal-head'].includes('SUPABASE_SECRET_KEY'))
   })
 
   it('hands the postgres URL and the role passwords to the tools alone', () => {

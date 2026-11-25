@@ -1,5 +1,6 @@
 # Serves one built application, the panel, the portal or the admin application, behind the
-# server's proxy, which ends TLS. web.sh starts it and sets BASIC_AUTH to on or off.
+# server's proxy, which ends TLS. web.sh starts it and sets BASIC_AUTH to on or off, and PAGES to
+# static or head.
 {
 	admin off
 	auto_https off
@@ -17,12 +18,7 @@
 (auth-off) {
 }
 
-:8080 {
-	root * /srv
-	encode zstd gzip
-
-	import auth-{$BASIC_AUTH}
-
+(headers) {
 	header {
 		# Scripts only from the application itself, calls only to it and to the API it was built for.
 		# Pictures also from that API, which serves every uploaded file, a convention's logo for one.
@@ -35,6 +31,65 @@
 		X-Opos-Commit "{$OPOS_COMMIT}"
 		-Server
 	}
+}
+
+# The plain document of the application, which starts it at any of its routes
+(document) {
+	header Cache-Control no-cache
+	rewrite * /index.html
+	file_server {
+		status 200
+	}
+}
+
+# Every path that is no built file is a route of the application, which starts from index.html
+(pages-static) {
+	handle {
+		header Cache-Control no-cache
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+# The portal's routes are answered by the server beside it, which fills the head of the document
+# for the page asked for and says 404 for a page that is not there. A file of the build is still
+# served from here, and so is the plain document whenever that server fails or does not answer:
+# the portal then opens as an application without one does.
+(pages-head) {
+	handle {
+		header Cache-Control no-cache
+		@file {
+			not path */
+			file {path}
+		}
+		handle @file {
+			file_server
+		}
+		handle {
+			reverse_proxy {$HEAD_UPSTREAM} {
+				transport http {
+					dial_timeout 1s
+					response_header_timeout 4s
+				}
+				@failed status 5xx
+				handle_response @failed {
+					import document
+				}
+			}
+		}
+	}
+	handle_errors 502 503 504 {
+		import headers
+		import document
+	}
+}
+
+:8080 {
+	root * /srv
+	encode zstd gzip
+
+	import auth-{$BASIC_AUTH}
+	import headers
 
 	# The container's health check, open with basic auth on
 	handle /healthz {
@@ -47,10 +102,6 @@
 		file_server
 	}
 
-	# Every other path is a route of the application, which starts from index.html
-	handle {
-		header Cache-Control no-cache
-		try_files {path} /index.html
-		file_server
-	}
+	# Every other path is a route of the application
+	import pages-{$PAGES}
 }

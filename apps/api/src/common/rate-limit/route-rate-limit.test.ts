@@ -65,6 +65,7 @@ describe('RouteRateLimiter', () => {
       shopQuotes: { limit: 600, ttl: 3_600_000 },
       orderPlacements: { limit: 300, ttl: 3_600_000 },
       paymentAttempts: { limit: 300, ttl: 3_600_000 },
+      paymentAttemptsOfOrder: { limit: 20, ttl: 3_600_000 },
       confirmationResends: { limit: 5, ttl: 3_600_000 },
       discountCodeTries: { limit: 30, ttl: 3_600_000 },
       salesExports: { limit: 30, ttl: 3_600_000 },

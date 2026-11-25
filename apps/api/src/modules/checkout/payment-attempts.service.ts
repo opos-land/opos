@@ -4,6 +4,7 @@ import { type OrderResult, RESULT_TOKEN_HOURS, type StartedAttempt } from '@opos
 import { parseAcceptLanguage } from '@opos/i18n'
 import { TenantContextService, type TenantInContext } from '../../common/als/tenant-context.service'
 import { notFound } from '../../common/errors/api-error'
+import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
 import { ENV, type Env } from '../../config/env'
 import { CredentialsVault, PaymentProviders } from '../payments/payment-providers'
 import { type Credentials } from '../payments/provider'
@@ -38,6 +39,7 @@ export class PaymentAttempts {
     private readonly providers: PaymentProviders,
     private readonly vault: CredentialsVault,
     private readonly context: TenantContextService,
+    private readonly limiter: RouteRateLimiter,
     @Inject(ENV) env: Pick<Env, 'API_URL' | 'PORTAL_URL'>,
   ) {
     this.apiUrl = env.API_URL.replace(/\/+$/, '')
@@ -59,6 +61,9 @@ export class PaymentAttempts {
     const first = await this.context.withTenant(tenant.id, async () => {
       const order = await this.opened(tenant.id, orderId, opener, new Date())
       this.payable(order, new Date())
+      // Counted for the order once its opener may open it, so nobody else spends its starts, and
+      // before the provider is asked: each start asks about every attempt before it.
+      await this.limiter.consume('paymentAttemptsOfOrder', `order:${order.id}`)
       const account = await this.account(tenant.id)
       const earlier = (await this.payments.attempts(order.id)).filter(
         (attempt) => attempt.status === 'started' || attempt.status === 'failed',

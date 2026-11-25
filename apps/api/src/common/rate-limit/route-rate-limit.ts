@@ -31,6 +31,11 @@ export const ROUTE_RATE_LIMITS = {
   orderPlacements: { limit: 300, ttl: 3_600_000 },
   /** Starting a payment attempt, by a visitor or by an account: one counter, per client address. */
   paymentAttempts: { limit: 300, ttl: 3_600_000 },
+  /**
+   * Starting a payment attempt for one order, per order, once its opener may open it: each start
+   * asks the provider about every earlier attempt of the order, from the address OPOS shares.
+   */
+  paymentAttemptsOfOrder: { limit: 20, ttl: 3_600_000 },
   /** Resending an order's confirmation, per order: each one is an email to its buyer. */
   confirmationResends: { limit: 5, ttl: 3_600_000 },
   /**

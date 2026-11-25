@@ -7,7 +7,8 @@ import {
   type StartedAttempt,
 } from '@opos/contract'
 import request from 'supertest'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { ROUTE_RATE_LIMITS } from '../src/common/rate-limit/route-rate-limit'
 import { loadEnv } from '../src/config/env'
 import { STAND_IN_TOKEN } from '../src/modules/checkout/bot-check'
 import {
@@ -49,6 +50,10 @@ const env = loadEnv()
 beforeAll(async () => {
   app = await createApp()
   await app.listen(0, '127.0.0.1')
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 afterAll(async () => {
@@ -268,6 +273,29 @@ describe('a payment attempt', () => {
     expect(res.body).toMatchObject({ code: 'order.already-paid' })
     expect(await s.attempts()).toMatchObject([{ id: first, status: 'paid' }])
     expect(await s.order(placed.orderId)).toMatchObject({ status: 'paid' })
+  })
+
+  // Each start asks the provider about every earlier attempt of the order, from the one address
+  // every convention shares: an order's starts have a count of their own.
+  it('starts only so often for one order, and a start refused spends nothing', async () => {
+    const s = await shop()
+    const [placed, other] = [await s.place(), await s.place('other@example.test')]
+    const { limit } = ROUTE_RATE_LIMITS.paymentAttemptsOfOrder
+    // Whoever holds no token of the order spends none of its starts.
+    await s.start(placed, 'not-its-token').expect(404)
+    for (let started = 0; started < limit; started += 1) await s.start(placed).expect(201)
+    const [asked, begun] = [vi.spyOn(fake(), 'state'), vi.spyOn(fake(), 'start')]
+
+    const res = await s.start(placed)
+
+    expect(res.status).toBe(429)
+    expect(res.body).toMatchObject({ code: 'request.rate-limited' })
+    expect(res.headers['retry-after']).toBeDefined()
+    expect(await s.attempts()).toHaveLength(limit)
+    expect(asked).not.toHaveBeenCalled()
+    expect(begun).not.toHaveBeenCalled()
+    // Another order has a count of its own.
+    await s.start(other).expect(201)
   })
 
   // An order is opened in its own convention alone, whatever token comes with it.

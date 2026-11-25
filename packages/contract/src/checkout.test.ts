@@ -619,6 +619,7 @@ describe('the result of an order', () => {
     number: 'ABCDEFGHJK',
     status: 'awaiting-payment',
     holdEndsAt: '2026-05-01T10:30:00.000Z',
+    payable: true,
     failureReason: null,
     moneyWith: null,
     editionSlug: '2026',
@@ -634,8 +635,11 @@ describe('the result of an order', () => {
       'holdEndsAt',
       'moneyWith',
       'number',
+      'payable',
       'status',
     ])
+    // Whether another try can start is the shop's to say, by its own clock.
+    expect(orderResultSchema.safeParse({ ...result, payable: undefined }).success).toBe(false)
   })
 
   it.each(ORDER_STATUSES)('takes the status %s', (status) => {

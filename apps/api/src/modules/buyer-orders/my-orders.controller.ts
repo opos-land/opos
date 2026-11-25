@@ -5,6 +5,7 @@ import { TenantContextService } from '../../common/als/tenant-context.service'
 import { InTenant } from '../../common/decorators/require-tenant.decorator'
 import { notFound } from '../../common/errors/api-error'
 import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
+import { withinHold } from '../checkout/hold'
 import { OrdersRepository } from '../checkout/orders.repository'
 import { notPaid } from '../order-management/order-management.errors'
 import { MyOrdersRepository } from './my-orders.repository'
@@ -33,6 +34,7 @@ export class MyOrdersController {
       const account = this.context.account()
       const email = account.email.trim().toLowerCase()
       const listed = await this.mine.list(tenantId, account.id)
+      const at = new Date()
       const shown: MyOrder[] = []
       for (const order of listed) {
         shown.push({
@@ -41,6 +43,8 @@ export class MyOrdersController {
           status: order.status,
           placedAt: order.placedAt.toISOString(),
           holdEndsAt: order.holdEndsAt?.toISOString() ?? null,
+          // What "Pay now" would answer, so the list offers it only while an attempt starts.
+          payable: withinHold(order, at),
           holderName: order.holderName,
           edition: { id: order.editionId, slug: order.editionSlug, name: order.editionName },
           lines: await this.read.lines(tenantId, order.id),

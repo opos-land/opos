@@ -567,6 +567,11 @@ export const orderResultSchema = z.object({
   status: z.enum(ORDER_STATUSES),
   /** When the hold of an order awaiting payment ends: a payment attempt starts only within it. */
   holdEndsAt: timestamp.nullable(),
+  /**
+   * Whether a payment attempt would start now: the order awaits payment within its hold, by the
+   * shop's own clock. The page offers another try by this, never by the clock of its device.
+   */
+  payable: z.boolean(),
   /** Why the last attempt failed, when its provider reported it and the order still awaits. */
   failureReason: z.enum(FAILURE_REASONS).nullable(),
   /** For an order that needs review: where the money is, as the provider's module words it. */

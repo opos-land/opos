@@ -85,7 +85,9 @@ export function ResultPage() {
   if (result.isError) return <ErrorMessage error={result.error} />
   if (result.isPending) return <LoadingView />
 
-  const { status, number, holdEndsAt, failureReason, moneyWith } = result.data
+  // `payable` is the shop's word, by its own clock, on whether another try would start: the
+  // clock of this device is not asked. It is as fresh as the status, read every few seconds.
+  const { status, number, payable, failureReason, moneyWith } = result.data
   const numberLine = (
     <p>
       <Trans>
@@ -93,8 +95,6 @@ export function ResultPage() {
       </Trans>
     </p>
   )
-  // Judged at the moment the status was last read, which the page does again every few seconds.
-  const held = holdEndsAt !== null && new Date(holdEndsAt).getTime() > result.dataUpdatedAt
 
   if (status === 'paid' || status === 'paid-manual') {
     return (
@@ -106,7 +106,7 @@ export function ResultPage() {
       </Page>
     )
   }
-  if (status === 'awaiting-payment' && held) {
+  if (status === 'awaiting-payment' && payable) {
     return (
       <Page title={<Trans>Not paid yet</Trans>}>
         {numberLine}

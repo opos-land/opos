@@ -11,6 +11,7 @@ import { type Credentials } from '../payments/provider'
 import { providerUnavailable } from '../shop/shop.errors'
 import { alreadyPaid, holdEnded } from './checkout.errors'
 import { hashOf } from './codes'
+import { withinHold } from './hold'
 import { attemptOf, PaymentConfirmations } from './payment-confirmations.service'
 import { type PayableOrder, PaymentsRepository } from './payments.repository'
 
@@ -123,7 +124,8 @@ export class PaymentAttempts {
   /** What the result page shows of the order: its status and number alone. */
   result(tenant: TenantInContext, orderId: string, token: string): Promise<OrderResult> {
     return this.context.withTenant(tenant.id, async () => {
-      const order = await this.opened(tenant.id, orderId, { token }, new Date())
+      const at = new Date()
+      const order = await this.opened(tenant.id, orderId, { token }, at)
       const attempts = await this.payments.attempts(order.id)
       const last = attempts.at(-1)
       const confirmed = attempts.findLast((attempt) => attempt.moneyWith !== null)
@@ -132,6 +134,8 @@ export class PaymentAttempts {
         status: order.status,
         holdEndsAt:
           order.status === 'awaiting-payment' ? (order.holdEndsAt?.toISOString() ?? null) : null,
+        // What starting an attempt would answer, so the page offers a try only while one starts.
+        payable: withinHold(order, at),
         // Why the last try failed, for as long as nothing came after it.
         failureReason:
           order.status === 'awaiting-payment' && last?.status === 'failed'
@@ -180,7 +184,7 @@ export class PaymentAttempts {
   private payable(order: PayableOrder, at: Date) {
     if (order.status === 'expired') throw holdEnded()
     if (order.status !== 'awaiting-payment') throw alreadyPaid()
-    if (!order.holdEndsAt || order.holdEndsAt.getTime() <= at.getTime()) throw holdEnded()
+    if (!withinHold(order, at)) throw holdEnded()
   }
 
   /** The account the order is paid into, with its credentials opened. */

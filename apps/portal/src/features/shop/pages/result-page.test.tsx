@@ -24,6 +24,7 @@ const result = (changes: Partial<OrderResult> = {}): OrderResult => ({
   number: 'ABCDEFGHJK',
   status: 'awaiting-payment',
   holdEndsAt: new Date(Date.now() + 20 * MINUTE).toISOString(),
+  payable: true,
   failureReason: null,
   moneyWith: null,
   editionSlug: '2027',
@@ -60,11 +61,14 @@ beforeEach(() => {
   api.leave.mockReset()
 })
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.useRealTimers()
+})
 
 describe('ResultPage', () => {
   it('says "Paid" with the order’s number and that the QR code was emailed', async () => {
-    api.result.mockResolvedValue(result({ status: 'paid', holdEndsAt: null }))
+    api.result.mockResolvedValue(result({ status: 'paid', holdEndsAt: null, payable: false }))
     view()
 
     expect(await screen.findByRole('heading', { name: 'Paid', level: 1 })).toBeDefined()
@@ -105,9 +109,9 @@ describe('ResultPage', () => {
   it.each([
     [
       'an order whose hold ended',
-      result({ holdEndsAt: new Date(Date.now() - MINUTE).toISOString() }),
+      result({ holdEndsAt: new Date(Date.now() - MINUTE).toISOString(), payable: false }),
     ],
-    ['an expired order', result({ status: 'expired', holdEndsAt: null })],
+    ['an expired order', result({ status: 'expired', holdEndsAt: null, payable: false })],
   ])('says the order expired for %s, and links a new checkout', async (_, shown) => {
     api.result.mockResolvedValue(shown)
     view()
@@ -121,11 +125,39 @@ describe('ResultPage', () => {
     )
   })
 
+  // The shop says whether another try would start, by its own clock: the device's may be off
+  // by more than the hold, and would then offer a try that starts nothing, or hide one that does.
+  it('offers another try by the shop’s word, with the device’s clock an hour ahead', async () => {
+    const shown = result()
+    vi.useFakeTimers({ toFake: ['Date'], now: Date.now() + 60 * MINUTE })
+    api.result.mockResolvedValue(shown)
+    view()
+
+    expect(await screen.findByRole('heading', { name: 'Not paid yet', level: 1 })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined()
+  })
+
+  it('says the order expired by the shop’s word, with the device’s clock an hour behind', async () => {
+    const shown = result({
+      holdEndsAt: new Date(Date.now() - MINUTE).toISOString(),
+      payable: false,
+    })
+    vi.useFakeTimers({ toFake: ['Date'], now: Date.now() - 60 * MINUTE })
+    api.result.mockResolvedValue(shown)
+    view()
+
+    expect(
+      await screen.findByRole('heading', { name: 'The order expired', level: 1 }),
+    ).toBeDefined()
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+  })
+
   it('says of an order that needs review that the payment arrived and where the money is', async () => {
     api.result.mockResolvedValue(
       result({
         status: 'needs-review',
         holdEndsAt: null,
+        payable: false,
         moneyWith: { en: 'The money is with the convention.', pl: 'Pieniądze są u konwentu.' },
       }),
     )
@@ -142,7 +174,7 @@ describe('ResultPage', () => {
     api.start.mockRejectedValue(new ORPCError('order.already-paid', { status: 409 }))
     view()
     fireEvent.click(await screen.findByRole('button', { name: 'Try again' }))
-    api.result.mockResolvedValue(result({ status: 'paid', holdEndsAt: null }))
+    api.result.mockResolvedValue(result({ status: 'paid', holdEndsAt: null, payable: false }))
 
     expect(await screen.findByRole('heading', { name: 'Paid', level: 1 })).toBeDefined()
     expect(api.leave).not.toHaveBeenCalled()

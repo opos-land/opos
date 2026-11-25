@@ -750,6 +750,7 @@ describe('the result of an order', () => {
       number: placed.number,
       status: 'awaiting-payment',
       holdEndsAt: expect.any(String) as string,
+      payable: true,
       failureReason: null,
       moneyWith: null,
       editionSlug: s.slug,
@@ -758,6 +759,21 @@ describe('the result of an order', () => {
     expect(holdEnds).toBeGreaterThan(Date.now() + (HOLD_MINUTES - 1) * MINUTE)
     // No personal data: nothing of the buyer or the ticket holder.
     expect(JSON.stringify(awaiting)).not.toMatch(/buyer@|Ada/)
+  })
+
+  // The shop says by its own clock whether the order can still be paid: the buyer's device,
+  // whose clock may be off by more than the hold, is not asked.
+  it('says whether a payment attempt would start: only within the hold of an order that awaits', async () => {
+    const s = await shop()
+    const placed = await s.place()
+
+    expect(await body(s, placed)).toMatchObject({ status: 'awaiting-payment', payable: true })
+    await setColumn('orders', placed.orderId, 'hold_ends_at', ago(1))
+    // Not expired yet, and no longer payable: what starting an attempt would answer.
+    expect(await body(s, placed)).toMatchObject({ status: 'awaiting-payment', payable: false })
+    await s.start(placed).expect(409)
+    await setColumn('orders', placed.orderId, 'status', 'expired')
+    expect(await body(s, placed)).toMatchObject({ status: 'expired', payable: false })
   })
 
   it('says paid only once the provider confirmed: the buyer’s return proves nothing', async () => {
@@ -771,6 +787,7 @@ describe('the result of an order', () => {
     expect(await body(s, placed)).toMatchObject({
       status: 'paid',
       holdEndsAt: null,
+      payable: false,
       failureReason: null,
       moneyWith: null,
     })

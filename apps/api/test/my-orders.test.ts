@@ -128,6 +128,8 @@ describe("an account's orders in a convention", () => {
       lines: [{ kind: 'ticket', name: 'Standard', quantity: 1, amountMinor: 10000 }],
       totalMinor: 10000,
       currency: 'PLN',
+      // Within its hold by the shop's own clock: "Pay now" would start a payment attempt.
+      payable: true,
       // Nothing is added to an order that is not paid.
       bought: null,
     })
@@ -135,6 +137,7 @@ describe("an account's orders in a convention", () => {
     expect(orders[1]).toMatchObject({
       status: 'paid',
       holdEndsAt: null,
+      payable: false,
       bought: { ticketTypeId: d.standard, addOnIds: [], itemIds: [] },
     })
     expect(JSON.stringify(orders)).not.toContain(buyer.email.toLowerCase())
@@ -230,6 +233,8 @@ describe('"Pay now"', () => {
 
     expect(late.body).toMatchObject({ code: 'order.hold-ended' })
     expect(await storedRows('payment_attempts', d.t.id)).toEqual([])
+    // The list says the same of the order before "Pay now" is pressed.
+    expect((await mine(d, buyer))[0]).toMatchObject({ status: 'awaiting-payment', payable: false })
   })
 })
 

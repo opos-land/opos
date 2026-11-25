@@ -1273,7 +1273,7 @@ msgstr "Tego żądania nie można wykonać z tego adresu. Odśwież stronę i sp
 
 #: src/errors.ts
 msgid "This scanner is stopped for now: the organizer who enabled it cannot manage tickets at the moment. Ask an organizer to restore that access, then try again."
-msgstr "Ten skaner jest chwilowo zatrzymany: organizator, który go włączył, nie może teraz zarządzać biletami. Poproś organizatora o przywrócenie tego dostępu i spróbuj ponownie."
+msgstr "Ten skaner jest chwilowo zatrzymany: organizator, który go włączył, nie może teraz zarządzać akredytacjami. Poproś organizatora o przywrócenie tego dostępu i spróbuj ponownie."
 
 #: src/errors.ts
 msgid "This scanner no longer works: its access was revoked or expired. Pair the phone again."

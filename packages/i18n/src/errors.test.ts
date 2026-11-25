@@ -127,7 +127,7 @@ describe('errorMessage', () => {
     ],
     [
       'scanner.stopped',
-      'Ten skaner jest chwilowo zatrzymany: organizator, który go włączył, nie może teraz zarządzać biletami. Poproś organizatora o przywrócenie tego dostępu i spróbuj ponownie.',
+      'Ten skaner jest chwilowo zatrzymany: organizator, który go włączył, nie może teraz zarządzać akredytacjami. Poproś organizatora o przywrócenie tego dostępu i spróbuj ponownie.',
     ],
     [
       'production.before-deadline',

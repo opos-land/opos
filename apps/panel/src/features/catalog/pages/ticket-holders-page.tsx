@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PlusIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
+import { changedFrom } from '../../../shared/lib/changes'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import {
   Badge,
@@ -66,7 +67,13 @@ export function TicketHoldersPage() {
         ) : shop.isError ? (
           <ErrorMessage error={shop.error} />
         ) : (
-          <AgeBands shop={shop.data} editionId={edition.id} canWrite={canWrite} />
+          <AgeBands
+            // What the edition holds by now fills the form anew.
+            key={JSON.stringify([shop.data.ageBands, shop.data.guardianConsentFormUrl])}
+            shop={shop.data}
+            editionId={edition.id}
+            canWrite={canWrite}
+          />
         )}
       </Section>
       <Section title={<Trans>Custom fields</Trans>}>
@@ -122,7 +129,8 @@ function AgeBands({
     const link = updateEditionShopSchema.safeParse({ guardianConsentFormUrl: form.trim() || null })
     setProblem(!ages ? 'ages' : !link.success ? 'form' : null)
     if (ages && link.success) {
-      update.mutate({ params: { editionId }, body: { ...ages, ...link.data } })
+      // Only what was changed here: the rest stays as someone else may have set it meanwhile.
+      update.mutate({ params: { editionId }, body: changedFrom(shop, { ...ages, ...link.data }) })
     }
   }
 

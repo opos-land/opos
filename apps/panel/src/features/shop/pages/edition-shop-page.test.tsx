@@ -2,7 +2,7 @@ import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { ORPCError } from '@orpc/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EditionShopPage } from './edition-shop-page'
@@ -65,11 +65,12 @@ const closed = {
 }
 const opened = { ...closed, open: true, openedAt: '2027-06-01T08:00:00.000Z' }
 
-const view = (path = '/convention-a/editions/2026/shop') =>
+const view = (
+  path = '/convention-a/editions/2026/shop',
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+) =>
   render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
+    <QueryClientProvider client={client}>
       <I18nProvider i18n={i18n}>
         <MemoryRouter initialEntries={[path]}>
           <Routes>
@@ -211,9 +212,9 @@ describe('EditionShopPage', () => {
     state.tickets = 'write'
     view()
     await screen.findByText('The shop is closed: nothing can be ordered.')
-    const field = screen.getByLabelText('Address of the FAQ')
+    const field = () => screen.getByLabelText<HTMLInputElement>('Address of the FAQ')
 
-    fireEvent.change(field, { target: { value: ' https://convention-a.test/faq ' } })
+    fireEvent.change(field(), { target: { value: ' https://convention-a.test/faq ' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save the address' }))
     await vi.waitFor(() => expect(update).toHaveBeenCalledTimes(1))
     expect(update.mock.calls[0]?.[0]).toEqual({
@@ -221,7 +222,9 @@ describe('EditionShopPage', () => {
       body: { faqUrl: 'https://convention-a.test/faq' },
     })
 
-    fireEvent.change(field, { target: { value: '' } })
+    // The saved address fills the form anew.
+    await waitFor(() => expect(field().value).toBe('https://convention-a.test/faq'))
+    fireEvent.change(field(), { target: { value: '' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save the address' }))
     await vi.waitFor(() => expect(update).toHaveBeenCalledTimes(2))
     expect(update.mock.calls[1]?.[0]).toMatchObject({ body: { faqUrl: null } })
@@ -231,9 +234,9 @@ describe('EditionShopPage', () => {
     state.tickets = 'write'
     view()
     await screen.findByText('The shop is closed: nothing can be ordered.')
-    const field = screen.getByLabelText('Message of a closed shop')
+    const field = () => screen.getByLabelText<HTMLTextAreaElement>('Message of a closed shop')
 
-    fireEvent.change(field, { target: { value: ' Tickets return in spring. ' } })
+    fireEvent.change(field(), { target: { value: ' Tickets return in spring. ' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save the message' }))
     await vi.waitFor(() => expect(update).toHaveBeenCalledTimes(1))
     expect(update.mock.calls[0]?.[0]).toEqual({
@@ -241,7 +244,9 @@ describe('EditionShopPage', () => {
       body: { salesClosedMessage: 'Tickets return in spring.' },
     })
 
-    fireEvent.change(field, { target: { value: ' ' } })
+    // The saved message fills the form anew.
+    await waitFor(() => expect(field().value).toBe('Tickets return in spring.'))
+    fireEvent.change(field(), { target: { value: ' ' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save the message' }))
     await vi.waitFor(() => expect(update).toHaveBeenCalledTimes(2))
     expect(update.mock.calls[1]?.[0]).toMatchObject({ body: { salesClosedMessage: null } })
@@ -266,7 +271,6 @@ describe('EditionShopPage', () => {
   it('sets the reminder: the days before the edition and the opening hours, and none with no number', async () => {
     state.tickets = 'write'
     read.mockResolvedValue(closed)
-    update.mockResolvedValue(closed)
     view()
 
     expect(
@@ -283,12 +287,54 @@ describe('EditionShopPage', () => {
       body: { reminderDaysBefore: 3, openingHours: 'Daily from 10 to 20.' },
     })
 
+    // What was saved fills the form anew.
+    await waitFor(() =>
+      expect(screen.getByLabelText<HTMLInputElement>('Days before the edition').value).toBe('3'),
+    )
     fireEvent.change(screen.getByLabelText('Days before the edition'), { target: { value: '' } })
     fireEvent.change(screen.getByLabelText('Opening hours'), { target: { value: '' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save the reminder' }))
     await waitFor(() => expect(update).toHaveBeenCalledTimes(2))
     expect(update.mock.calls[1]![0]).toMatchObject({
       body: { reminderDaysBefore: null, openingHours: null },
+    })
+  })
+
+  it('fills its forms with what the edition holds by now, and saves only what was changed', async () => {
+    state.tickets = 'write'
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    view(undefined, client)
+    const days = () => screen.getByLabelText<HTMLInputElement>('Days before the edition')
+    await screen.findByLabelText('Days before the edition')
+
+    // Someone else set these since the forms were filled.
+    act(() => {
+      client.setQueryData(['shop', 'edition', 'edition-2026'], {
+        ...closed,
+        faqUrl: 'https://convention-a.test/faq',
+        salesClosedMessage: 'Tickets return in spring.',
+        openingHours: 'Daily from 10 to 20.',
+      })
+    })
+    await waitFor(() =>
+      expect(screen.getByLabelText<HTMLTextAreaElement>('Opening hours').value).toBe(
+        'Daily from 10 to 20.',
+      ),
+    )
+    expect(screen.getByLabelText<HTMLInputElement>('Address of the FAQ').value).toBe(
+      'https://convention-a.test/faq',
+    )
+    expect(screen.getByLabelText<HTMLTextAreaElement>('Message of a closed shop').value).toBe(
+      'Tickets return in spring.',
+    )
+
+    fireEvent.change(days(), { target: { value: '3' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save the reminder' }))
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(1))
+    // The opening hours were not touched: they are not sent.
+    expect(update.mock.calls[0]![0]).toEqual({
+      params: { editionId: 'edition-2026' },
+      body: { reminderDaysBefore: 3 },
     })
   })
 

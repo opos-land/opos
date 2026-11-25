@@ -1,7 +1,7 @@
 import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MerchandisePage } from './merchandise-page'
@@ -77,11 +77,9 @@ const item = (position: number, fields: object = {}) => ({
   ...fields,
 })
 
-const view = () =>
+const view = (client = new QueryClient({ defaultOptions: { queries: { retry: false } } })) =>
   render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
+    <QueryClientProvider client={client}>
       <I18nProvider i18n={i18n}>
         <MemoryRouter initialEntries={['/convention-a/editions/2026/merchandise']}>
           <Routes>
@@ -153,11 +151,8 @@ describe('the merchandise page', () => {
     await waitFor(() => expect(updateShop).toHaveBeenCalledTimes(1))
     expect(updateShop.mock.calls[0]![0]).toEqual({
       params: { editionId: 'edition-2026' },
-      body: {
-        merchPreorderDeadline: '2027-05-01T22:00:00.000Z',
-        merchOnlyEnabled: true,
-        pickupInformation: null,
-      },
+      // The pick-up information was not touched: it is not sent.
+      body: { merchPreorderDeadline: '2027-05-01T22:00:00.000Z', merchOnlyEnabled: true },
     })
 
     fireEvent.change(field(DEADLINE), { target: { value: '' } })
@@ -181,10 +176,36 @@ describe('the merchandise page', () => {
       body: { pickupInformation: 'At the desk in hall B, from 10 to 18.' },
     })
 
-    fireEvent.change(pickUp, { target: { value: '  ' } })
+    await waitFor(() =>
+      expect(field('Pick-up information').value).toBe('At the desk in hall B, from 10 to 18.'),
+    )
+    fireEvent.change(field('Pick-up information'), { target: { value: '  ' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save how merchandise sells' }))
     await waitFor(() => expect(updateShop).toHaveBeenCalledTimes(2))
     expect(updateShop.mock.calls[1]![0]).toMatchObject({ body: { pickupInformation: null } })
+  })
+
+  it('fills the form with what the edition holds by now, and saves only what was changed in it', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    view(client)
+    await screen.findByLabelText(DEADLINE)
+
+    // Someone else set the deadline since the form was filled.
+    act(() => {
+      client.setQueryData(
+        ['shop', 'edition'],
+        shop({ merchPreorderDeadline: '2027-05-01T22:00:00.000Z' }),
+      )
+    })
+    await waitFor(() => expect(field(DEADLINE).value).toBe('2027-05-01T22:00'))
+
+    fireEvent.change(field('Pick-up information'), { target: { value: 'At the desk.' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save how merchandise sells' }))
+    await waitFor(() => expect(updateShop).toHaveBeenCalledTimes(1))
+    expect(updateShop.mock.calls[0]![0]).toEqual({
+      params: { editionId: 'edition-2026' },
+      body: { pickupInformation: 'At the desk.' },
+    })
   })
 
   it('lists each item with its price and how many of its variants are out of stock', async () => {

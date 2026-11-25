@@ -1,7 +1,7 @@
 import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TicketHoldersPage } from './ticket-holders-page'
@@ -67,11 +67,9 @@ const customField = (position: number, fields: object = {}) => ({
   ...fields,
 })
 
-const view = () =>
+const view = (client = new QueryClient({ defaultOptions: { queries: { retry: false } } })) =>
   render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
+    <QueryClientProvider client={client}>
       <I18nProvider i18n={i18n}>
         <MemoryRouter initialEntries={['/convention-a/editions/2026/ticket-holders']}>
           <Routes>
@@ -150,6 +148,30 @@ describe("the ticket holders' data page", () => {
         ageBands: { teenFromAge: 13, adultFromAge: 18 },
         guardianConsentFormUrl: 'https://convention.test/consent.pdf',
       },
+    })
+  })
+
+  it('fills the form with what the edition holds by now, and saves only what was changed in it', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    view(client)
+    await screen.findByLabelText(TEEN)
+
+    // Someone else set the form since the fields were filled.
+    act(() => {
+      client.setQueryData(
+        ['shop', 'edition'],
+        shop({ guardianConsentFormUrl: 'https://convention.test/consent.pdf' }),
+      )
+    })
+    await waitFor(() => expect(field(FORM).value).toBe('https://convention.test/consent.pdf'))
+
+    fireEvent.change(field(TEEN), { target: { value: '13' } })
+    fireEvent.change(field(ADULT), { target: { value: '18' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save the age bands' }))
+    await waitFor(() => expect(updateShop).toHaveBeenCalledTimes(1))
+    expect(updateShop.mock.calls[0]![0]).toEqual({
+      params: { editionId: 'edition-2026' },
+      body: { ageBands: { teenFromAge: 13, adultFromAge: 18 } },
     })
   })
 

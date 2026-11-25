@@ -1,13 +1,8 @@
 import { useLingui } from '@lingui/react/macro'
 import { useEffect } from 'react'
+import { formatTitle } from './title'
 
-const SEPARATOR = ' · '
-
-/** A tab title: the parts, most specific first and the missing ones left out, then the portal. */
-export function formatTitle(parts: readonly (string | undefined)[], application: string) {
-  const named = parts.filter((part): part is string => Boolean(part?.trim()))
-  return [...named, application].join(SEPARATOR)
-}
+export { formatTitle }
 
 interface Claim {
   title: string

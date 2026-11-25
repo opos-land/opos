@@ -212,6 +212,7 @@ describe('RouteRateLimiter', () => {
       scannerPairings: { limit: 30, ttl: 3_600_000 },
       scannerScans: { limit: 6000, ttl: 3_600_000 },
       scannerHandOuts: { limit: 6000, ttl: 3_600_000 },
+      scannerRefusals: { limit: 300, ttl: 3_600_000 },
       profileReports: { limit: 10, ttl: 3_600_000 },
     })
   })

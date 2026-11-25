@@ -160,7 +160,7 @@ export class ScannerService {
 
   /** Reads a QR code as the scanner the token names: S1-S5. A scan marks nothing by itself. */
   scan(code: string): Promise<ScanResult> {
-    return this.asScanner('scannerScans', (scanner) => this.read(scanner, code))
+    return this.asScanner((scanner) => this.read(scanner, code))
   }
 
   /**
@@ -171,7 +171,7 @@ export class ScannerService {
     body: { code: string; orderId: string; lineIds: readonly string[] },
     at = new Date(),
   ): Promise<ScanResult> {
-    return this.asScanner('scannerHandOuts', async (scanner) => {
+    return this.asScanner(async (scanner) => {
       const { orders } = await this.read(scanner, body.code)
       // A scanner marks nothing of an order it did not scan.
       const order = orders.find((shown) => shown.orderId === body.orderId)
@@ -216,15 +216,14 @@ export class ScannerService {
    * device's access is judged here at every request: that it still holds the token the request
    * came with, was not revoked and has not ended, and the org who enabled it, whose expiry and
    * removal end it. A suspended tenant is refused
-   * where its transaction opens.
+   * where its transaction opens. The request was counted against the scanner where its token
+   * named it, in ScannerGuard.
    */
   private async asScanner<T>(
-    limit: 'scannerScans' | 'scannerHandOuts',
     fn: (scanner: StandingScanner) => Promise<T>,
     now = new Date(),
   ): Promise<T> {
     const found = this.context.scanner()
-    await this.rateLimiter.consume(limit, `scanner:${found.id}`)
     return this.context.withTenant(found.tenantId, async () => {
       const scanner = await this.scanners.standing(found.tenantId, found.id, now, {
         tokenHash: found.tokenHash,

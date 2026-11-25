@@ -318,7 +318,13 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   its own tenant's transaction.
 - Every route has a default rate limit per account, or per address without a session; a route open
   to abuse adds its own in code
-  ([route-rate-limit.ts](../apps/api/src/common/rate-limit/route-rate-limit.ts)).
+  ([route-rate-limit.ts](../apps/api/src/common/rate-limit/route-rate-limit.ts)). A limit counts
+  against what the request proves, an account by its session, a scanner or an order link by its
+  token, and against the client address only where the request proves nothing or guesses; a
+  guess is counted once it is known to be one
+  ([0095](adr/0095-count-a-rate-limit-against-what-a-request-proves.md)). The routes a scanner
+  calls under its token skip the default limit, which the scanners and the visitors behind one
+  address would share. The counters live in the memory of each API process.
 - A log line written on purpose names no token, password or email address; an unexpected error is
   logged whole, never sent in the body.
 
@@ -809,7 +815,11 @@ steps of [adding a feature](#adding-a-feature).
   request in its tenant's transaction: revoked, ended, or enabled by an org whose access has
   ended or who no longer writes the tickets of its edition, it opens nothing. It is judged there by the secret the phone sent, the token or the
   pairing code, which the scanner must still hold: a new pairing code replaces both, and the hash
-  that found the scanner across tenants was read a moment before. An org gives a new pairing
+  that found the scanner across tenants was read a moment before. The guard counts every request
+  of a scanner's route: against the scanner its token names, under the limit of the route and
+  whatever the body then holds, or against the client address when the token names none, and an
+  address out of those refusals is refused before a token is looked up
+  ([0095](adr/0095-count-a-rate-limit-against-what-a-request-proves.md)). An org gives a new pairing
   code only to a scanner that ends no later than its own access. A scan reads the orders of the scanner's own edition that the code
   carries, and no email address; a code of another edition is told as such, and nothing of its
   order is read. A hand-out is marked only under the code the scanner read, and names the

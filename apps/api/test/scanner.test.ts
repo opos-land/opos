@@ -2,6 +2,7 @@ import { type NestExpressApplication } from '@nestjs/platform-express'
 import { type PairedScanner, type ScanResult } from '@opos/contract'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { ROUTE_RATE_LIMITS, RouteRateLimiter } from '../src/common/rate-limit/route-rate-limit'
 import { createApp } from './app'
 import { deleteCreatedAccounts, session } from './auth'
 import {
@@ -482,5 +483,88 @@ describe('a hand-out', () => {
     const [line] = (await g.lines(order.id)).filter((row) => row.id === entry)
     expect(line).toMatchObject({ handed_out_at: null, handed_out_by: null })
     await handOut(g.token, order.code, order.id, [entry]).expect(200)
+  })
+})
+
+// docs/ARCHITECTURE.md, API conventions: a request of a scanner's route counts against the
+// scanner its token names, and against the client address only when the token names none. The
+// scanners of a venue ask from one address, with every visitor on its network.
+describe('the rate limits of a scanner’s routes', () => {
+  let limited: NestExpressApplication
+  /** The default limit of this API: anything counted against it is refused at once. */
+  const DEFAULT = 3
+
+  beforeAll(async () => {
+    limited = await createApp({}, [], { limit: DEFAULT, ttl: 60_000 })
+    await limited.listen(0, '127.0.0.1')
+  })
+
+  afterAll(async () => {
+    await limited.close()
+  })
+
+  const scanFrom = (ip: string, token: string | null, body: object) => {
+    const req = request(limited.getHttpServer()).post('/scanner/scans').set('X-Forwarded-For', ip)
+    return (token === null ? req : req.set('Authorization', `Bearer ${token}`)).send(body)
+  }
+  const limitedResponse = (res: request.Response) => {
+    expect(res.status).toBe(429)
+    expect(res.body).toMatchObject({ code: 'request.rate-limited' })
+    expect(Number(res.headers['retry-after'])).toBeGreaterThan(0)
+  }
+
+  it('share no default limit with the scanners and the visitors behind one address', async () => {
+    const g = await gate()
+    const side = await addScanner(g.t.id, g.edition, { name: 'Side gate' })
+    const order = await g.paid()
+    const ip = '203.0.113.60'
+    const visit = () => request(limited.getHttpServer()).get('/health').set('X-Forwarded-For', ip)
+    for (let visited = 0; visited < DEFAULT; visited += 1) await visit().expect(200)
+    limitedResponse(await visit())
+
+    for (let read = 0; read <= DEFAULT; read += 1) {
+      await scanFrom(ip, g.token, { code: order.code }).expect(200)
+      await scanFrom(ip, side.token, { code: order.code }).expect(200)
+    }
+    const entry = (await g.lines(order.id)).find((line) => line.kind === 'ticket')!
+    await request(limited.getHttpServer())
+      .post('/scanner/hand-outs')
+      .set('X-Forwarded-For', ip)
+      .set('Authorization', `Bearer ${g.token}`)
+      .send({ code: order.code, orderId: order.id, lineIds: [String(entry.id)] })
+      .expect(200)
+  })
+
+  it('count a request with no scanner’s token against its address, refused then before a token is looked up', async () => {
+    const g = await gate()
+    const order = await g.paid()
+    const ip = '203.0.113.61'
+    const { limit } = ROUTE_RATE_LIMITS.scannerRefusals
+    for (let refused = 0; refused < limit; refused += 1) {
+      const token = refused % 2 === 0 ? null : 'x'.repeat(43)
+      expect((await scanFrom(ip, token, { code: order.code }).expect(401)).body).toMatchObject(
+        revoked,
+      )
+    }
+
+    limitedResponse(await scanFrom(ip, 'y'.repeat(43), { code: order.code }))
+    limitedResponse(await scanFrom(ip, null, { code: order.code }))
+    // Refused before its token is looked up: a scanner behind that address waits with it.
+    limitedResponse(await scanFrom(ip, g.token, { code: order.code }))
+    await scanFrom('203.0.113.62', g.token, { code: order.code }).expect(200)
+  })
+
+  it('count every request of a scanner against the scanner, whatever its body', async () => {
+    const g = await gate()
+    const side = await addScanner(g.t.id, g.edition, { name: 'Side gate' })
+    const ip = '203.0.113.63'
+    const limiter = limited.get(RouteRateLimiter)
+    for (let read = 0; read < ROUTE_RATE_LIMITS.scannerScans.limit; read += 1) {
+      await limiter.consume('scannerScans', `scanner:${g.scanner.id}`)
+    }
+
+    limitedResponse(await scanFrom(ip, g.token, {}))
+    // Another scanner behind the address has its own.
+    await scanFrom(ip, side.token, {}).expect(400)
   })
 })

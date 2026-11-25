@@ -1,14 +1,14 @@
-import { Controller, UseGuards } from '@nestjs/common'
+import { Controller } from '@nestjs/common'
 import { contract } from '@opos/contract'
 import { Implement, implement } from '@orpc/nest'
-import { ScannerGuard } from './scanner.guard'
+import { AsScanner } from './scanner.guard'
 import { ScannerService } from './scanner.service'
 
 /**
  * What a phone asks as a scanner (docs/specs/0007-scanner.md): no session and no membership. The
  * pairing route takes a code in its body; the others take the device's token in
- * `Authorization: Bearer`, which ScannerGuard reads before anything of the request, and the
- * service judges the device behind it at every request.
+ * `Authorization: Bearer`, which ScannerGuard reads before anything of the request, counting the
+ * request against the scanner, and the service judges the device behind it at every request.
  */
 @Controller()
 export class ScannerController {
@@ -22,7 +22,7 @@ export class ScannerController {
   }
 
   @Implement(contract.scanner.scan)
-  @UseGuards(ScannerGuard)
+  @AsScanner('scannerScans')
   scan() {
     return implement(contract.scanner.scan).handler(({ input }) =>
       this.service.scan(input.body.code),
@@ -30,7 +30,7 @@ export class ScannerController {
   }
 
   @Implement(contract.scanner.handOut)
-  @UseGuards(ScannerGuard)
+  @AsScanner('scannerHandOuts')
   handOut() {
     return implement(contract.scanner.handOut).handler(({ input }) =>
       this.service.handOut(input.body),

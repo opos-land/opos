@@ -310,6 +310,9 @@ describe('the axes of an item', () => {
 
     const dialog = await screen.findByRole('alertdialog')
     expect(within(dialog).getByText('Save the axes and remove variants?')).toBeDefined()
+    // The size chart stays with its value, so the modal does not name it.
+    expect(within(dialog).getByText(/every variant of the item goes with its stock/)).toBeDefined()
+    expect(within(dialog).queryByText(/size chart/)).toBeNull()
     expect(updateItem).not.toHaveBeenCalled()
     await confirm('Save the axes')
     await waitFor(() => expect(updateItem).toHaveBeenCalledTimes(1))
@@ -325,12 +328,51 @@ describe('the axes of an item', () => {
 
     const dialog = await screen.findByRole('alertdialog')
     expect(within(dialog).getByText('Save the axes and remove variants?')).toBeDefined()
+    expect(within(dialog).getByText(/A value left empty is removed as well\./)).toBeDefined()
     expect(updateItem).not.toHaveBeenCalled()
     await confirm('Save the axes')
     await waitFor(() => expect(updateItem).toHaveBeenCalledTimes(1))
     expect(updateItem.mock.calls[0]![0]).toMatchObject({
       body: { axes: [{ id: 'cut' }, { id: 'size', values: [{ id: 'l', label: 'L' }] }] },
     })
+  })
+
+  it('name the size chart alone where the item has no variant to lose', async () => {
+    readItems.mockResolvedValue([mug, { ...shirt, variants: [] }])
+    view('shirt')
+    await waitFor(() => expect(field('Value 1 of axis 1').value).toBe("Women's"))
+
+    type('Value 1 of axis 1', '')
+    press('Save the axes')
+
+    const dialog = await screen.findByRole('alertdialog')
+    expect(within(dialog).getByText('Save the axes and remove size charts?')).toBeDefined()
+    expect(within(dialog).getByText(/A removed value takes its size chart\./)).toBeDefined()
+    expect(within(dialog).getByText(/A value left empty is removed as well\./)).toBeDefined()
+    expect(within(dialog).queryByText(/variant/)).toBeNull()
+    expect(updateItem).not.toHaveBeenCalled()
+    await confirm('Save the axes')
+    await waitFor(() => expect(updateItem).toHaveBeenCalledTimes(1))
+    expect(updateItem.mock.calls[0]![0]).toMatchObject({
+      body: { axes: [{ id: 'cut', values: [{ id: 'm', label: "Men's" }] }, { id: 'size' }] },
+    })
+  })
+
+  it('name the variants and the size chart where a value takes both', async () => {
+    view('shirt')
+    await waitFor(() => expect(field('Value 1 of axis 1').value).toBe("Women's"))
+
+    press('Remove value 1 of axis 1')
+    press('Save the axes')
+
+    const dialog = await screen.findByRole('alertdialog')
+    expect(
+      within(dialog).getByText('Save the axes and remove variants and size charts?'),
+    ).toBeDefined()
+    expect(
+      within(dialog).getByText(/takes the variants that held it, and its size chart\./),
+    ).toBeDefined()
+    expect(updateItem).not.toHaveBeenCalled()
   })
 
   it('refuse an axis left without a name, and send nothing', async () => {

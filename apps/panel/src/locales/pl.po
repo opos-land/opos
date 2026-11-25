@@ -155,6 +155,10 @@ msgstr "Procent ceny"
 msgid "A QR code has 32 characters: letters and digits."
 msgstr "Kod QR ma 32 znaki: litery i cyfry."
 
+#: src/features/catalog/components/axes-editor.tsx
+msgid "A removed value takes its size chart."
+msgstr "Usunięta wartość zabiera swoją tabelę rozmiarów."
+
 #: src/features/orders/pages/manual-order-page.tsx
 msgid "A sale made outside the shop. What it sells is handed over as you record it: the order has no QR code and sends no email. A person who should hold a QR code ahead of the edition gets a 100% discount code instead, and places the order in the shop."
 msgstr "Sprzedaż poza sklepem. To, co sprzedajesz, wydajesz od razu przy zapisie: zamówienie nie ma kodu QR i nie wysyła żadnego e-maila. Osoba, która ma mieć kod QR przed edycją, dostaje zamiast tego kod rabatowy na 100% i składa zamówienie w sklepie."
@@ -182,6 +186,10 @@ msgstr "Nastolatek: od ilu lat"
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "A ticket holder is a child, a teen or an adult by their age on the first day of the edition. A child enters with a guardian present, a teen with a guardian’s written consent brought on paper."
 msgstr "Posiadacz akredytacji jest dzieckiem, nastolatkiem albo dorosłym według wieku w pierwszym dniu edycji. Dziecko wchodzi w towarzystwie opiekuna, nastolatek z pisemną zgodą opiekuna przyniesioną na papierze."
+
+#: src/features/catalog/components/axes-editor.tsx
+msgid "A value left empty is removed as well."
+msgstr "Wartość, której pole zostało puste, też zostanie usunięta."
 
 #: src/features/orders/model/labels.ts
 msgid "A variant was swapped"
@@ -2182,6 +2190,10 @@ msgstr "Włączone: sklep przyjmuje też zamówienie bez akredytacji"
 msgid "Once an axis is added or removed, every variant of the item goes with its stock. A removed value takes the variants that held it, and its size chart."
 msgstr "Po dodaniu albo usunięciu osi znikną wszystkie warianty gadżetu razem ze stanami magazynowymi. Usunięta wartość zabiera warianty, które ją miały, i swoją tabelę rozmiarów."
 
+#: src/features/catalog/components/axes-editor.tsx
+msgid "Once an axis is added or removed, every variant of the item goes with its stock. A removed value takes the variants that held it."
+msgstr "Po dodaniu albo usunięciu osi znikną wszystkie warianty gadżetu razem ze stanami magazynowymi. Usunięta wartość zabiera warianty, które ją miały."
+
 #: src/features/catalog/components/add-on-picture.tsx
 msgid "One picture, which the shop shows with the add-on. It is for everyone once the add-on is shown in the shop of a published edition."
 msgstr "Jedno zdjęcie, które sklep pokazuje przy dodatku. Jest dostępne dla wszystkich, gdy dodatek jest widoczny w sklepie opublikowanej edycji."
@@ -2895,6 +2907,14 @@ msgstr "Zapisz przedziały wiekowe"
 #: src/features/catalog/components/axes-editor.tsx
 msgid "Save the axes"
 msgstr "Zapisz osie"
+
+#: src/features/catalog/components/axes-editor.tsx
+msgid "Save the axes and remove size charts?"
+msgstr "Zapisać osie i usunąć tabele rozmiarów?"
+
+#: src/features/catalog/components/axes-editor.tsx
+msgid "Save the axes and remove variants and size charts?"
+msgstr "Zapisać osie i usunąć warianty oraz tabele rozmiarów?"
 
 #: src/features/catalog/components/axes-editor.tsx
 msgid "Save the axes and remove variants?"

@@ -157,12 +157,16 @@ export function axesBody(
 }
 
 /**
- * Whether saving these axes takes away what the screen cannot bring back: every variant once an
- * axis is added or removed, those that held a value once the value is removed, and the size chart
- * of a value that goes. A value goes as the request drops it: left out, or its label left empty.
- * An item with no variant loses none, and a value without a size chart goes with nothing else.
+ * What saving these axes takes away that the screen cannot bring back, null when nothing: every
+ * variant once an axis is added or removed, those that held a value once the value is removed, and
+ * the size chart of a value that goes. A value goes as the request drops it: left out, or its
+ * label left empty. An item with no variant loses none, and a value without a size chart goes with
+ * nothing else.
  */
-export function reshapes(item: MerchandiseItem, fields: readonly AxisFields[]): boolean {
+export function takenByAxes(
+  item: MerchandiseItem,
+  fields: readonly AxisFields[],
+): 'variants' | 'size-charts' | 'both' | null {
   const keptAxes = new Set(fields.flatMap((axis) => axis.id ?? []))
   const keptValues = new Set(
     fields.flatMap((axis) =>
@@ -170,11 +174,14 @@ export function reshapes(item: MerchandiseItem, fields: readonly AxisFields[]): 
     ),
   )
   const charted = item.axes.flatMap((axis) => axis.values.filter((value) => value.sizeChart))
-  if (charted.some((value) => !keptValues.has(value.id))) return true
-  if (item.variants.length === 0) return false
-  if (fields.some((axis) => axis.id === undefined)) return true
-  if (item.axes.some((axis) => !keptAxes.has(axis.id))) return true
-  return item.variants.some((variant) => variant.valueIds.some((id) => !keptValues.has(id)))
+  const sizeCharts = charted.some((value) => !keptValues.has(value.id))
+  const variants =
+    item.variants.length > 0 &&
+    (fields.some((axis) => axis.id === undefined) ||
+      item.axes.some((axis) => !keptAxes.has(axis.id)) ||
+      item.variants.some((variant) => variant.valueIds.some((id) => !keptValues.has(id))))
+  if (variants) return sizeCharts ? 'both' : 'variants'
+  return sizeCharts ? 'size-charts' : null
 }
 
 /** Why a chosen file cannot be a picture or a size chart, before it is sent; null when it can. */

@@ -9,8 +9,8 @@ import {
   imageProblem,
   itemBody,
   itemFields,
-  reshapes,
   stockWrites,
+  takenByAxes,
   variantRows,
   variantsKey,
   variantsPlan,
@@ -232,22 +232,24 @@ describe('the axes of an item, as their editor holds them', () => {
     const item = shirt([variant('v1', ['w', 's'])])
     const fields = axesFields(item)
 
-    expect(reshapes(item, fields)).toBe(false)
-    expect(reshapes(item, [{ ...fields[0]!, name: 'Fit' }, fields[1]!])).toBe(false)
-    expect(reshapes(item, [...fields, { name: 'Colour', values: [{ label: 'Black' }] }])).toBe(true)
-    expect(reshapes(item, [fields[0]!])).toBe(true)
-    expect(reshapes(item, [fields[0]!, { ...fields[1]!, values: [fields[1]!.values[1]!] }])).toBe(
-      true,
+    expect(takenByAxes(item, fields)).toBeNull()
+    expect(takenByAxes(item, [{ ...fields[0]!, name: 'Fit' }, fields[1]!])).toBeNull()
+    expect(takenByAxes(item, [...fields, { name: 'Colour', values: [{ label: 'Black' }] }])).toBe(
+      'variants',
     )
+    expect(takenByAxes(item, [fields[0]!])).toBe('variants')
+    expect(
+      takenByAxes(item, [fields[0]!, { ...fields[1]!, values: [fields[1]!.values[1]!] }]),
+    ).toBe('variants')
     // A value added touches no variant.
     expect(
-      reshapes(item, [
+      takenByAxes(item, [
         fields[0]!,
         { ...fields[1]!, values: [...fields[1]!.values, { label: 'XL' }] },
       ]),
-    ).toBe(false)
+    ).toBeNull()
     // An item with no variant has none to lose.
-    expect(reshapes(shirt(), [fields[0]!])).toBe(false)
+    expect(takenByAxes(shirt(), [fields[0]!])).toBeNull()
   })
 
   it('take the variants of a value whose label is cleared, as the request leaves it out', () => {
@@ -256,11 +258,11 @@ describe('the axes of an item, as their editor holds them', () => {
     const cleared = [cut!, { ...size!, values: [{ id: 's', label: ' ' }, size!.values[1]!] }]
 
     expect(axesBody(cleared)).toMatchObject({ axes: [{}, { values: [{ id: 'l', label: 'L' }] }] })
-    expect(reshapes(item, cleared)).toBe(true)
+    expect(takenByAxes(item, cleared)).toBe('variants')
     // A new row left empty is no value yet: nothing goes with it.
-    expect(reshapes(item, [cut!, { ...size!, values: [...size!.values, { label: '' }] }])).toBe(
-      false,
-    )
+    expect(
+      takenByAxes(item, [cut!, { ...size!, values: [...size!.values, { label: '' }] }]),
+    ).toBeNull()
   })
 
   it('take the size chart of a value that goes, of an item with no variant too', () => {
@@ -278,15 +280,43 @@ describe('the axes of an item, as their editor holds them', () => {
     }
     const [cut, size] = axesFields(item)
 
-    expect(reshapes(item, [cut!, size!])).toBe(false)
+    expect(takenByAxes(item, [cut!, size!])).toBeNull()
     // The value without a chart goes with nothing.
-    expect(reshapes(item, [{ ...cut!, values: [cut!.values[0]!] }, size!])).toBe(false)
-    expect(reshapes(item, [{ ...cut!, values: [cut!.values[1]!] }, size!])).toBe(true)
+    expect(takenByAxes(item, [{ ...cut!, values: [cut!.values[0]!] }, size!])).toBeNull()
+    expect(takenByAxes(item, [{ ...cut!, values: [cut!.values[1]!] }, size!])).toBe('size-charts')
     expect(
-      reshapes(item, [{ ...cut!, values: [{ id: 'w', label: '' }, cut!.values[1]!] }, size!]),
-    ).toBe(true)
+      takenByAxes(item, [{ ...cut!, values: [{ id: 'w', label: '' }, cut!.values[1]!] }, size!]),
+    ).toBe('size-charts')
     // An axis that goes takes its values, and their size charts.
-    expect(reshapes(item, [size!])).toBe(true)
+    expect(takenByAxes(item, [size!])).toBe('size-charts')
+  })
+
+  it('name what goes: the variants, the size charts, or both', () => {
+    const chart = { fileId: 'chart-w', width: 400, height: 300 }
+    const item: MerchandiseItem = {
+      ...shirt([variant('v1', ['w', 's']), variant('v2', ['m', 'l'])]),
+      axes: [
+        {
+          id: 'cut',
+          name: 'Cut',
+          values: [{ ...value('w', "Women's"), sizeChart: chart }, value('m', "Men's")],
+        },
+        shirt().axes[1]!,
+      ],
+    }
+    const [cut, size] = axesFields(item)
+
+    // The value that goes held a variant and a size chart.
+    expect(takenByAxes(item, [{ ...cut!, values: [cut!.values[1]!] }, size!])).toBe('both')
+    // The value that goes held a variant alone, and the size chart stays with its own.
+    expect(takenByAxes(item, [{ ...cut!, values: [cut!.values[0]!] }, size!])).toBe('variants')
+    expect(takenByAxes(item, [cut!, { ...size!, values: [size!.values[0]!] }])).toBe('variants')
+    // An axis added takes every variant, and no size chart.
+    expect(takenByAxes(item, [cut!, size!, { name: 'Colour', values: [{ label: 'Black' }] }])).toBe(
+      'variants',
+    )
+    // The axis that goes takes every variant, and the size chart of its value.
+    expect(takenByAxes(item, [size!])).toBe('both')
   })
 })
 

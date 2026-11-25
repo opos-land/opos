@@ -259,6 +259,44 @@ describe('a scanner', () => {
     expect(screen.getByRole('checkbox', { name: /Entry/ })).toBeDefined()
   })
 
+  // docs/specs/0007-scanner.md, H3: the second of two scanners is told when and by which the
+  // first handed it out.
+  it('reads the order again when another scanner was first, and shows its mark', async () => {
+    device.handOut.mockRejectedValue(
+      new ORPCError('scan.already-handed-out', {
+        status: 409,
+        data: {
+          lineId: 'line-entry',
+          handedOutAt: '2026-06-05T09:00:00.000Z',
+          scanner: 'Side gate',
+        },
+      }),
+    )
+    view()
+    await read()
+    fireEvent.click(await screen.findByRole('checkbox', { name: /Entry/ }))
+    device.scan.mockResolvedValue(
+      shown({
+        entry: {
+          lineId: 'line-entry',
+          ticketType: 'Standard',
+          perks: [],
+          handedOutAt: '2026-06-05T09:00:00.000Z',
+          handedOutBy: 'Side gate',
+        },
+      }),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mark as handed out' }))
+
+    expect(await screen.findByText(/Handed out .* by Side gate/)).toBeDefined()
+    expect(device.scan).toHaveBeenLastCalledWith('the-token', CODE)
+    expect(screen.queryByRole('checkbox', { name: /Entry/ })).toBeNull()
+    // The refusal stays on screen, and what is left is still offered.
+    expect(screen.getByText('This was already handed out.')).toBeDefined()
+    expect(screen.getByRole('checkbox', { name: 'Room' })).toBeDefined()
+  })
+
   it('shows the add-ons of an order with no ticket, each to be marked', async () => {
     device.scan.mockResolvedValue(shown({ entry: null, ageBand: null, items: [] }))
     view()

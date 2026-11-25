@@ -155,6 +155,15 @@ function Scanning({ device, onRevoked }: { device: PairedScanner; onRevoked: () 
       setScan({ code: scan.code, result })
     } catch (error) {
       failed(error)
+      // Another scanner or the panel was first: the order is read again, so that the line says
+      // when and by which it was handed out and is offered no more.
+      if (errorCode(error) === 'scan.already-handed-out') {
+        try {
+          setScan({ code: scan.code, result: await scanCode(device.token, scan.code) })
+        } catch (again) {
+          failed(again)
+        }
+      }
     } finally {
       setBusy(false)
     }

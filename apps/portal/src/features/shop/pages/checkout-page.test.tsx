@@ -724,6 +724,43 @@ describe('CheckoutPage', () => {
     expect(api.place.mock.calls[1]![1]).toMatchObject({ expectedTotalMinor: 15000 })
   })
 
+  // With a discount code the total is the shop's own price of the cart: it is asked again, or
+  // the buyer would confirm the old one for ever.
+  it('asks the shop for the price with the code again when the total changed', async () => {
+    api.quote.mockResolvedValueOnce({ currency: 'PLN', lines: [], totalMinor: 10800 })
+    api.quote.mockResolvedValue({ currency: 'PLN', lines: [], totalMinor: 13500 })
+    api.place.mockRejectedValueOnce(
+      new ORPCError('order.total-changed', { status: 409, data: { totalMinor: 13500 } }),
+    )
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({
+        step: 'summary',
+        discountCode: 'EARLY10',
+        consentIds: [ids.terms],
+        providerConsent: true,
+      }),
+    )
+    view()
+    await stepHeading('Summary')
+    await screen.findByText(/Code EARLY10 is applied/)
+    const due = () => screen.getByRole('rowheader', { name: 'Total due' }).closest('tr')!
+    expect(within(due()).getByText(/108[.,]00/)).toBeDefined()
+
+    press('Order and pay')
+
+    expect(await screen.findByText(/changed to .*135[.,]00/)).toBeDefined()
+    await waitFor(() => expect(within(due()).getByText(/135[.,]00/)).toBeDefined())
+    expect(api.leave).not.toHaveBeenCalled()
+    press('Order and pay')
+    await waitFor(() => expect(api.leave).toHaveBeenCalled())
+    expect(api.place.mock.calls[1]![1]).toMatchObject({
+      discountCode: 'EARLY10',
+      expectedTotalMinor: 13500,
+    })
+  })
+
   it('says so when the bot check failed, and lets the buyer try again', async () => {
     const failed = new ORPCError('bot-check.failed', { status: 403 })
     api.place.mockRejectedValueOnce(failed)

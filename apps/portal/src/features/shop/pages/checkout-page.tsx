@@ -295,7 +295,10 @@ function Checkout({
         if (named.kind === 'variant') return change({ step: 'merch' })
       }
       if (code === 'order.total-changed' && typeof named.totalMinor === 'number') {
-        // A total never changes silently: the buyer is shown the new one and confirms it.
+        // A total never changes silently: the buyer is shown the new one and confirms it. With
+        // a discount code the total shown is the shop's own price of the cart, so that is asked
+        // again; nothing is placed while it is.
+        if (entered !== '') void coded.refetch()
         return setNewTotal(named.totalMinor)
       }
       if (code === 'order.email-refused') change({ step: 'holder' })

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Builds the images as a deployment's server does and tries what a build alone does not show: that
-# the API's bundle finds every import in its production dependencies, and that an application
-# answers a route with its page and its headers. Needs Docker and nothing else; run it after a
-# change to the Dockerfile, the Caddyfile, the dependencies or the workspace's packages.
+# the API's bundle finds every import in its production dependencies, that an application answers
+# a route with its page and its headers, and that the portal's pages come with their head from the
+# server beside it, and without it when that server is gone. Needs Docker and nothing else; run it
+# after a change to the Dockerfile, the Caddyfile, the dependencies or the workspace's packages.
 #
 #   infra/docker/check.sh
 set -euo pipefail
@@ -12,6 +13,10 @@ cd "$(dirname "$0")/../.."
 api_url=https://opos-control.invalid
 name=opos-images-check-portal
 guarded=opos-images-check-guarded
+# The portal beside the server that answers its pages, on a network of their own
+network=opos-images-check
+head=opos-images-check-head
+served=opos-images-check-served
 password=opos-check-password
 commit=0123456789abcdef0123456789abcdef01234567
 
@@ -19,12 +24,13 @@ build() {
   docker build --quiet -f infra/docker/Dockerfile "$@" . >/dev/null
 }
 
-echo "Building the api, the tools, the panel, the portal and the admin application"
+echo "Building the api, the tools, the panel, the portal with the server beside it and the admin application"
 build --target api -t opos-api:check
 build --target tools -t opos-tools:check
 for app in panel portal admin; do
   build --target web --build-arg APP="$app" --build-arg VITE_API_URL="$api_url" -t "opos-$app:check"
 done
+build --target head --build-arg APP=portal --build-arg VITE_API_URL="$api_url" -t opos-portal-head:check
 
 # Without its environment the API stops at the validation, past every import of the bundle
 echo "Starting the api without its environment"
@@ -52,7 +58,11 @@ echo "Asking the portal for a route"
 docker run --rm -d --name "$name" -p 127.0.0.1:39080:8080 opos-portal:check >/dev/null
 docker run --rm -d --name "$guarded" -p 127.0.0.1:39081:8080 \
   -e BASIC_AUTH_PASSWORD="$password" -e OPOS_COMMIT="$commit" opos-admin:check >/dev/null
-trap 'docker stop "$name" "$guarded" >/dev/null' EXIT
+cleanup() {
+  docker stop "$name" "$guarded" "$served" "$head" >/dev/null 2>&1 || true
+  docker network rm "$network" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
 for port in 39080 39081; do
   for _ in $(seq 30); do
     curl -fsS -o /dev/null "http://127.0.0.1:$port/healthz" 2>/dev/null && break
@@ -124,4 +134,79 @@ if grep -q '^BASIC_AUTH_PASSWORD=' <<<"$environ"; then
   exit 1
 fi
 
-echo "The images build, the api resolves its imports, the tools run past pnpm's check and the frontends serve their routes with their commit, behind basic auth when asked"
+# The server beside the portal stops without its environment, past every import of its one file
+echo "Starting the server beside the portal without its environment"
+log=$(docker run --rm opos-portal-head:check 2>&1 || true)
+if ! grep -q 'Invalid environment' <<<"$log"; then
+  echo "$log" >&2
+  echo "The server beside the portal did not reach the validation of its environment" >&2
+  exit 1
+fi
+
+# The portal asks that server for its pages. The API's address is one nothing answers at, so the
+# pages that would read it get the plain head; a page that reads nothing is named all the same
+echo "Asking the portal for a page beside the server that answers its pages"
+docker network create "$network" >/dev/null
+docker run --rm -d --name "$head" --network "$network" \
+  -e PORTAL_URL=https://opos-control.invalid -e API_URL="$api_url" opos-portal-head:check >/dev/null
+docker run --rm -d --name "$served" --network "$network" -p 127.0.0.1:39082:8080 \
+  -e HEAD_UPSTREAM="$head:8081" opos-portal:check >/dev/null
+page=""
+for _ in $(seq 30); do
+  page=$(curl -fsS http://127.0.0.1:39082/privacy 2>/dev/null || true)
+  grep -q 'og:site_name' <<<"$page" && break
+  sleep 1
+done
+holds() {
+  if ! grep -q "$1" <<<"$page"; then
+    echo "$page" >&2
+    echo "The page lacks: $1" >&2
+    exit 1
+  fi
+}
+holds '<meta property="og:site_name" content="OPOS" data-server-head>'
+holds '<link rel="canonical" href="https://opos-control.invalid/privacy" data-server-head>'
+holds '<div id="root"></div>'
+# The headers are the portal's own, on a page the other server answered
+headers=$(curl -fsS -D - -o /dev/null http://127.0.0.1:39082/privacy)
+expect "content-type: text/html"
+expect "content-security-policy: .*connect-src 'self' $api_url"
+expect "cache-control: no-cache"
+expect "x-opos-commit: unknown"
+
+# A page that is not there is a 404 with the portal's document, which says so itself; a built file
+# is still the portal's own to serve
+status=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:39082/no/such/page)
+if [ "$status" != 404 ]; then
+  echo "A page that is not there answered $status, not 404" >&2
+  exit 1
+fi
+page=$(curl -s http://127.0.0.1:39082/no/such/page)
+holds '<meta name="robots" content="noindex" data-server-head>'
+holds '<div id="root"></div>'
+status=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:39082/assets/missing.js)
+if [ "$status" != 404 ]; then
+  echo "A missing built file answered $status beside the other server, not 404" >&2
+  exit 1
+fi
+
+# Without that server the portal opens all the same, from its plain document and under its headers
+docker stop "$head" >/dev/null
+headers=$(curl -fsS -D - -o /dev/null http://127.0.0.1:39082/privacy)
+expect "content-type: text/html"
+expect "content-security-policy: .*connect-src 'self' $api_url"
+expect "cache-control: no-cache"
+page=$(curl -fsS http://127.0.0.1:39082/privacy)
+holds '<div id="root"></div>'
+if grep -q 'data-server-head' <<<"$page"; then
+  echo "The portal answered a filled head with the server beside it stopped" >&2
+  exit 1
+fi
+
+# A value that is no host and port stops the portal before Caddy reads it
+if docker run --rm -e HEAD_UPSTREAM='head 8081' opos-portal:check >/dev/null 2>&1; then
+  echo "The portal started with a HEAD_UPSTREAM that is no host and port" >&2
+  exit 1
+fi
+
+echo "The images build, the api resolves its imports, the tools run past pnpm's check, the frontends serve their routes with their commit, behind basic auth when asked, and the portal's pages come with their head, or without it when the server beside the portal is gone"

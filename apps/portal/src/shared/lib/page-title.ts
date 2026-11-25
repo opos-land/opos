@@ -1,13 +1,8 @@
 import { useLingui } from '@lingui/react/macro'
 import { useEffect } from 'react'
+import { formatTitle } from './title'
 
-const SEPARATOR = ' · '
-
-/** A tab title: the parts, most specific first and the missing ones left out, then the portal. */
-export function formatTitle(parts: readonly (string | undefined)[], application: string) {
-  const named = parts.filter((part): part is string => Boolean(part?.trim()))
-  return [...named, application].join(SEPARATOR)
-}
+export { formatTitle }
 
 interface Claim {
   title: string
@@ -16,26 +11,30 @@ interface Claim {
 
 // The mounted titles in mount order: the newest screen's wins, else the newest page's.
 const claims: Claim[] = []
-let initial: string | undefined
+// What the tab says while nothing on the screen names itself: the portal's name, as the last
+// title gave it. Never the title the document came with, which the server wrote for the page it
+// opened at (docs/ARCHITECTURE.md, Frontends) and which would name a page that is gone.
+let unnamed: string | undefined
 
 function show() {
-  initial ??= document.title
   const claim = claims.findLast((entry) => entry.screen) ?? claims.at(-1)
-  document.title = claim?.title ?? initial
+  document.title = claim?.title ?? unnamed ?? document.title
 }
 
 function useTitle(parts: readonly (string | undefined)[], screen: boolean) {
   const { t } = useLingui()
-  const title = formatTitle(parts, t`OPOS`)
+  const application = t`OPOS`
+  const title = formatTitle(parts, application)
   useEffect(() => {
     const claim = { title, screen }
     claims.push(claim)
+    unnamed = application
     show()
     return () => {
       claims.splice(claims.indexOf(claim), 1)
       show()
     }
-  }, [title, screen])
+  }, [title, screen, application])
 }
 
 /**

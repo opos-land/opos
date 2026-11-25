@@ -54,10 +54,12 @@ describe('usePageTitle', () => {
     expect(document.title).toBe('Opening ceremony · Convention A 2026 · OPOS')
   })
 
-  it('gives back the title the document had once the page leaves', () => {
+  // The document comes with the title the server gave the page it opened at: with no page to
+  // name, the tab would otherwise keep the name of a page that is gone
+  it('names the portal alone once the page leaves, not what the document came with', () => {
     render(inI18n(<Page parts={['Team', 'Convention A']} />)).unmount()
 
-    expect(document.title).toBe('Before the portal')
+    expect(document.title).toBe('OPOS')
   })
 })
 

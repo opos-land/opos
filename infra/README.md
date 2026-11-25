@@ -4,18 +4,18 @@ The deployed environments, described in OpenTofu units that Terragrunt runs. The
 [ARCHITECTURE.md](../docs/ARCHITECTURE.md#environments); the reasons in the records it links.
 `live/dev` is the Dev environment.
 
-| Path                                      | Holds                                                                                                                                          |
-| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SUPABASE.md`                             | setting up a Supabase project by hand, and its access token                                                                                    |
-| `COOLIFY.md`                              | setting up a project on the Coolify server, its tokens and Docker's IPv6                                                                       |
-| `root.hcl`                                | what every unit shares: the state, its encryption, the Scaleway provider                                                                       |
-| `coolify.hcl`                             | the Coolify provider, for the units that change Coolify                                                                                        |
-| `supabase.hcl`                            | the Supabase provider, for the units that change what is inside a Supabase project                                                             |
-| `modules/`                                | the OpenTofu modules, each with its committed provider lock file                                                                               |
-| `units/`                                  | the catalog: one unit per module, configured by the values a stack hands it                                                                    |
-| `live/<environment>/env.yaml`             | the one place an environment is configured: plain settings and the names of its secrets                                                        |
-| `live/<environment>/terragrunt.stack.hcl` | the environment's units, generated into `.terragrunt-stack` on every run                                                                       |
-| `docker/`                                 | the images and the compose file of a deployment: the API, the database tools, and the panel, the portal and the admin application behind Caddy |
+| Path                                      | Holds                                                                                                                                                                                                    |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SUPABASE.md`                             | setting up a Supabase project by hand, and its access token                                                                                                                                              |
+| `COOLIFY.md`                              | setting up a project on the Coolify server, its tokens and Docker's IPv6                                                                                                                                 |
+| `root.hcl`                                | what every unit shares: the state, its encryption, the Scaleway provider                                                                                                                                 |
+| `coolify.hcl`                             | the Coolify provider, for the units that change Coolify                                                                                                                                                  |
+| `supabase.hcl`                            | the Supabase provider, for the units that change what is inside a Supabase project                                                                                                                       |
+| `modules/`                                | the OpenTofu modules, each with its committed provider lock file                                                                                                                                         |
+| `units/`                                  | the catalog: one unit per module, configured by the values a stack hands it                                                                                                                              |
+| `live/<environment>/env.yaml`             | the one place an environment is configured: plain settings and the names of its secrets                                                                                                                  |
+| `live/<environment>/terragrunt.stack.hcl` | the environment's units, generated into `.terragrunt-stack` on every run                                                                                                                                 |
+| `docker/`                                 | the images and the compose file of a deployment: the API, the database tools, and the panel, the portal and the admin application behind Caddy, and the server that fills the head of the portal's pages |
 
 ## Commands
 
@@ -186,6 +186,11 @@ Coolify, built on the server from the head of `develop`
   nothing else. The bucket is private, encrypted at rest, and keeps a removed or replaced object's
   earlier version for `files.noncurrent_days`, which an operator restores with an S3 client under
   their own key. Images go through the deployment's own imgproxy, which no host routes to.
+- **Page heads.** The `portal-head` service answers the document of each of the portal's pages
+  with that page's head, read from the API's public routes; the portal asks it inside the
+  deployment's network. No host routes to it and it holds no secret. With it stopped the portal
+  opens all the same, from its plain document
+  ([0091](../docs/adr/0091-fill-the-head-of-the-portals-pages-on-a-server-beside-it.md)).
 - **Mail.** Dev's mail never leaves the server: the API sends it to Mailpit, the `mail` service
   (`deployment.catch_mail` in `env.yaml`), whose inbox is at its address. The `mail` unit still
   keeps the domain's records for a deployment that sends.
@@ -225,6 +230,8 @@ Coolify, built on the server from the head of `develop`
 | the portal, the panel and the admin application | basic auth, then the application                                 |
 | a sign-up on the portal                         | the confirmation mail in `https://mail.dev.opos.land`            |
 | the imgproxy container in Coolify               | healthy                                                          |
+| the portal-head container in Coolify            | healthy                                                          |
+| the source of an edition's page on the portal   | a title that names the edition, and `og:title` in its head       |
 | the `release` job of a push to `develop`        | "Coolify queued deployment", then the commit finished in Coolify |
 
 The API reaches the project over its direct connection, which on a Free project is IPv6 alone

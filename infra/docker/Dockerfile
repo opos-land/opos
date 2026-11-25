@@ -8,6 +8,8 @@
 #   docker build -f infra/docker/Dockerfile --target tools .
 #   docker build -f infra/docker/Dockerfile --target web \
 #     --build-arg APP=panel --build-arg VITE_API_URL=https://api.example.org .
+#   docker build -f infra/docker/Dockerfile --target head \
+#     --build-arg APP=portal --build-arg VITE_API_URL=https://api.example.org .
 #
 # Each image holds one part of the workspace, cut out by `turbo prune`, and runs as a user without
 # privileges. compose.yaml beside this file puts them together into one deployment.
@@ -128,3 +130,21 @@ EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=5s --retries=3 \
   CMD ["wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
 CMD ["web"]
+
+# --- the server beside the portal ------------------------------------------------------------
+
+# Answers the document of each of the portal's pages with that page's head
+# (docs/adr/0091-fill-the-head-of-the-portals-pages-on-a-server-beside-it.md). Built with
+# APP=portal, from the portal's own build: one file with everything it imports in it, beside the
+# document it fills, so the image holds Node and no installed dependency. It keeps no secret.
+FROM ${NODE_IMAGE} AS head
+ENV NODE_ENV=production \
+    PORT=8081
+WORKDIR /srv
+COPY --from=build-web /repo/apps/portal/build ./
+COPY --from=build-web /repo/apps/portal/dist/index.html ./index.html
+USER node
+EXPOSE 8081
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+  CMD ["node", "-e", "fetch(`http://127.0.0.1:${process.env.PORT}/healthz`).then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+CMD ["node", "--enable-source-maps", "main.js"]

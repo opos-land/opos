@@ -5,6 +5,7 @@ import { Providers } from './app/providers'
 import { router } from './app/router'
 import { forgetDraftsAtSignOut } from './features/shop'
 import { loadLocale, pickLocale } from './shared/lib/i18n'
+import { dropServerHeadOnLeaving } from './shared/lib/server-head'
 import { startSession, useSession } from './shared/lib/session'
 import { applyTheme, signedOutTheme } from './shared/lib/theme'
 import './styles.css'
@@ -16,6 +17,8 @@ applyTheme(signedOutTheme())
 // meanwhile, and a page that needs it shows a loading view until it is.
 // An unfinished checkout lives in the tab and is cleared when its account signs out.
 forgetDraftsAtSignOut((listener) => useSession.subscribe(listener))
+// The head the server wrote names the page the document opened at, and goes with that page.
+dropServerHeadOnLeaving(router)
 void startSession()
 void loadLocale(pickLocale()).then(() => {
   createRoot(document.getElementById('root')!).render(

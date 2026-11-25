@@ -18,7 +18,7 @@
       "dependsOn": ["^build", "i18n:compile"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "env": ["VITE_API_URL", "SUPABASE_SECRET_KEY"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**", "build/**"]
     },
     "local:start": {
       "dependsOn": ["i18n:compile"],

@@ -220,6 +220,7 @@ msgid "Avatar file"
 msgstr "Avatar file"
 
 #: src/features/profile/pages/profile-page.tsx
+#: src/server/routes.ts
 msgid "Avatar of {name}"
 msgstr "Avatar of {name}"
 
@@ -309,6 +310,7 @@ msgid "Check your inbox"
 msgstr "Check your inbox"
 
 #: src/features/shop/pages/checkout-page.tsx
+#: src/server/routes.ts
 msgid "Checkout"
 msgstr "Checkout"
 
@@ -394,6 +396,7 @@ msgid "Confirm your address"
 msgstr "Confirm your address"
 
 #: src/features/auth/pages/confirm-page.tsx
+#: src/server/routes.ts
 msgid "Confirmation link"
 msgstr "Confirmation link"
 
@@ -427,6 +430,7 @@ msgstr "Counting visits and seeing how the pages are used, to improve OPOS."
 #: src/features/auth/pages/register-page.tsx
 #: src/features/landing/pages/landing-page.tsx
 #: src/features/shop/pages/checkout-page.tsx
+#: src/server/routes.ts
 msgid "Create an account"
 msgstr "Create an account"
 
@@ -589,6 +593,7 @@ msgid "Expired"
 msgstr "Expired"
 
 #: src/features/landing/pages/landing-page.tsx
+#: src/server/routes.ts
 msgid "Fantasy conventions, in one place"
 msgstr "Fantasy conventions, in one place"
 
@@ -789,6 +794,7 @@ msgstr "More for the order {firstNumber}"
 
 #: src/app/layout.tsx
 #: src/features/schedule/pages/schedule-page.tsx
+#: src/server/routes.ts
 msgid "My schedule"
 msgstr "My schedule"
 
@@ -869,6 +875,7 @@ msgid "Open the link from your email to confirm your address or reset your passw
 msgstr "Open the link from your email to confirm your address or reset your password."
 
 #: src/app/layout.tsx
+#: src/server/routes.ts
 #: src/shared/lib/page-title.ts
 msgid "OPOS"
 msgstr "OPOS"
@@ -878,6 +885,7 @@ msgid "OPOS is free for conventions."
 msgstr "OPOS is free for conventions."
 
 #: src/features/landing/pages/landing-page.tsx
+#: src/server/routes.ts
 msgid "OPOS is the platform conventions use for their programme, tickets and attendee sign-ups. It is free for conventions."
 msgstr "OPOS is the platform conventions use for their programme, tickets and attendee sign-ups. It is free for conventions."
 
@@ -936,6 +944,7 @@ msgstr "Orders are the conventions’ sales records: they stay after the account
 msgid "Other editions"
 msgstr "Other editions"
 
+#: src/server/routes.ts
 #: src/shared/ui/messages.tsx
 msgid "Page not found"
 msgstr "Page not found"
@@ -1014,6 +1023,7 @@ msgstr "Price"
 #: src/app/layout.tsx
 #: src/features/consent/components/consent-banner.tsx
 #: src/features/landing/pages/privacy-page.tsx
+#: src/server/routes.ts
 msgid "Privacy policy"
 msgstr "Privacy policy"
 
@@ -1023,6 +1033,7 @@ msgid "Privacy settings"
 msgstr "Privacy settings"
 
 #: src/features/conventions/pages/edition-program-page.tsx
+#: src/server/routes.ts
 msgid "Programme"
 msgstr "Programme"
 
@@ -1127,6 +1138,7 @@ msgstr "Resend QR code"
 
 #: src/features/auth/pages/confirm-page.tsx
 #: src/features/auth/pages/forgot-password-page.tsx
+#: src/server/routes.ts
 msgid "Reset your password"
 msgstr "Reset your password"
 
@@ -1206,6 +1218,7 @@ msgid "Send the report"
 msgstr "Send the report"
 
 #: src/features/shop/pages/shop-page.tsx
+#: src/server/routes.ts
 msgid "Shop"
 msgstr "Shop"
 
@@ -1222,6 +1235,7 @@ msgstr "Show this code at the entrance and when you pick up your merchandise. Wh
 #: src/features/auth/pages/login-page.tsx
 #: src/features/landing/pages/landing-page.tsx
 #: src/features/shop/pages/checkout-page.tsx
+#: src/server/routes.ts
 msgid "Sign in"
 msgstr "Sign in"
 
@@ -1295,6 +1309,7 @@ msgstr "Tell the administrators of OPOS that this profile should not be here. Th
 
 #: src/app/layout.tsx
 #: src/features/landing/pages/terms-page.tsx
+#: src/server/routes.ts
 msgid "Terms"
 msgstr "Terms"
 
@@ -1546,6 +1561,7 @@ msgstr "Turn on two-factor authentication"
 
 #: src/features/account/pages/account-page.tsx
 #: src/features/auth/pages/mfa-page.tsx
+#: src/server/routes.ts
 msgid "Two-factor authentication"
 msgstr "Two-factor authentication"
 
@@ -1766,6 +1782,7 @@ msgstr "You picked another ticket type. Merchandise it does not offer is removed
 #: src/features/account/pages/account-page.tsx
 #: src/features/landing/pages/terms-page.tsx
 #: src/features/profile/pages/my-profile-page.tsx
+#: src/server/routes.ts
 msgid "Your account"
 msgstr "Your account"
 
@@ -1829,6 +1846,7 @@ msgstr "Your name, your avatar and your profile"
 #: src/features/shop/components/summary-step.tsx
 #: src/features/shop/pages/order-link-page.tsx
 #: src/features/shop/pages/result-page.tsx
+#: src/server/routes.ts
 msgid "Your order"
 msgstr "Your order"
 
@@ -1851,6 +1869,7 @@ msgstr "Your payment is under review"
 
 #: src/features/account/pages/account-page.tsx
 #: src/features/profile/pages/my-profile-page.tsx
+#: src/server/routes.ts
 msgid "Your profile"
 msgstr "Your profile"
 

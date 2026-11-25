@@ -606,6 +606,22 @@ describe('the limits of what is sold', () => {
     await setColumn('orders', String(first!.id), 'status', 'paid')
     await s.place().expect(201)
   })
+
+  // Carts that share no ticket type wait for nothing of each other's stock or capacity.
+  it('let one email hold no fourth order awaiting payment placed at the same moment', async () => {
+    const s = await shop()
+    const types = [s.standard]
+    for (const name of ['Second', 'Third', 'Fourth', 'Fifth', 'Sixth']) {
+      types.push(await addTicketType(s.t.id, s.edition, { name }))
+    }
+
+    const answers = await Promise.all(
+      types.map((ticketTypeId) => s.place({ cart: { ticket: { ticketTypeId } } })),
+    )
+
+    expect(answers.map((res) => res.status).sort()).toEqual([201, 201, 201, 409, 409, 409])
+    expect(await s.orders()).toHaveLength(MAX_UNPAID_ORDERS)
+  })
 })
 
 describe('an order placed by an account', () => {

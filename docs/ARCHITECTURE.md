@@ -696,9 +696,11 @@ steps of [adding a feature](#adding-a-feature).
   is queued in the transaction of its cause and sent by the outbox
   ([0049](adr/0049-send-the-emails-of-an-order-from-an-outbox-in-the-database.md)). The
   credentials of a provider account stay as they are while an order awaits payment: an order
-  being placed and a change of them share one lock of the tenant's account. `opos_app` never
-  updates an order's number, its prices or what a line sells, but for a merchandise line's
-  variant ([0058](adr/0058-let-the-api-change-the-variant-an-order-line-names.md)).
+  being placed and a change of them share one lock of the tenant's account. The orders awaiting
+  payment of an email in an edition are counted under a lock of that email in the edition, which
+  an order takes after the locks of invariant 9. `opos_app` never updates an order's number, its
+  prices or what a line sells, but for a merchandise line's variant
+  ([0058](adr/0058-let-the-api-change-the-variant-an-order-line-names.md)).
 - **Order management.** Every change an org makes of an order runs under the tenant's write lock
   and locks the order's row first, then the rows that carry the limits its lines touch, in the
   order placing takes them (invariant 9): the order a payment's confirmation takes too. A manual

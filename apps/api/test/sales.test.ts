@@ -192,6 +192,21 @@ describe('the dashboard of an edition’s sales', () => {
     ])
   })
 
+  // The total of one order fits the database's four-byte integer; the sum of an edition's need not.
+  it('sums a revenue larger than the largest total one order may carry', async () => {
+    const { d, order } = await desk()
+    for (let placed = 0; placed < 3; placed += 1) {
+      await order({ totalMinor: 1_000_000_000, placedAt: '2027-03-05T12:00:00Z' })
+    }
+
+    const report = await sales(d)
+
+    expect(report.revenue).toEqual({ paidMinor: 3_000_000_000, manualMinor: 0 })
+    expect(report.days).toEqual([
+      { day: '2027-03-05', paidMinor: 3_000_000_000, manualMinor: 0, tickets: 3 },
+    ])
+  })
+
   it('is empty for an edition that sold nothing, and reads its own edition alone', async () => {
     const { d, order } = await desk()
     const sibling = await addEdition(d.t.id)

@@ -51,7 +51,8 @@ export class SalesRepository {
       .select({
         status: orders.status,
         orders: count(),
-        totalMinor: sql<number>`coalesce(sum(${orders.totalMinor}), 0)::int`,
+        // A sum of totals outgrows the four bytes one total fits: it is read as the eight it is.
+        totalMinor: sql<number>`coalesce(sum(${orders.totalMinor}), 0)`.mapWith(Number),
       })
       .from(orders)
       .where(and(eq(orders.editionId, editionId), inArray(orders.status, [...HELD])))
@@ -111,7 +112,7 @@ export class SalesRepository {
         .select({
           day: sql<string>`to_char(coalesce(${orders.paidAt}, ${orders.placedAt}) at time zone ${timeZone}, 'YYYY-MM-DD')`,
           status: orders.status,
-          totalMinor: sql<number>`coalesce(sum(${orders.totalMinor}), 0)::int`,
+          totalMinor: sql<number>`coalesce(sum(${orders.totalMinor}), 0)`.mapWith(Number),
           tickets: sql<number>`coalesce(sum(${ticketsOf.tickets}), 0)::int`,
         })
         .from(orders)

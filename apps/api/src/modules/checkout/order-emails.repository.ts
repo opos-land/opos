@@ -22,7 +22,7 @@ import {
   tenants,
   ticketTypes,
 } from '@opos/db'
-import { and, asc, desc, eq, inArray, isNotNull, isNull, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, exists, inArray, isNotNull, isNull, lte, sql } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { type KeptEmail } from './kept-email'
 import { type OrderEmailKind } from './orders.repository'
@@ -315,12 +315,15 @@ export class OrderEmailsRepository {
     email: string,
     orderId: string,
   ): Promise<{ locale: string | null; holdsOrder: boolean } | undefined> {
-    const [row] = await this.context
-      .tx()
-      .select({
-        locale: accounts.locale,
-        holdsOrder: sql<boolean>`exists (select 1 from ${orderAccounts} where ${orderAccounts.orderId} = ${orderId} and ${orderAccounts.accountId} = ${accounts.id})`,
-      })
+    const tx = this.context.tx()
+    // A query of its own names each column with its table; one written into the list of fields
+    // would lose the tables' names, and compare whichever columns answer to the bare ones.
+    const onAccount = tx
+      .select({ one: sql`1` })
+      .from(orderAccounts)
+      .where(and(eq(orderAccounts.orderId, orderId), eq(orderAccounts.accountId, accounts.id)))
+    const [row] = await tx
+      .select({ locale: accounts.locale, holdsOrder: sql<boolean>`${exists(onAccount)}` })
       .from(accounts)
       .where(and(sql`lower(${accounts.email}) = ${email}`, isNotNull(accounts.emailConfirmedAt)))
     return row

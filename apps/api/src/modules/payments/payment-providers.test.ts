@@ -104,6 +104,13 @@ describe('PaymentProviders', () => {
     ).rejects.toThrow(/outside every transaction/)
   })
 
+  it('says whether two sets of credentials name one account without calling anyone, and never for a provider with no module', () => {
+    expect(providers.sameAccount('fake', { account: 'demo' }, { account: 'demo' })).toBe(true)
+    expect(providers.sameAccount('fake', { account: 'demo' }, { account: 'other' })).toBe(false)
+    const none = new PaymentProviders(new Map())
+    expect(none.sameAccount('fake', { account: 'demo' }, { account: 'demo' })).toBe(false)
+  })
+
   it('names what stored credentials still miss without calling anyone, also inside a transaction', () => {
     expect(providers.missing('fake', { account: FAKE_ACCOUNT.notReady })).toEqual([
       'fake.not-ready',

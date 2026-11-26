@@ -3,9 +3,11 @@ import {
   type PlacedOrder,
   type PlaceOrder,
   type PlaceVisitorOrder,
+  type Quote,
   RESULT_TOKEN_HEADER,
   type StartedAttempt,
 } from '@opos/contract'
+import { queryOptions } from '@tanstack/react-query'
 import { accountApi, tenantApi } from '../../../shared/lib/api'
 
 // The shop of an edition, as anyone reads it, and what a checkout asks of the API. A visitor's
@@ -27,26 +29,40 @@ export const offerOptions = (slug: string, editionSlug: string) =>
 export const offerKey = (slug: string, editionSlug: string) =>
   accountApi.public.shop.queryKey({ input: { params: { slug, editionSlug } } })
 
-/**
- * The price of a cart with a discount code: only the API knows a code's terms, so the Summary
- * asks it. A code that cannot be used is refused with one answer, whatever is wrong with it.
- */
-export const discountQuoteOptions = (
-  slug: string,
-  editionSlug: string,
-  cart: Cart,
-  discountCode: string,
-) =>
-  accountApi.public.shopQuote.queryOptions({
-    input: { params: { slug, editionSlug }, body: { ...cart, discountCode } },
-  })
-
 /** Where the order of a checkout is placed: its edition, by both of its names. */
 export interface PlacedIn {
   slug: string
   editionSlug: string
   editionId: string
 }
+
+/**
+ * The price of a cart with a discount code: only the API knows a code's terms, so the Summary
+ * asks it. A code that cannot be used is refused with one answer, whatever is wrong with it. A
+ * "Buy more" cart is priced as an addition to the account's own order it names, which the quote
+ * for anyone cannot do: it is asked of the account's quote, in the tenant.
+ */
+export const discountQuoteOptions = (
+  at: PlacedIn,
+  cart: Cart,
+  discountCode: string,
+  extendsOrderId?: string,
+) =>
+  queryOptions<Quote>(
+    extendsOrderId === undefined
+      ? accountApi.public.shopQuote.queryOptions({
+          input: {
+            params: { slug: at.slug, editionSlug: at.editionSlug },
+            body: { ...cart, discountCode },
+          },
+        })
+      : tenantApi(at.slug).checkout.quote.queryOptions({
+          input: {
+            params: { editionId: at.editionId },
+            body: { ...cart, discountCode, extendsOrderId },
+          },
+        }),
+  )
 
 /** Places the order of a checkout; a signed-in buyer's is the account's own. */
 export function placeOrder(

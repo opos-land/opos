@@ -1,9 +1,16 @@
 import { Injectable } from '@nestjs/common'
 import { type PaymentProvider } from '@opos/contract'
-import { orders, paymentProviderAccounts } from '@opos/db'
-import { and, eq, sql } from 'drizzle-orm'
+import { orders, paymentAttempts, paymentProviderAccounts } from '@opos/db'
+import { and, eq, exists, gt, isNull, or, sql } from 'drizzle-orm'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { providerAccountLockKey } from './provider-account-lock'
+
+/**
+ * For how long after the hold of an expired order ended a payment started for it may still be
+ * confirmed, so that its account stays: a payment starts only within the hold, and a provider
+ * repeats the notification of one for hours.
+ */
+export const LATE_CONFIRMATION_HOURS = 24
 
 export interface StoredProviderAccount {
   provider: PaymentProvider
@@ -55,19 +62,51 @@ export class ProviderAccountRepository {
   }
 
   /**
-   * Whether an order of the convention awaits payment. The lock on the tenant's provider account
-   * is taken first, alone, and an order with something to pay shares it while it is placed: one
-   * being placed is waited for and counted, and one placed after waits for the change of the
-   * credentials.
+   * Whether a payment of the convention is under way: an order awaits payment, or one expired
+   * whose hold ended within the last LATE_CONFIRMATION_HOURS and which has a payment attempt
+   * its provider may still confirm, since a payment made counts whenever its confirmation comes.
+   * That is an attempt nobody confirmed, but for one its provider refused to register: the
+   * provider knows no such attempt and confirms nothing of it. An attempt the provider was asked
+   * about once more after the order expired counts on, whatever it answered: "not paid" is not
+   * its last word, and a transfer booked later is confirmed with the account. The two share one
+   * mark and differ by its moment. A refusal is marked with the moment the attempt started,
+   * which is within the hold; asking again is marked an hour after the end of the hold at the
+   * earliest. So an attempt marked after the end of its order's hold may still be confirmed, as
+   * one not marked at all. The lock on the tenant's provider account is taken first, alone, and
+   * an order with something to pay shares it while it is placed: one being placed is waited for
+   * and counted, and one placed after waits for the change of the credentials.
    */
-  async paymentsUnderWay(): Promise<boolean> {
+  async paymentsUnderWay(now = new Date()): Promise<boolean> {
     const tx = this.context.tx()
     const tenantId = this.context.tenant().id
     await tx.execute(sql`select pg_advisory_xact_lock(${providerAccountLockKey(tenantId)}::bigint)`)
+    const since = new Date(now.getTime() - LATE_CONFIRMATION_HOURS * 3_600_000)
+    const confirmable = tx
+      .select({ id: paymentAttempts.id })
+      .from(paymentAttempts)
+      .where(
+        and(
+          eq(paymentAttempts.tenantId, tenantId),
+          eq(paymentAttempts.orderId, orders.id),
+          isNull(paymentAttempts.confirmedAt),
+          or(
+            isNull(paymentAttempts.recheckedAt),
+            gt(paymentAttempts.recheckedAt, orders.holdEndsAt),
+          ),
+        ),
+      )
     const [order] = await tx
       .select({ id: orders.id })
       .from(orders)
-      .where(and(eq(orders.tenantId, tenantId), eq(orders.status, 'awaiting-payment')))
+      .where(
+        and(
+          eq(orders.tenantId, tenantId),
+          or(
+            eq(orders.status, 'awaiting-payment'),
+            and(eq(orders.status, 'expired'), gt(orders.holdEndsAt, since), exists(confirmable)),
+          ),
+        ),
+      )
       .limit(1)
     return order !== undefined
   }

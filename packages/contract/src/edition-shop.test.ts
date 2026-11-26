@@ -257,8 +257,10 @@ describe('a consent', () => {
     refused(updateConsentSchema.safeParse({ position: 1.5 }))
   })
 
-  it('answers its place, its document and whether the shop shows it', () => {
+  // An org is told before it tries: the sentence of a consent an order accepted stays.
+  it('answers its place, its document, whether the shop shows it and whether an order accepted it', () => {
     expect(Object.keys(consentSchema.shape).sort()).toEqual([
+      'accepted',
       'documentId',
       'editionId',
       'hidden',
@@ -276,6 +278,7 @@ describe("the codes of an edition's shop", () => {
     'document.too-many',
     'document.too-many-versions',
     'consent.too-many',
+    'consent.accepted',
   ])('list %s', (code) => {
     expect(errorCodes).toContain(code)
   })

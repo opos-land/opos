@@ -24,6 +24,10 @@ msgstr "{count, plural, one {# order needs review: its payment arrived and could
 msgid "{count, plural, one {Permissions in the edition} other {Permissions in the editions}}"
 msgstr "{count, plural, one {Permissions in the edition} other {Permissions in the editions}}"
 
+#: src/features/scanner/pages/edition-scanner-page.tsx
+msgid "{ends}, a day after the edition’s last day"
+msgstr "{ends}, a day after the edition’s last day"
+
 #: src/features/program/components/speakers-editor.tsx
 msgid "{limit, plural, one {An item can have up to # speaker.} other {An item can have up to # speakers.}}"
 msgstr "{limit, plural, one {An item can have up to # speaker.} other {An item can have up to # speakers.}}"
@@ -174,6 +178,10 @@ msgstr "A scanner is a phone that reads buyers’ QR codes at the gate and at th
 #: src/features/catalog/components/size-charts-editor.tsx
 msgid "A size chart belongs to a value, such as a cut. Give charts to the values of one axis: the shop shows the chart of the value a buyer chose."
 msgstr "A size chart belongs to a value, such as a cut. Give charts to the values of one axis: the shop shows the chart of the value a buyer chose."
+
+#: src/features/scanner/pages/edition-scanner-page.tsx
+msgid "A stopped scanner gets no new pairing code."
+msgstr "A stopped scanner gets no new pairing code."
 
 #: src/features/scanner/model/labels.ts
 msgid "A teen enters only with the guardian’s consent on paper."
@@ -496,6 +504,10 @@ msgstr "An item holds at most 100 variants. Untick some of the combinations."
 #: src/features/catalog/components/size-charts-editor.tsx
 msgid "An item without option axes has no size chart."
 msgstr "An item without option axes has no size chart."
+
+#: src/features/shop/components/consent-form.tsx
+msgid "An order has already accepted this consent, so its sentence cannot be changed. To ask for another sentence, hide this consent in the list of consents and add a new one."
+msgstr "An order has already accepted this consent, so its sentence cannot be changed. To ask for another sentence, hide this consent in the list of consents and add a new one."
 
 #: src/features/orders/pages/orders-page.tsx
 msgid "An order’s number, a name, an email address or a QR code."
@@ -1748,8 +1760,8 @@ msgid "Last used"
 msgstr "Last used"
 
 #: src/features/scanner/pages/new-scanner-page.tsx
-msgid "Left empty, the scanner’s access ends a day after the edition’s last day, and no later than your own access."
-msgstr "Left empty, the scanner’s access ends a day after the edition’s last day, and no later than your own access."
+msgid "Left empty, the scanner’s access ends a day after the edition’s last day, also when that day is changed later, and no later than your own access."
+msgstr "Left empty, the scanner’s access ends a day after the edition’s last day, also when that day is changed later, and no later than your own access."
 
 #: src/features/discounts/pages/discount-codes-page.tsx
 msgid "Let it run again"
@@ -3220,6 +3232,14 @@ msgstr "Status"
 msgid "Stock"
 msgstr "Stock"
 
+#: src/features/scanner/components/scanner-state.ts
+msgid "Stopped: its organizer cannot manage tickets now"
+msgstr "Stopped: its organizer cannot manage tickets now"
+
+#: src/features/scanner/components/scanner-state.ts
+msgid "Stopped: its organizer left the team"
+msgstr "Stopped: its organizer left the team"
+
 #: src/features/orders/pages/email-page.tsx
 msgid "Subject"
 msgstr "Subject"
@@ -3384,6 +3404,10 @@ msgstr "The convention's address is set by the platform administrator."
 #: src/features/shop/model/documents.ts
 msgid "The convention’s payment provider account is connected and ready to sell."
 msgstr "The convention’s payment provider account is connected and ready to sell."
+
+#: src/features/shop/model/providers.ts
+msgid "The CRC key and the merchant ID are confirmed only by the first payment a buyer starts. You can correct the API key and the CRC key of this account at any time. A different merchant ID or point of sale ID is a different account: like any other account, you can give it only when no payment is under way."
+msgstr "The CRC key and the merchant ID are confirmed only by the first payment a buyer starts. You can correct the API key and the CRC key of this account at any time. A different merchant ID or point of sale ID is a different account: like any other account, you can give it only when no payment is under way."
 
 #: src/features/shop/components/provider-account-section.tsx
 msgid "The credentials are checked with the provider, stored encrypted and never shown again."
@@ -4066,6 +4090,10 @@ msgstr "This order needs review"
 msgid "This phone is no scanner yet. Open the pairing link an organizer shows you in the panel, or read its QR code with the camera."
 msgstr "This phone is no scanner yet. Open the pairing link an organizer shows you in the panel, or read its QR code with the camera."
 
+#: src/features/scanner/pages/scanner-page.tsx
+msgid "This phone stays the scanner: it does not have to be paired again."
+msgstr "This phone stays the scanner: it does not have to be paired again."
+
 #: src/features/shop/components/provider-account-section.tsx
 msgid "This provider answers only calls from the IP addresses entered in its panel. Ask the OPOS administrators for the address to enter there before you connect the account."
 msgstr "This provider answers only calls from the IP addresses entered in its panel. Ask the OPOS administrators for the address to enter there before you connect the account."
@@ -4077,6 +4105,14 @@ msgstr "This provider answers only calls from the IP addresses entered in its pa
 #: src/features/scanner/pages/scanner-page.tsx
 msgid "This scanner no longer works: its access was revoked or has ended. Ask an organizer to pair this phone again."
 msgstr "This scanner no longer works: its access was revoked or has ended. Ask an organizer to pair this phone again."
+
+#: src/features/scanner/pages/edition-scanner-page.tsx
+msgid "This scanner reads and marks nothing for now: the organizer who enabled it cannot manage the tickets of this edition at the moment, because their access has ended or their tickets permission was lowered. The scanner works again, on the phone that holds it, as soon as that organizer can."
+msgstr "This scanner reads and marks nothing for now: the organizer who enabled it cannot manage the tickets of this edition at the moment, because their access has ended or their tickets permission was lowered. The scanner works again, on the phone that holds it, as soon as that organizer can."
+
+#: src/features/scanner/pages/edition-scanner-page.tsx
+msgid "This scanner reads and marks nothing, for good: the organizer who enabled it left the team. Revoke it and enable a new scanner."
+msgstr "This scanner reads and marks nothing, for good: the organizer who enabled it left the team. Revoke it and enable a new scanner."
 
 #: src/features/scanner/pages/edition-scanner-page.tsx
 msgid "This scanner was revoked or its access has ended: it gets no new pairing code. Enable a new scanner instead."
@@ -4214,6 +4250,7 @@ msgid "Transaction number"
 msgstr "Transaction number"
 
 #: src/features/auth/components/accept-invitation.tsx
+#: src/features/scanner/pages/scanner-page.tsx
 #: src/shared/ui/messages.tsx
 msgid "Try again"
 msgstr "Try again"

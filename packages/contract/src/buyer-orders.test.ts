@@ -88,6 +88,7 @@ describe("an account's orders in a convention", () => {
     placedAt: '2027-05-01T10:00:00.000Z',
     holdEndsAt: null,
     payable: false,
+    resendable: true,
     holderName: 'Ada',
     edition: { id: '0198c1a0-0000-7000-8000-000000000002', slug: '2027', name: 'Pyrkon 2027' },
     lines: order.lines,
@@ -108,11 +109,17 @@ describe("an account's orders in a convention", () => {
       status: 'awaiting-payment',
       holdEndsAt: '2027-05-01T10:30:00.000Z',
       payable: true,
+      resendable: false,
       bought: null,
     }
     expect(myOrderSchema.parse(awaiting)).toEqual(awaiting)
     // Whether "Pay now" would start an attempt is the shop's to say, by its own clock.
     expect(myOrderSchema.safeParse({ ...awaiting, payable: undefined }).success).toBe(false)
+    // And so is whether "Resend QR code" would send: a paid order an org moved to another
+    // address is listed with neither that nor "Buy more".
+    const passedOn = { ...mine, resendable: false, bought: null }
+    expect(myOrderSchema.parse(passedOn)).toEqual(passedOn)
+    expect(myOrderSchema.safeParse({ ...mine, resendable: undefined }).success).toBe(false)
     expect(JSON.stringify(myOrderSchema.parse({ ...mine, email: 'a@b.test' }))).not.toMatch(/a@b/)
   })
 

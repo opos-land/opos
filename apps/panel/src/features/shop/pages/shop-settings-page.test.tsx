@@ -252,6 +252,40 @@ describe('ShopSettingsPage', () => {
     ).toBeDefined()
   })
 
+  // Przelewy24's access test checks the point of sale and the API key alone. The keys of the
+  // account are corrected at any time; another merchant or point of sale is another account,
+  // which the API takes only while no payment is under way.
+  it('says of a ready Przelewy24 account what only the first payment confirms, and what is corrected when', async () => {
+    state.shop = 'read'
+    const p24 = { ...account, provider: 'przelewy24' }
+    const note =
+      'The CRC key and the merchant ID are confirmed only by the first payment a buyer starts. You can correct the API key and the CRC key of this account at any time. A different merchant ID or point of sale ID is a different account: like any other account, you can give it only when no payment is under way.'
+    readAccount.mockResolvedValue({ account: p24, providers: ['przelewy24'], callsFrom: null })
+    const { unmount } = view()
+
+    expect(await section('Payment provider account').findByText(note)).toBeDefined()
+
+    // An account that is not ready says what it misses, and nothing of a payment yet.
+    unmount()
+    readAccount.mockResolvedValue({
+      account: { ...p24, ready: false, missing: ['przelewy24.abandoned-payment-email-on'] },
+      providers: ['przelewy24'],
+      callsFrom: null,
+    })
+    view()
+    await section('Payment provider account').findByText('Not ready to sell')
+    expect(screen.queryByText(note)).toBeNull()
+  })
+
+  it('says nothing of the kind of an account whose provider checks all it is given', async () => {
+    state.shop = 'read'
+    readAccount.mockResolvedValue({ account, providers: ['fake'], callsFrom: null })
+    view()
+
+    await section('Payment provider account').findByText('Ready to sell')
+    expect(screen.queryByText(/confirmed only by the first payment/)).toBeNull()
+  })
+
   it('offers no account to connect where the environment has no provider', async () => {
     state.shop = 'write'
     readAccount.mockResolvedValue({ account: null, providers: [] })

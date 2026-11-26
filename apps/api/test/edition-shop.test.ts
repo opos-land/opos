@@ -66,6 +66,7 @@ interface Consent {
   isRequired: boolean
   position: number
   hidden: boolean
+  accepted: boolean
 }
 
 let app: NestExpressApplication
@@ -777,6 +778,8 @@ describe('the consents of an edition', () => {
       isRequired: true,
       position: 1,
       hidden: false,
+      // No order accepted it yet.
+      accepted: false,
     })
     expect(second).toMatchObject({ documentId: null, isRequired: false, position: 2 })
     expect(await list(c)).toEqual([first, second])
@@ -820,6 +823,8 @@ describe('the consents of an edition', () => {
   it('change their sentence, whether they are required and whether they are hidden', async () => {
     const c = await convention()
     const consent = await add(c, { text: 'I accept', isRequired: true })
+    // No order accepted it: its sentence is still the org's to change.
+    expect(consent.accepted).toBe(false)
 
     const changed = await c
       .as('patch', `/consents/${consent.id}`, {

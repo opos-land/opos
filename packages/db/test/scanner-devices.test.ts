@@ -103,6 +103,31 @@ describe('scanner_devices', () => {
     ).toEqual([{ tenant_id: a.tenant, enabled_by_membership_id: null }])
   })
 
+  // docs/PRODUCT.md, 7. Modules: a scanner whose org set no end follows its edition. The end is
+  // then computed where it is read, so the row holds none, and no role writes one afterwards.
+  it('holds an end only when its org set one, and the application role changes neither', async () => {
+    const at = await place()
+    const [follows, set] = [
+      await device(at, { expires_at: null }),
+      await device(at, { expires_at: '2027-06-01T10:00:00Z' }),
+    ]
+
+    expect(
+      await migrator`
+        select expires_at from scanner_devices where id in ${migrator([follows, set])}
+        order by expires_at nulls first
+      `,
+    ).toEqual([{ expires_at: null }, { expires_at: new Date('2027-06-01T10:00:00Z') }])
+    for (const id of [follows, set]) {
+      await expect(
+        inTenant(
+          at.tenant,
+          (sql) => sql`update scanner_devices set expires_at = now() where id = ${id}`,
+        ),
+      ).rejects.toThrow(/permission denied/)
+    }
+  })
+
   it('is found by the hash of its pairing code and of its token, which no two scanners share', async () => {
     const [a, b] = await Promise.all([place(), place()])
     const [code, token] = [hash(), hash()]

@@ -163,6 +163,12 @@ export async function connectAccount(
   `)
 }
 
+/** Leaves the tenant's provider account with credentials nothing opens, as a replaced key does. */
+export const loseCredentials = (tenantId: string) =>
+  db.execute(sql`
+    update payment_provider_accounts set credentials = 'sealed' where tenant_id = ${tenantId}
+  `)
+
 /** Complete seller's details of the tenant, as its shop settings set them. */
 export const addSeller = (tenantId: string) =>
   db.execute(sql`
@@ -209,6 +215,25 @@ export async function addDocument(
     versionIds.push(version!.id)
   }
   return { id: document!.id, versionIds, fileIds }
+}
+
+/** Another version of a document, published after those it has; answers the version's identifier. */
+export async function addDocumentVersion(tenantId: string, editionId: string, documentId: string) {
+  const [file] = await db.execute<{ id: string }>(sql`
+    insert into uploaded_files (tenant_id, edition_id, kind, content_type, size, sha256, name)
+    values (${tenantId}, ${editionId}, 'edition-document', 'application/pdf', 10,
+      repeat('e', 64), 'document.pdf')
+    returning id
+  `)
+  const [version] = await db.execute<{ id: string }>(sql`
+    insert into edition_document_versions (tenant_id, edition_id, document_id, number, file_id)
+    values (${tenantId}, ${editionId}, ${documentId}, (
+      select coalesce(max(number), 0) + 1 from edition_document_versions
+      where document_id = ${documentId}
+    ), ${file!.id})
+    returning id
+  `)
+  return version!.id
 }
 
 /** A consent of an edition as its row alone, last in the list unless a place is given. */
@@ -564,7 +589,8 @@ export async function addScanner(
   values: {
     name?: string
     membershipId?: string | null
-    expiresAt?: string
+    /** Null for a scanner whose org set no end: it follows its edition. Left out, a far end. */
+    expiresAt?: string | null
     revoked?: boolean
     /** Not paired yet: no token, and a pairing code still to spend. */
     pairingCode?: string
@@ -587,7 +613,8 @@ export async function addScanner(
       ${hashOf(values.pairingCode ?? randomUUID())},
       ${values.pairingExpiresAt ?? sql`now() + interval '15 minutes'`},
       ${paired ? sql`now()` : null}, ${paired ? hashOf(token) : null},
-      ${values.expiresAt ?? '2099-01-01T00:00:00Z'}, ${values.revoked ? sql`now()` : null})
+      ${values.expiresAt === undefined ? '2099-01-01T00:00:00Z' : values.expiresAt},
+      ${values.revoked ? sql`now()` : null})
     returning id
   `)
   return { id: row!.id, token }
@@ -764,6 +791,8 @@ export async function addPaymentAttempt(
     moneyWith?: 'convention' | 'buyer' | null
     providerReference?: string | null
     information?: Record<string, string> | null
+    /** When it was marked as one nobody asks about again. */
+    recheckedAt?: string | null
   } = {},
 ) {
   const status = values.status ?? 'paid'
@@ -772,12 +801,13 @@ export async function addPaymentAttempt(
     values.paidAt === undefined ? (settled ? '2027-05-01T10:05:00Z' : null) : values.paidAt
   const [row] = await db.execute<{ id: string }>(sql`
     insert into payment_attempts (tenant_id, edition_id, order_id, provider, status, amount_minor,
-      paid_amount_minor, paid_at, confirmed_at, money_with, provider_reference, information)
+      paid_amount_minor, paid_at, confirmed_at, money_with, provider_reference, rechecked_at,
+      information)
     values (${tenantId}, ${editionId}, ${orderId}, 'fake', ${status}, ${values.amountMinor ?? 10000},
       ${values.paidAmountMinor === undefined ? (settled ? (values.amountMinor ?? 10000) : null) : values.paidAmountMinor},
       ${paidAt}, ${paidAt},
       ${values.moneyWith === undefined ? (status === 'paid' ? 'convention' : status === 'refused' ? 'buyer' : null) : values.moneyWith},
-      ${values.providerReference ?? null},
+      ${values.providerReference ?? null}, ${values.recheckedAt ?? null},
       ${values.information === undefined || values.information === null ? null : sql`${JSON.stringify(values.information)}::jsonb`})
     returning id
   `)

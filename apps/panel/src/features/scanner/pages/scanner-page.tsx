@@ -25,7 +25,8 @@ const refusalOf = (error: unknown): ScanRefusal | null => {
 
 /**
  * The scanner (`/scanner`), on a phone with no account signed in
- * (docs/specs/0007-scanner.md): opened with a pairing link it becomes a scanner; as one it reads
+ * (docs/specs/0007-scanner.md): opened with a pairing link it becomes that link's scanner,
+ * whatever scanner it was before (docs/PRODUCT.md, 7. Modules); as one it reads
  * a buyer's QR code, shows whom to let in and what to hand over, and marks what the org chose as
  * handed out. A scan marks nothing by itself.
  */
@@ -43,15 +44,18 @@ export function ScannerPage() {
       if (!code) return
       // The code leaves the address before it is spent: it stays in no history.
       window.history.replaceState(null, '', window.location.pathname)
-      // A phone that is a scanner already stays the one it is, and one code is spent at a time.
-      if (pairing.current || readDevice()) return
+      // One code is spent at a time.
+      if (pairing.current) return
       pairing.current = true
       setFailure(null)
+      // The phone that opens the link becomes its scanner, in place of any scanner it was; a
+      // code that is refused leaves it the scanner it was.
       pairScanner(code)
         .then(
           (paired) => {
             saveDevice(paired)
             setDevice(paired)
+            setEnded(false)
           },
           (error: unknown) => setFailure(error),
         )
@@ -75,7 +79,11 @@ export function ScannerPage() {
   return (
     <main className="mx-auto flex min-h-svh max-w-md flex-col gap-4 p-4">
       {device ? (
-        <Scanning device={device} onRevoked={revoked} />
+        <>
+          <ErrorMessage error={failure} />
+          {/* A phone paired anew starts as its new scanner: nothing the old one read stays. */}
+          <Scanning key={device.token} device={device} onRevoked={revoked} />
+        </>
       ) : (
         <>
           <h1 className="text-2xl font-semibold">
@@ -110,12 +118,20 @@ function Scanning({ device, onRevoked }: { device: PairedScanner; onRevoked: () 
   const [scan, setScan] = useState<{ code: string; result: ScanResult } | null>(null)
   const [refusal, setRefusal] = useState<ScanRefusal | null>(null)
   const [problem, setProblem] = useState<unknown>(null)
+  // The refusal that passes, with the code that was being read: the phone stays the scanner.
+  const [stopped, setStopped] = useState<{ code: string; error: unknown } | null>(null)
 
+  /** What a request under `code` was refused with. */
   const failed = useCallback(
-    (error: unknown) => {
-      const code = errorCode(error)
-      if (code === 'scanner.revoked') return onRevoked()
-      const reason = code === 'scan.not-valid' ? refusalOf(error) : null
+    (error: unknown, code: string) => {
+      const refused = errorCode(error)
+      // A refusal that lasts: the phone is no scanner any more, and forgets its token.
+      if (refused === 'scanner.revoked') return onRevoked()
+      // One that passes: the organizer who enabled the scanner cannot manage tickets right now.
+      // The token works again once they can, so it is kept and the read is offered again.
+      if (refused === 'scanner.stopped') return setStopped({ code, error })
+      setStopped(null)
+      const reason = refused === 'scan.not-valid' ? refusalOf(error) : null
       if (reason) {
         setScan(null)
         setRefusal(reason)
@@ -135,9 +151,10 @@ function Scanning({ device, onRevoked }: { device: PairedScanner; onRevoked: () 
       setBusy(true)
       try {
         setScan({ code, result: await scanCode(device.token, code) })
+        setStopped(null)
         setTyped('')
       } catch (error) {
-        failed(error)
+        failed(error, code)
       } finally {
         setBusy(false)
       }
@@ -154,14 +171,14 @@ function Scanning({ device, onRevoked }: { device: PairedScanner; onRevoked: () 
       const result = await handOutLines(device.token, { code: scan.code, orderId, lineIds })
       setScan({ code: scan.code, result })
     } catch (error) {
-      failed(error)
+      failed(error, scan.code)
       // Another scanner or the panel was first: the order is read again, so that the line says
       // when and by which it was handed out and is offered no more.
       if (errorCode(error) === 'scan.already-handed-out') {
         try {
           setScan({ code: scan.code, result: await scanCode(device.token, scan.code) })
         } catch (again) {
-          failed(again)
+          failed(again, scan.code)
         }
       }
     } finally {
@@ -178,17 +195,36 @@ function Scanning({ device, onRevoked }: { device: PairedScanner; onRevoked: () 
     void read(typed)
   }
   const { editionName, conventionName } = device
+  const header = (
+    <header>
+      <h1 className="text-2xl font-semibold">{device.name}</h1>
+      <p className="text-muted-foreground text-sm">
+        <Trans>
+          Scanner of {editionName}, {conventionName}
+        </Trans>
+      </p>
+    </header>
+  )
+
+  // Stopped, it reads nothing: it says why and offers the read again.
+  if (stopped) {
+    return (
+      <>
+        {header}
+        <ErrorMessage error={stopped.error} />
+        <p className="text-sm">
+          <Trans>This phone stays the scanner: it does not have to be paired again.</Trans>
+        </p>
+        <Button disabled={busy} onClick={() => void read(stopped.code)}>
+          <Trans>Try again</Trans>
+        </Button>
+      </>
+    )
+  }
 
   return (
     <>
-      <header>
-        <h1 className="text-2xl font-semibold">{device.name}</h1>
-        <p className="text-muted-foreground text-sm">
-          <Trans>
-            Scanner of {editionName}, {conventionName}
-          </Trans>
-        </p>
-      </header>
+      {header}
       <ErrorMessage error={problem} />
       {refusal && <NotValid reason={refusal} />}
       {scan?.result.orders.map((order) => (

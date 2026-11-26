@@ -338,6 +338,22 @@ describe('a merchandise item', () => {
     refused(putVariantsSchema.safeParse({}))
   })
 
+  it('may say which variants its list was built on, each hidden or shown, and nothing else of them', () => {
+    const known = [{ id: value, hidden: true }]
+
+    expect(putVariantsSchema.parse({ variants: [], known })).toEqual({ variants: [], known })
+    expect(putVariantsSchema.parse({ variants: [], known: [] })).toEqual({
+      variants: [],
+      known: [],
+    })
+    refused(putVariantsSchema.safeParse({ variants: [], known: [{ id: value }] }))
+    refused(putVariantsSchema.safeParse({ variants: [], known: [{ id: 'M', hidden: false }] }))
+    refused(putVariantsSchema.safeParse({ variants: [], known: [{ ...known[0], stock: 5 }] }))
+    // More variants than an item holds were read from no item.
+    const many = Array.from({ length: MAX_ITEM_VARIANTS + 1 }, () => known[0])
+    refused(putVariantsSchema.safeParse({ variants: [], known: many }))
+  })
+
   it('holds a stock that is a whole number from zero, or none while it is unlimited', () => {
     expect(putStockSchema.parse({ stock: 0 })).toEqual({ stock: 0 })
     expect(putStockSchema.parse({ stock: null })).toEqual({ stock: null })

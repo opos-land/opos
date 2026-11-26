@@ -119,22 +119,23 @@ and after every restore.
 **Cross-tenant queries** run only in
 [GlobalDbService](../apps/api/src/common/database/global-db.service.ts):
 
-| Query                                  | Bound                                                                                                                                                           |
-| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| a tenant by slug                       | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address                                                   |
-| `GET /me/memberships`                  | the session's account; expired memberships left out, and the editions of a suspended tenant                                                                     |
-| `GET /me/schedule`                     | the session's own likes; published editions only, of tenants not suspended                                                                                      |
-| `GET /public/editions`                 | publication: the published editions of tenants not suspended, with the columns anyone reads of each one convention at a time                                    |
-| `DELETE /me`                           | the session's account; answers only whether it is a tenant's last head                                                                                          |
-| the sweep of files                     | the API's own job; the identifiers, owners and kinds of files, and whether a feature's row points at one                                                        |
-| a payment attempt by its identifier    | the address of a provider's notification; it answers the tenant and the provider alone, and nothing counts before the provider's signature holds                |
-| the orders whose hold ended            | the API's own job; identifiers alone, of tenants not suspended                                                                                                  |
-| the emails of orders that are due      | the API's own job; identifiers alone, of tenants not suspended                                                                                                  |
-| a scanner by a hash                    | the pairing code or the token the caller sent, by its hash; it answers the scanner and its tenant alone, and the device is judged in that tenant's transaction  |
-| an order link by a hash                | the token the caller sent, by its hash; it answers the link's tenant alone, and the link and its order are read in that tenant's transaction                    |
-| the editions whose reminder may be due | the API's own job; identifiers, the tenant's time zone and the start a page continues from alone, of published editions of tenants not suspended                |
-| a published profile by its identifier  | the account's own publication: the public name and what the profile's page shows, of a profile published and not taken down, and nothing that names the account |
-| whose avatar a file is                 | the avatar is public from its upload; it answers the account to the API alone, which then serves the file                                                       |
+| Query                                   | Bound                                                                                                                                                           |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| a tenant by slug                        | its public columns, and whether it is suspended: a public route answers a suspended one as an unknown address                                                   |
+| `GET /me/memberships`                   | the session's account; expired memberships left out, and the editions of a suspended tenant                                                                     |
+| `GET /me/schedule`                      | the session's own likes; published editions only, of tenants not suspended                                                                                      |
+| `GET /public/editions`                  | publication: the published editions of tenants not suspended, with the columns anyone reads of each one convention at a time                                    |
+| `DELETE /me`                            | the session's account; answers only whether it is a tenant's last head                                                                                          |
+| the sweep of files                      | the API's own job; the identifiers, owners and kinds of files, and whether a feature's row points at one                                                        |
+| a payment attempt by its identifier     | the address of a provider's notification; it answers the tenant and the provider alone, and nothing counts before the provider's signature holds                |
+| the orders whose hold ended             | the API's own job; identifiers and the end of the hold a page continues from alone, of tenants not suspended                                                    |
+| the payment attempts to ask about again | the API's own job; identifiers and the end of the hold a page continues from alone, of expired orders of tenants not suspended                                  |
+| the emails of orders that are due       | the API's own job; identifiers alone, of tenants not suspended                                                                                                  |
+| a scanner by a hash                     | the pairing code or the token the caller sent, by its hash; it answers the scanner and its tenant alone, and the device is judged in that tenant's transaction  |
+| an order link by a hash                 | the token the caller sent, by its hash; it answers the link's tenant alone, and the link and its order are read in that tenant's transaction                    |
+| the editions whose reminder may be due  | the API's own job; identifiers, the tenant's time zone and the start a page continues from alone, of published editions of tenants not suspended                |
+| a published profile by its identifier   | the account's own publication: the public name and what the profile's page shows, of a profile published and not taken down, and nothing that names the account |
+| whose avatar a file is                  | the avatar is public from its upload; it answers the account to the API alone, which then serves the file                                                       |
 
 A new one is bound by the session's account or its confirmed email address, a secret the caller
 proved (a signature, a link or device token), the API's own job, or publication: an edition's,
@@ -311,31 +312,46 @@ The model is in [PRODUCT.md](PRODUCT.md#5-roles-and-permissions), the decision i
   behind an advisory lock, so one process sweeps at a time, removing, once older than 24 hours,
   a file's row nothing points at and an object no row explains; the expiry of orders every
   minute and the outbox of their emails every quarter of a minute, each claiming a row under a
-  lock another process skips; the reminders before an edition every five minutes, each queued
+  lock another process skips; the question asked once more about the payment attempts of
+  expired orders every quarter of an hour, on a clock of its own so that no provider's answer
+  holds an expiry back, which two processes may each ask while the order's lock lets one take
+  the payment; the reminders before an edition every five minutes, each queued
   under a lock of its edition's shop row, so a second process finds it gone out; the removal of
   the profile reports closed twelve months before, daily, which two processes do once. A job finds its
   rows across tenants by identifiers alone, passes a suspended tenant's by, and acts on each in
   its own tenant's transaction.
 - Every route has a default rate limit per account, or per address without a session; a route open
   to abuse adds its own in code
-  ([route-rate-limit.ts](../apps/api/src/common/rate-limit/route-rate-limit.ts)).
+  ([route-rate-limit.ts](../apps/api/src/common/rate-limit/route-rate-limit.ts)). A limit counts
+  against what the request proves, an account by its session, a scanner or an order link by its
+  token, and against the client address only where the request proves nothing or guesses; a
+  guess is counted once it is known to be one
+  ([0095](adr/0095-count-a-rate-limit-against-what-a-request-proves.md)). The routes a scanner
+  calls under its token skip the default limit, which the scanners and the visitors behind one
+  address would share. So do the routes that take a payment provider's notifications, which a
+  provider sends for every convention from a few addresses: they count against the client
+  address under a limit of their own. The counters live in the memory of each API process.
 - A log line written on purpose names no token, password or email address; an unexpected error is
   logged whole, never sent in the body.
+- A transaction Postgres ends for another to go on, the victim of a deadlock or one it could not
+  serialise, is no unexpected error on any route: all of it is rolled back, the answer is `503`
+  `request.busy` with `Retry-After`, as for a write that waited too long for its tenant, and the
+  log gets a warning that names the error, never the query.
 
-| Status | Meaning                                                                                                            | Default code                                                 |
-| ------ | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
-| `400`  | validation; `params.field` names the field                                                                         | `request.invalid`                                            |
-| `401`  | no valid session; a stale sign-in, `aal1` and Supabase Auth's refusals have their own                              | `session.invalid`                                            |
-| `403`  | insufficient permission; anti-escalation, `Origin` and a suspended tenant have their own                           | `permission.denied`                                          |
-| `404`  | absent or of another tenant                                                                                        | `request.not-found`                                          |
-| `409`  | an invariant or unique constraint, by constraint name; an owner's files over its limit                             | always specific                                              |
-| `410`  | an invitation expired or revoked                                                                                   | `invitation.expired`, `invitation.revoked`                   |
-| `413`  | a file over its kind's limit, or an image over 50 megapixels                                                       | `file.too-large`                                             |
-| `415`  | a body that is not JSON                                                                                            | `request.invalid`                                            |
-| `422`  | a file whose content is not what its type says, or not of its kind's types; credentials a payment provider refuses | `file.type-refused`, `provider.credentials-refused`          |
-| `429`  | rate limit, with `Retry-After`                                                                                     | `request.rate-limited`                                       |
-| `500`  | unexpected; no details in the body                                                                                 | `server.error`                                               |
-| `503`  | a write waiting too long; Supabase Auth, the bucket, imgproxy or a payment provider out of reach                   | `request.busy`, `server.unavailable`, `provider.unavailable` |
+| Status | Meaning                                                                                                                                     | Default code                                                 |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `400`  | validation; `params.field` names the field                                                                                                  | `request.invalid`                                            |
+| `401`  | no valid session; a stale sign-in, `aal1` and Supabase Auth's refusals have their own                                                       | `session.invalid`                                            |
+| `403`  | insufficient permission; anti-escalation, `Origin` and a suspended tenant have their own                                                    | `permission.denied`                                          |
+| `404`  | absent or of another tenant                                                                                                                 | `request.not-found`                                          |
+| `409`  | an invariant or unique constraint, by constraint name; an owner's files over its limit                                                      | always specific                                              |
+| `410`  | an invitation expired or revoked                                                                                                            | `invitation.expired`, `invitation.revoked`                   |
+| `413`  | a file over its kind's limit, or an image over 50 megapixels                                                                                | `file.too-large`                                             |
+| `415`  | a body that is not JSON                                                                                                                     | `request.invalid`                                            |
+| `422`  | a file whose content is not what its type says, or not of its kind's types; credentials a payment provider refuses                          | `file.type-refused`, `provider.credentials-refused`          |
+| `429`  | rate limit, with `Retry-After`                                                                                                              | `request.rate-limited`                                       |
+| `500`  | unexpected; no details in the body                                                                                                          | `server.error`                                               |
+| `503`  | a write waiting too long, or ended by Postgres for another to go on; Supabase Auth, the bucket, imgproxy or a payment provider out of reach | `request.busy`, `server.unavailable`, `provider.unavailable` |
 
 ## Frontends
 
@@ -670,11 +686,20 @@ steps of [adding a feature](#adding-a-feature).
   from an open shop is refused under the same lock. A published version of a legal document is a
   file for everyone, served by the version's own identifier and bound to the tenant its address
   names; it is not bound by its edition's publication, since a buyer reads what they accepted.
+  The sentence of a consent an order accepted is refused any change, by a code of its own; the
+  change locks the consent's row before it reads the orders, so an order that accepts the
+  consent at that moment is counted
+  ([0094](adr/0094-attest-in-an-order-each-consent-exactly-as-its-buyer-saw-it.md)).
 - **The catalog.** What an edition sells lies in edition tables behind `tickets`. A list a row
   carries, such as a ticket type's price tiers or an item's option axes, travels with its row as
   a whole. A ticket type has one price at a moment or none: an exclusion constraint keeps its
   tiers apart, and the API refuses them first by a code of its own
   ([0046](adr/0046-keep-the-price-tiers-of-a-ticket-type-apart-with-an-exclusion-constraint.md)).
+  The variants of a merchandise item that exist are put as a whole list too. A request that
+  names the variants its list was built on, each hidden or shown, is refused by a code of its
+  own once the item has others, so a form filled before someone else's change deletes no variant
+  of theirs, makes none again and hides or shows none; the panel always names them
+  ([0103](adr/0103-refuse-a-list-of-variants-built-on-variants-the-item-no-longer-has.md)).
   A statement by identifier names the parent it acts within, whoever calls it. A change that
   writes several add-ons, a new place or a deletion, first locks the edition's add-ons by
   identifier, as an order locks those of its cart, and a deletion of a merchandise item first
@@ -689,19 +714,63 @@ steps of [adding a feature](#adding-a-feature).
   buyer opens filter on the tenant themselves. A cart is priced by one function of the
   contract, which the portal runs for the running total and the API for the order
   ([0050](adr/0050-price-a-cart-with-one-function-of-the-contract.md)); an order is placed at
-  the total the buyer saw or not at all. The routes that open an order without a sign-in take
-  its result token in a header, for 24 hours from its placing; the token and an order link are
-  stored as hashes, the QR code of a paid order sealed for its own row
+  the total the buyer saw or not at all. That function refuses a cart whose lines come to more
+  than an order keeps of an amount, so no quote, order or manual order reaches the database
+  with one
+  ([0100](adr/0100-refuse-a-cart-whose-lines-come-to-more-than-an-order-keeps.md)). Its request names each consent accepted with the
+  version of the document shown beside it, and the API places no order with a version that is
+  not the one in force, so that the order keeps what its buyer saw
+  ([0094](adr/0094-attest-in-an-order-each-consent-exactly-as-its-buyer-saw-it.md)). The routes
+  that open an order without a sign-in take its result token in a header, for 24 hours from its
+  placing; the token and an order link are stored as hashes, the QR code of a paid order sealed
+  for its own row
   ([0051](adr/0051-keep-an-orders-secrets-as-hashes-and-its-qr-code-sealed.md)). The bot check
   is verified before the order's transaction, by a stand-in on `local` and `dev` and by nothing
   that passes on production
   ([0052](adr/0052-stand-in-for-the-bot-check-until-the-portal-has-one.md)). An email of an order
   is queued in the transaction of its cause and sent by the outbox
-  ([0049](adr/0049-send-the-emails-of-an-order-from-an-outbox-in-the-database.md)). The
-  credentials of a provider account stay as they are while an order awaits payment: an order
-  being placed and a change of them share one lock of the tenant's account. The orders awaiting
-  payment of an email in an edition are counted under a lock of that email in the edition, which
-  an order takes after the locks of invariant 9. `opos_app` never updates an order's number, its
+  ([0049](adr/0049-send-the-emails-of-an-order-from-an-outbox-in-the-database.md)). A provider
+  account stays as it is while a payment is under way, which is while an order awaits payment
+  and, for 24 hours from the end of its hold, while an expired order has a payment attempt its
+  provider may still confirm: one nobody confirmed, but for an attempt the provider refused to
+  register, the one case in which the account waits for no more than the provider's word. An
+  attempt the provider answered about as not paid once the order had expired counts on, since a
+  payment booked later is still confirmed. The account is
+  not disconnected, and it gives way to new credentials only when they name the same
+  account, as its provider's module tells, when the stored ones no longer open, or when the
+  provider, asked before the route's transaction, refuses the stored ones
+  ([0093](adr/0093-change-a-provider-account-under-a-payment-only-where-the-payment-loses-nothing.md)).
+  An order being placed and a change of the account share one lock of the tenant's account. The
+  expiry of orders asks the account the convention holds now, and expires an order whose attempt
+  that account does not know. A job of its own, which the expiry never waits for, asks the
+  provider once more about each payment attempt of an expired order that nobody confirmed, from
+  an hour after the end of the hold and for 24 hours from it at most, so that a payment settled
+  with its answer lost is found. A payment the provider reports goes through the three steps of
+  a confirmation, as a late one; the attempt is marked once the provider answered and is not
+  asked about again, and nothing is written before the answer, so no state stands between the
+  steps. A provider that did not answer about one attempt of a convention is asked about no
+  other of them until the next run, and a run asks a limited number of questions
+  ([0104](adr/0104-ask-the-provider-once-more-about-each-payment-attempt-of-an-expired-order.md)).
+  The orders awaiting
+  payment in an edition are counted for the buyer the request proves: those on the account that
+  places the order, or for a visitor those under the email that are on no account, so that an
+  order anyone places under an email never counts against its account. Each count runs under a
+  lock of that account or that email in the edition, which an order takes after the locks of
+  invariant 9
+  ([0099](adr/0099-count-an-accounts-unpaid-orders-apart-from-a-visitors-under-its-email.md)).
+  A request that places an order may carry a placement key, which the portal draws with a
+  checkout and sends with every try to place it. The key stands for what the checkout orders:
+  the portal draws a new one whenever anything of the checkout but its step changes, so a
+  changed checkout places an order of its own. The key is a secret of the buyer's: the order
+  keeps its hash, unique in the edition and made with the account that places, so an account's
+  key finds that account's order alone. A try whose key placed an order under the same email
+  address places nothing and takes nothing again: it is answered with that order and a new
+  result token in place of the one before. A key whose order is under another address, was
+  placed at another total or neither awaits payment nor is paid is refused as an invalid field,
+  with nothing told of the order. The key is looked up under a lock of its own in the edition,
+  the first lock a placing takes, so tries sent together place one order
+  ([0102](adr/0102-place-one-order-for-a-checkout-however-often-it-is-sent.md)).
+  `opos_app` never updates an order's number, its
   prices or what a line sells, but for a merchandise line's variant
   ([0058](adr/0058-let-the-api-change-the-variant-an-order-line-names.md)).
 - **Order management.** Every change an org makes of an order runs under the tenant's write lock
@@ -718,9 +787,12 @@ steps of [adding a feature](#adding-a-feature).
   ([0057](adr/0057-search-an-orders-qr-code-by-a-hash-the-panel-makes.md)). An email of an order
   is queued without a text: the outbox writes it from the order as it stands when it is sent,
   under the lock of the order's row, so each thing an org changes is a kind of email of its own,
-  and an email that would hand the order over to an address the order has left since is
-  withdrawn, never sent. So is an email that says the order is paid, with its QR code, once the
-  order no longer is. What a sent email said is kept on its row, a subject and a text written
+  and an email to the buyer queued for an address the order has left since is withdrawn, never
+  sent, whatever it says: that address gets the notice of the change alone, and an email to the
+  orgs is not judged by the order's address
+  ([0101](adr/0101-send-nothing-of-an-order-to-the-address-it-left-or-at-its-old-accounts-asking.md)).
+  An email that says the order is paid, with its QR code, is withdrawn too once the order no
+  longer is. What a sent email said is kept on its row, a subject and a text written
   apart from the email that goes out, as for an address with no account: in the convention's
   language and with no way to sign in. It holds neither the QR code nor the token of the order
   link: each is noted for leaving out where the outbox makes it, never by the kind of the email,
@@ -731,13 +803,19 @@ steps of [adding a feature](#adding-a-feature).
   to, and no search finds an alert by an address.
 - **Discount codes.** A code's terms never leave the API. The offer names no code: the portal
   asks the quote for the price of the cart with the code a buyer entered, and the API prices it
-  with the contract's one function. Every code that cannot be used answers the quote alike, and
-  a quote that tries a code counts against a rate limit of its own for the client's address
-  ([0062](adr/0062-keep-a-discount-codes-terms-in-the-api-and-refuse-every-unusable-code-alike.md));
-  an order whose code cannot be used counts against the same limit, and an address that limit
-  blocks places no order with a code. No more of an address's orders with a code are placed at
-  once than it has tries left, so placing them, one by one or together, is no other way to try
-  codes. An order that uses its code counts against nothing.
+  with the contract's one function. Every code that cannot be used answers the quote alike
+  ([0062](adr/0062-keep-a-discount-codes-terms-in-the-api-and-refuse-every-unusable-code-alike.md)).
+  The quote for anyone knows no order, so a "Buy more" cart is priced by the account's own
+  quote, a tenant route that asks for no membership: it reads the order added to as placing
+  does, locks nothing, and spends the tries of a code as the quote for anyone does
+  ([0098](adr/0098-price-a-buy-more-cart-with-its-discount-code-in-the-accounts-own-quote.md)).
+  A quote or an order whose code cannot be used counts against a rate limit of its own for the
+  client's address, and an address that limit blocks prices no cart and places no order with a
+  code. No more of an address's quotes and orders with a code run at once than it has tries
+  left, so sending them, one by one or together, is no other way to try codes. A quote or an
+  order that uses its code counts against nothing: the buyers behind one address use a code as
+  often as they buy
+  ([0095](adr/0095-count-a-rate-limit-against-what-a-request-proves.md)).
   A code is looked up within the edition the request names. An order names its code, and what
   the code took off is a line of the order below zero, the only one. A use is an order that
   holds: it is counted under the lock of the code's row, the last lock an order takes
@@ -774,12 +852,20 @@ steps of [adding a feature](#adding-a-feature).
   and in the body of a request, never in a path or a query; its routes name no tenant, so every
   read behind them filters on the tenant the link's hash answered
   ([0063](adr/0063-open-an-order-link-by-a-token-after-the-hash-found-across-tenants.md)).
-  What a link opens carries no email address and nothing of the ticket holder. Asking for a
+  What a link opens carries no email address and nothing of the ticket holder. An opening counts
+  against the link, by the hash of its token, once the token finds its order, and against the
+  client address when it finds nothing; an address out of those is refused before a token is
+  looked up, so the buyers behind one address each open their own
+  ([0095](adr/0095-count-a-rate-limit-against-what-a-request-proves.md)). Asking for a
   fresh link answers alike for any token, and queues one at most once an hour for an order; the
   email that carries it hands the order over, and is withdrawn like a confirmation when the order
   has left its address. The routes of an account's own orders are tenant routes that ask for no
   membership: their reads filter on the tenant and on the session's account, and another
-  account's order is not there. A "Buy more" order names the account's own paid order of the
+  account's order is not there. An order an org moved to another email stays on the account it
+  was on, whose list says that its confirmation is sent again no longer: "Resend QR code" is
+  refused for it as "Buy more" is, before the order's limit of resends is counted
+  ([0101](adr/0101-send-nothing-of-an-order-to-the-address-it-left-or-at-its-old-accounts-asking.md)).
+  A "Buy more" order names the account's own paid order of the
   same edition, whose row is locked before any limit, when the order is placed and when a
   payment or an org makes it paid; it is priced by the contract's one function against what that
   order's ticket type offers and what was bought on its QR code, and
@@ -792,14 +878,31 @@ steps of [adding a feature](#adding-a-feature).
   token alone ([0059](adr/0059-pair-a-scanner-with-a-code-and-know-it-by-a-token.md)). A guard
   names the scanner before anything of a request is read, and the device is judged at every
   request in its tenant's transaction: revoked, ended, or enabled by an org whose access has
-  ended or who no longer writes the tickets of its edition, it opens nothing. It is judged there by the secret the phone sent, the token or the
+  ended or who no longer writes the tickets of its edition, it opens nothing. A refusal that
+  lasts and one that passes are told apart: a scanner that was revoked, has ended, was given a
+  new pairing code or whose org left the team answers as a caller with no token does, and the
+  phone forgets it; one whose org is in the team and cannot write the tickets of its edition at
+  that moment answers that it is stopped, under an error code of its own, and the phone keeps
+  its token, which works again once the org can
+  ([0096](adr/0096-pair-the-phone-that-opens-a-pairing-link-and-forget-a-scanner-only-on-a-lasting-refusal.md)).
+  A scanner's end is a day after the last day of its edition, or the earlier end its org set:
+  it is computed from the edition in every query that judges or tells it, never read from the
+  scanner's row alone, so a change of an edition's dates writes nothing to its scanners, no role
+  changes a scanner's end, and the phone judges none
+  ([0097](adr/0097-read-a-scanners-end-from-its-editions-last-day-at-every-check.md)).
+  It is judged there by the secret the phone sent, the token or the
   pairing code, which the scanner must still hold: a new pairing code replaces both, and the hash
-  that found the scanner across tenants was read a moment before. An org gives a new pairing
+  that found the scanner across tenants was read a moment before. The guard counts every request
+  of a scanner's route: against the scanner its token names, under the limit of the route and
+  whatever the body then holds, or against the client address when the token names none, and an
+  address out of those refusals is refused before a token is looked up
+  ([0095](adr/0095-count-a-rate-limit-against-what-a-request-proves.md)). An org gives a new pairing
   code only to a scanner that ends no later than its own access. A scan reads the orders of the scanner's own edition that the code
   carries, and no email address; a code of another edition is told as such, and nothing of its
   order is read. A hand-out is marked only under the code the scanner read, and names the
   scanner. The list of an edition's scanners tells who enabled each by an address only to a
-  member who may read the team; another org is told its own address alone. QR codes are drawn and read in the browser, and a camera frame never leaves the phone
+  member who may read the team; another org is told its own address alone, and of any scanner
+  whether the org who enabled it writes the tickets, is stopped or has left. QR codes are drawn and read in the browser, and a camera frame never leaves the phone
   ([0060](adr/0060-read-and-draw-qr-codes-in-the-panels-browser.md)).
 
 ## Adding a feature

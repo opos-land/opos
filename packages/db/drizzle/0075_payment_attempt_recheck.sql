@@ -1,0 +1,2 @@
+ALTER TABLE "payment_attempts" ADD COLUMN "rechecked_at" timestamp with time zone;--> statement-breakpoint
+CREATE INDEX "payment_attempts_to_recheck_idx" ON "payment_attempts" USING btree ("tenant_id","order_id") WHERE "payment_attempts"."confirmed_at" is null and "payment_attempts"."rechecked_at" is null;

@@ -139,6 +139,7 @@ async function shop(ticketType: Parameters<typeof addTicketType>[2] = {}) {
     slug,
     standard,
     account,
+    credentials,
     order,
     place,
     start,
@@ -341,7 +342,8 @@ describe('a payment attempt at Przelewy24', () => {
     expect(p24.transaction(attemptId)!.registered.timeLimit).toBe(5)
   })
 
-  it('ends an attempt Przelewy24 did not register, and says the provider is unavailable', async () => {
+  // Whether Przelewy24 registered it is not known: the attempt is still one to ask about.
+  it('ends an attempt whose registration Przelewy24 did not answer, and says the provider is unavailable', async () => {
     const s = await shop()
     const placed = await s.place()
     p24.down = true
@@ -349,7 +351,26 @@ describe('a payment attempt at Przelewy24', () => {
     const res = await s.start(placed).expect(503)
 
     expect(res.body).toMatchObject({ code: 'provider.unavailable' })
-    expect(await s.attempts()).toMatchObject([{ status: 'ended' }])
+    expect(await s.attempts()).toMatchObject([{ status: 'ended', rechecked_at: null }])
+  })
+
+  // Przelewy24 answered that it registers no such transaction: it will never confirm one.
+  it('ends an attempt Przelewy24 refused to register as one nobody is asked about again', async () => {
+    const s = await shop()
+    const placed = await s.place()
+    // A merchant ID with a digit wrong: the access test, which takes the point of sale and the
+    // API key alone, went through.
+    await connectAccount(s.t.id, 'przelewy24', {
+      ...s.credentials,
+      merchantId: String(s.account.merchantId + 500_000),
+    })
+
+    const res = await s.start(placed).expect(503)
+
+    expect(res.body).toMatchObject({ code: 'provider.unavailable' })
+    const [attempt] = await s.attempts()
+    expect(attempt).toMatchObject({ status: 'ended', confirmed_at: null })
+    expect(attempt!.rechecked_at).not.toBeNull()
   })
 })
 
@@ -508,6 +529,47 @@ describe('the state of an attempt at Przelewy24', () => {
     expect(new Date(String(attempt!.paid_at)).toISOString()).toBe('2026-05-01T08:30:00.000Z')
   })
 
+  // The order expired, its buyer paid a moment later, and the answer of the verification was
+  // lost on its way: Przelewy24 counts the transaction as verified and repeats no notification.
+  // Asked again an hour after the hold, it tells of the payment, which is taken as a late one.
+  it('finds the payment of an expired order whose verification left no trace', async () => {
+    const s = await shop()
+    const placed = await s.place()
+    const attemptId = await s.started(placed)
+    await setColumn(
+      'orders',
+      placed.orderId,
+      'hold_ends_at',
+      new Date(Date.now() - MINUTE).toISOString(),
+    )
+    await app.get(OrderExpiry).run(new Date(), { tenantId: s.t.id })
+    expect(await s.stored(placed)).toMatchObject({ status: 'expired' })
+    p24.verificationDown = true
+    await notify(attemptId, p24.pay(attemptId)).expect(503)
+    p24.transaction(attemptId)!.status = 2
+    p24.verificationDown = false
+    expect(await s.attempts()).toMatchObject([{ status: 'ended', confirmed_at: null }])
+    await setColumn(
+      'orders',
+      placed.orderId,
+      'hold_ends_at',
+      new Date(Date.now() - 61 * MINUTE).toISOString(),
+    )
+
+    const result = await app.get(OrderExpiry).recheck(new Date(), { tenantId: s.t.id })
+
+    expect(result).toEqual({ taken: 1, unpaid: 0, waiting: 0 })
+    expect(await s.stored(placed)).toMatchObject({ status: 'paid' })
+    const [attempt] = await s.attempts()
+    expect(attempt).toMatchObject({
+      status: 'paid',
+      paid_amount_minor: 10000,
+      money_with: 'convention',
+    })
+    expect(attempt!.provider_reference).not.toBeNull()
+    expect(attempt!.confirmed_at).not.toBeNull()
+  })
+
   it('expires an order nobody paid, and leaves one whose provider does not answer', async () => {
     const s = await shop()
     const [unpaid, unknown] = [await s.place(), await s.place('other@example.test')]
@@ -545,6 +607,113 @@ describe('the state of an attempt at Przelewy24', () => {
     expect(res.body).toMatchObject({ code: 'order.already-paid' })
     expect(verifications(first)).toHaveLength(1)
     expect(await s.stored(placed)).toMatchObject({ status: 'paid' })
+  })
+})
+
+// A payment under way is confirmed with the account it started with, so its credentials stay
+// while an order awaits payment, but for an account that loses nothing by the change: the same
+// one given again, and one Przelewy24 refuses.
+describe('the credentials of a Przelewy24 account with a payment under way', () => {
+  const connect = (
+    t: Awaited<ReturnType<typeof tenantWithHead>>,
+    provider: 'przelewy24' | 'fake',
+    credentials: object,
+  ) =>
+    request(app.getHttpServer())
+      .put('/shop/provider-account')
+      .use(session(t.head.token))
+      .set('X-Tenant-Slug', t.slug)
+      .send({ provider, credentials })
+  const endHold = (orderId: string) =>
+    setColumn('orders', orderId, 'hold_ends_at', new Date(Date.now() - MINUTE).toISOString())
+  const expiry = (tenantId: string) => app.get(OrderExpiry).run(new Date(), { tenantId })
+
+  it('are corrected for the same account, and the expiry then finds the payment made', async () => {
+    const s = await shop()
+    const placed = await s.place()
+    const attemptId = await s.started(placed)
+    p24.pay(attemptId)
+    // The org made new keys in Przelewy24's panel: the stored ones open nothing there.
+    s.account.apiKey = 'a-new-api-key'
+    s.account.crc = 'a-new-crc-key'
+    await endHold(placed.orderId)
+    expect(await expiry(s.t.id)).toMatchObject({ waiting: 1 })
+    expect(await s.stored(placed)).toMatchObject({ status: 'awaiting-payment' })
+
+    await connect(s.t, 'przelewy24', {
+      ...s.credentials,
+      apiKey: 'a-new-api-key',
+      crc: 'a-new-crc-key',
+    }).expect(200)
+
+    expect(await expiry(s.t.id)).toMatchObject({ paid: 1 })
+    expect(await s.stored(placed)).toMatchObject({ status: 'paid' })
+    expect(verifications(attemptId)).toHaveLength(1)
+  })
+
+  it('give way to another account once Przelewy24 refuses them, and the order nobody can be asked about expires', async () => {
+    const s = await shop()
+    const placed = await s.place()
+    await s.started(placed)
+    const another = merchant()
+
+    // Przelewy24 still answers to the stored ones: the payment is confirmed with them.
+    const kept = await connect(s.t, 'przelewy24', another.credentials).expect(409)
+    expect(kept.body).toMatchObject({ code: 'shop.payments-under-way' })
+
+    // The account's key is gone at Przelewy24: nothing is confirmed with the stored ones again.
+    s.account.apiKey = 'a-key-nobody-stored'
+    await endHold(placed.orderId)
+    expect(await expiry(s.t.id)).toMatchObject({ waiting: 1 })
+    // Out of reach is no refusal.
+    p24.down = true
+    await connect(s.t, 'przelewy24', another.credentials).expect(409)
+    p24.down = false
+
+    await connect(s.t, 'przelewy24', another.credentials).expect(200)
+
+    // The new account knows no such transaction: nothing was paid into it.
+    expect(await expiry(s.t.id)).toMatchObject({ expired: 1 })
+    expect(await s.stored(placed)).toMatchObject({ status: 'expired' })
+  })
+
+  // The access test takes the point of sale's identifier and the API key alone, so a mistyped
+  // merchant ID connects as ready and fails at the first buyer. Another merchant ID is another
+  // account: it waits for the order's hold, and for nothing after it, since Przelewy24 refused
+  // to register the attempt and confirms nothing of it.
+  it('with a mistyped merchant ID are corrected once the order they failed has expired', async () => {
+    const s = await shop()
+    const mistyped = { ...s.credentials, merchantId: String(s.account.merchantId + 500_000) }
+    await connectAccount(s.t.id, 'przelewy24', mistyped)
+    const placed = await s.place()
+    await s.start(placed).expect(503)
+
+    // The order awaits payment until its hold ends.
+    const kept = await connect(s.t, 'przelewy24', s.credentials).expect(409)
+    expect(kept.body).toMatchObject({ code: 'shop.payments-under-way' })
+
+    // The hold ends now, after the refusal, as it does for every attempt: one starts only
+    // within the hold, and the refusal is told by a mark from before the hold's end.
+    await setColumn('orders', placed.orderId, 'hold_ends_at', new Date().toISOString())
+    expect(await expiry(s.t.id)).toMatchObject({ expired: 1 })
+
+    await connect(s.t, 'przelewy24', s.credentials).expect(200)
+    // The next buyer pays.
+    await s.started(await s.place('next@example.test'))
+  })
+
+  it('give way to an account of another provider once Przelewy24 refuses them, and the order expires', async () => {
+    const s = await shop()
+    const placed = await s.place()
+    await s.started(placed)
+    s.account.apiKey = 'a-key-nobody-stored'
+    await endHold(placed.orderId)
+
+    await connect(s.t, 'fake', { account: 'demo' }).expect(200)
+
+    // The attempt's provider has no account of the convention left to ask with.
+    expect(await expiry(s.t.id)).toMatchObject({ expired: 1 })
+    expect(await s.stored(placed)).toMatchObject({ status: 'expired' })
   })
 })
 

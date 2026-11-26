@@ -455,6 +455,8 @@ describe('verifyDatabase', () => {
       ['the code of a QR code', 'code', 'order_qr_codes'],
       ['when an order link expires', 'expires_at', 'order_links'],
       ['the order an order extends', 'extends_order_id', 'orders'],
+      // The key a checkout placed its order with is written once, with the order.
+      ['the placement key of an order', 'placement_key_hash', 'orders'],
       // A scanner's name, its end and the org behind it are set once, when it is enabled.
       ['the name of a scanner', 'name', 'scanner_devices'],
       ['when a scanner ends', 'expires_at', 'scanner_devices'],
@@ -491,7 +493,10 @@ describe('verifyDatabase', () => {
       ['orders', 'holder_name'],
       ['orders', 'number'],
       ['orders', 'result_token_hash'],
-      ['payment_attempts', 'order_id'],
+      ['orders', 'placement_key_hash'],
+      // An attempt to ask about again is found by its order's identifier: what its provider
+      // said of a payment stays in its tenant.
+      ['payment_attempts', 'paid_amount_minor'],
       ['payment_attempts', 'information'],
       ['order_emails', 'recipient'],
       ['order_emails', 'kind'],

@@ -8,7 +8,7 @@ import {
 } from '@opos/contract'
 import request from 'supertest'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import { ROUTE_RATE_LIMITS } from '../src/common/rate-limit/route-rate-limit'
+import { ROUTE_RATE_LIMITS, RouteRateLimiter } from '../src/common/rate-limit/route-rate-limit'
 import { loadEnv } from '../src/config/env'
 import { STAND_IN_TOKEN } from '../src/modules/checkout/bot-check'
 import {
@@ -244,9 +244,46 @@ describe('a payment attempt', () => {
     const res = await s.start(placed).expect(503)
 
     expect(res.body).toMatchObject({ code: 'provider.unavailable' })
-    // The attempt is kept as one that ended with no payment.
-    expect(await s.attempts()).toMatchObject([{ status: 'ended' }])
+    // The attempt is kept as one that ended with no payment. The provider did not answer, so it
+    // may know the attempt after all: it is still one to ask about.
+    expect(await s.attempts()).toMatchObject([{ status: 'ended', rechecked_at: null }])
     expect(await s.order(placed.orderId)).toMatchObject({ status: 'awaiting-payment', holds: true })
+  })
+
+  // The provider answered, and registered nothing: it will never confirm a payment of the
+  // attempt, so its last word is in before the order ever expires.
+  it('marks an attempt the provider refused to register as one nobody is asked about again', async () => {
+    const s = await shop(FAKE_ACCOUNT.startRefused)
+    const placed = await s.place()
+
+    const res = await s.start(placed).expect(503)
+
+    expect(res.body).toMatchObject({ code: 'provider.unavailable' })
+    const [attempt] = await s.attempts()
+    expect(attempt).toMatchObject({ status: 'ended', confirmed_at: null })
+    expect(attempt!.rechecked_at).not.toBeNull()
+    expect(await s.order(placed.orderId)).toMatchObject({ status: 'awaiting-payment', holds: true })
+  })
+
+  // The mark of a refused attempt is told from the mark of one asked about again by its moment:
+  // within the order's hold. It is the moment the start was found to be within the hold, never
+  // the one the provider answered at, which may come after the hold has ended.
+  it('marks a refused attempt within the hold of its order, however late the provider answers', async () => {
+    const s = await shop()
+    const placed = await s.place()
+    vi.spyOn(fake(), 'start').mockImplementation(async () => {
+      // The hold ends while the provider answers.
+      await setColumn('orders', placed.orderId, 'hold_ends_at', new Date().toISOString())
+      return { outcome: 'refused', reason: 'the provider is asked to refuse' }
+    })
+
+    await s.start(placed).expect(503)
+
+    const [attempt] = await s.attempts()
+    const order = await s.order(placed.orderId)
+    expect(attempt).toMatchObject({ status: 'ended', confirmed_at: null })
+    const moment = (stored: unknown) => new Date(stored as string | Date).getTime()
+    expect(moment(attempt!.rechecked_at)).toBeLessThanOrEqual(moment(order.hold_ends_at))
   })
 
   it('starts again while none was paid: the buyer tries again without entering anything anew', async () => {
@@ -877,5 +914,54 @@ describe('the pay page of the fake provider', () => {
     await page('0198c1a0-0000-7000-8000-000000000001').expect(404)
     await page('0198c1a0-0000-7000-8000-000000000001/paid').expect(404)
     await page(`${attemptId}/free`).expect(404)
+  })
+})
+
+// docs/ARCHITECTURE.md, API conventions: a provider tells of every convention's payments from a
+// few addresses of its own, and many at once when a sale opens.
+describe('the notifications of a provider', () => {
+  let limited: NestExpressApplication
+  /** The default limit of this API: anything counted against it is refused at once. */
+  const DEFAULT = 3
+
+  beforeAll(async () => {
+    limited = await createApp({}, [], { limit: DEFAULT, ttl: 60_000 })
+    await limited.listen(0, '127.0.0.1')
+  })
+
+  afterAll(async () => {
+    await limited.close()
+  })
+
+  it('skip the default limit, and count against their address under a limit of their own', async () => {
+    const s = await shop()
+    const placed = await s.place()
+    const attemptId = await s.started(placed)
+    const body = fake().pay(attemptId)
+    const ip = '203.0.113.70'
+    const tell = (path: string, told: object, from = ip) =>
+      request(limited.getHttpServer())
+        .post(`/payments/fake/notifications/${path}`)
+        .set('X-Forwarded-For', from)
+        .send(told)
+    for (let told = 0; told <= DEFAULT; told += 1) {
+      await tell(attemptId, body).expect(200)
+      await tell(`${attemptId}/additional`, {}).expect(404)
+    }
+    expect((await s.order(placed.orderId)).status).toBe('paid')
+
+    const { limit } = ROUTE_RATE_LIMITS.providerNotifications
+    const limiter = limited.get(RouteRateLimiter)
+    for (let told = 2 * (DEFAULT + 1); told < limit; told += 1) {
+      await limiter.consume('providerNotifications', `ip:${ip}`)
+    }
+
+    for (const res of [await tell(attemptId, body), await tell(`${attemptId}/additional`, {})]) {
+      expect(res.status).toBe(429)
+      expect(res.body).toMatchObject({ code: 'request.rate-limited' })
+      expect(Number(res.headers['retry-after'])).toBeGreaterThan(0)
+    }
+    // Another address of the provider is still heard.
+    await tell(attemptId, body, '203.0.113.71').expect(200)
   })
 })

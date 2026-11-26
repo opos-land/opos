@@ -1338,6 +1338,10 @@ msgstr "Zmiany zostały zapisane."
 msgid "The code was wrong."
 msgstr "Kod był błędny."
 
+#: src/features/shop/components/summary-step.tsx
+msgid "The document has changed. Read it and accept this again."
+msgstr "Dokument się zmienił. Przeczytaj go i zaakceptuj ponownie."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "The hash of a recovery code you have used: as a record, until you delete the account."
 msgstr "Skrót kodu odzyskiwania, który został użyty: jako zapis, do usunięcia konta."
@@ -1643,6 +1647,10 @@ msgstr "Nie możemy tu pokazać tego zamówienia. Ta strona otwiera się w przeg
 #: src/shared/ui/messages.tsx
 msgid "We could not find what you are looking for."
 msgstr "Nie znaleźliśmy tego, czego szukasz."
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "We could not place the order. Check the summary and try again."
+msgstr "Nie udało się złożyć zamówienia. Sprawdź podsumowanie i spróbuj ponownie."
 
 #: src/features/auth/pages/confirm-page.tsx
 msgid "We could not sign you in"

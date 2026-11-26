@@ -23,6 +23,7 @@ import {
   scannerNameTaken,
   scannerOutlivesOrg,
   scannerRevoked,
+  scannerStopped,
 } from './scanner.errors'
 import { ScannersRepository, type StandingScanner } from './scanners.repository'
 import { ScansRepository } from './scans.repository'
@@ -50,7 +51,8 @@ export class ScannerService {
    * Enables a scanner of the edition for the org of the request, and answers its pairing code:
    * the only time the code is told. It runs under the tenant's write lock, which judged the org
    * again: the scanner ends a day after the edition's last day unless the org sets less, and
-   * never later than the org's own access.
+   * never later than the org's own access. With no earlier end to keep, none is written: the
+   * scanner follows its edition, and its end is read from the edition's last day from then on.
    */
   async enable(editionId: string, body: CreateScanner, now = new Date()): Promise<EnabledScanner> {
     const membership = this.context.membership()
@@ -58,7 +60,8 @@ export class ScannerService {
     if (!membership || !editionEnd) throw notFound('edition')
     const latest = new Date(editionEnd.getTime() + SCANNER_DAYS_AFTER_EDITION * DAY)
     const own = membership.expiresAt
-    let expiresAt = own && own < latest ? own : latest
+    // An org whose own access ends earlier enables no scanner past that end.
+    let expiresAt = own && own < latest ? own : null
     if (body.expiresAt !== undefined) {
       const asked = new Date(body.expiresAt)
       if (asked > latest) {
@@ -67,7 +70,9 @@ export class ScannerService {
       if (own && asked > own) throw scannerOutlivesOrg()
       expiresAt = asked
     }
-    if (expiresAt <= now) throw invalidField('expiresAt', 'The scanner would have ended already')
+    if ((expiresAt ?? latest) <= now) {
+      throw invalidField('expiresAt', 'The scanner would have ended already')
+    }
     if ((await this.scanners.enabled(editionId, now)) >= MAX_SCANNERS) {
       throw scannerLimitReached(MAX_SCANNERS)
     }
@@ -139,7 +144,10 @@ export class ScannerService {
       const scanner = await this.scanners.standing(found.tenantId, found.id, now, {
         pairingCodeHash,
       })
-      if (!scanner || scanner.pairingExpiresAt <= now) throw pairingCodeRefused()
+      // A scanner its org stops pairs no phone: its code is refused like any that does not work.
+      if (!scanner || scanner.stopped || scanner.pairingExpiresAt <= now) {
+        throw pairingCodeRefused()
+      }
       const names = await this.scanners.names(found.tenantId, scanner.editionId)
       if (!names) throw pairingCodeRefused()
       const token = secretToken()
@@ -160,7 +168,7 @@ export class ScannerService {
 
   /** Reads a QR code as the scanner the token names: S1-S5. A scan marks nothing by itself. */
   scan(code: string): Promise<ScanResult> {
-    return this.asScanner('scannerScans', (scanner) => this.read(scanner, code))
+    return this.asScanner((scanner) => this.read(scanner, code))
   }
 
   /**
@@ -171,7 +179,7 @@ export class ScannerService {
     body: { code: string; orderId: string; lineIds: readonly string[] },
     at = new Date(),
   ): Promise<ScanResult> {
-    return this.asScanner('scannerHandOuts', async (scanner) => {
+    return this.asScanner(async (scanner) => {
       const { orders } = await this.read(scanner, body.code)
       // A scanner marks nothing of an order it did not scan.
       const order = orders.find((shown) => shown.orderId === body.orderId)
@@ -214,22 +222,25 @@ export class ScannerService {
   /**
    * Runs `fn` as the scanner the request's token named, in its tenant's transaction. The
    * device's access is judged here at every request: that it still holds the token the request
-   * came with, was not revoked and has not ended, and the org who enabled it, whose expiry and
-   * removal end it. A suspended tenant is refused
-   * where its transaction opens.
+   * came with, was not revoked and has not ended, and the org who enabled it. An org who left
+   * the team ends it like a revocation; one whose access has ended or who no longer writes the
+   * tickets of its edition stops it for as long as that lasts, which is told apart so that the
+   * phone keeps its token (docs/ARCHITECTURE.md, Modules waiting for their domain owner). A
+   * suspended tenant is refused
+   * where its transaction opens. The request was counted against the scanner where its token
+   * named it, in ScannerGuard.
    */
   private async asScanner<T>(
-    limit: 'scannerScans' | 'scannerHandOuts',
     fn: (scanner: StandingScanner) => Promise<T>,
     now = new Date(),
   ): Promise<T> {
     const found = this.context.scanner()
-    await this.rateLimiter.consume(limit, `scanner:${found.id}`)
     return this.context.withTenant(found.tenantId, async () => {
       const scanner = await this.scanners.standing(found.tenantId, found.id, now, {
         tokenHash: found.tokenHash,
       })
       if (!scanner) throw scannerRevoked()
+      if (scanner.stopped) throw scannerStopped()
       await this.scanners.touch(found.tenantId, scanner.id, now)
       return fn(scanner)
     })

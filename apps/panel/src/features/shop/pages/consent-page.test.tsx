@@ -87,6 +87,7 @@ const consent = (position: number, fields: object = {}) => ({
   isRequired: true,
   position,
   hidden: false,
+  accepted: false,
   ...fields,
 })
 
@@ -170,6 +171,9 @@ describe('the page of a consent', () => {
 
     const sentence = await screen.findByLabelText<HTMLTextAreaElement>('Sentence the buyer accepts')
     expect(sentence.value).toBe('Consent 1')
+    // No order accepted it: its sentence is the org's to change.
+    expect(sentence.readOnly).toBe(false)
+    expect(screen.queryByText(/An order has already accepted this consent/)).toBeNull()
     // The document is linked for good: another link is a new consent.
     expect(screen.queryByLabelText('Linked document')).toBeNull()
     expect(
@@ -185,6 +189,31 @@ describe('the page of a consent', () => {
     expect(updateConsent.mock.calls[0]?.[0]).toEqual({
       params: { editionId: 'edition-2026', consentId: 'consent-1' },
       body: { text: 'I accept the terms of the shop.', isRequired: false },
+    })
+  })
+
+  // An order shows the sentence its buyer accepted: the page says so before the org tries, and
+  // sends no sentence with the rest.
+  it('says that the sentence of a consent an order accepted stays, and saves the rest', async () => {
+    state.tickets = 'write'
+    readConsents.mockResolvedValue([consent(1, { accepted: true })])
+    view()
+
+    const sentence = await screen.findByLabelText<HTMLTextAreaElement>('Sentence the buyer accepts')
+    expect(sentence.value).toBe('Consent 1')
+    expect(sentence.readOnly).toBe(true)
+    expect(
+      screen.getByText(
+        'An order has already accepted this consent, so its sentence cannot be changed. To ask for another sentence, hide this consent in the list of consents and add a new one.',
+      ),
+    ).toBeDefined()
+    fireEvent.change(screen.getByLabelText('Acceptance'), { target: { value: 'optional' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save the consent' }))
+
+    await vi.waitFor(() => expect(updateConsent).toHaveBeenCalledTimes(1))
+    expect(updateConsent.mock.calls[0]?.[0]).toEqual({
+      params: { editionId: 'edition-2026', consentId: 'consent-1' },
+      body: { isRequired: false },
     })
   })
 

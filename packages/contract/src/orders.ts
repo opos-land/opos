@@ -421,7 +421,7 @@ export const ordersContract = {
       path: '/editions/{editionId}/orders/manual',
       successStatus: 201,
       summary:
-        'Records a sale made outside the shop as a "Paid - manual" order with its lines handed out; refused with order.unavailable naming what ran out; needs tickets=write',
+        'Records a sale made outside the shop as a "Paid - manual" order with its lines handed out; refused with order.unavailable naming what ran out, or with order.total-too-high; needs tickets=write',
     })
     .input(edition.extend({ body: manualOrderSchema }))
     .output(orderDetailSchema),

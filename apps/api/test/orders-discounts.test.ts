@@ -154,18 +154,65 @@ describe('a discount code at the Summary', () => {
 
   it('is tried only so often from one address', async () => {
     const d = await orderDesk(app)
+    await addDiscountCode(d.t.id, d.edition, { code: 'early10', ticketTypeIds: [d.standard] })
     const ip = from()
     const { limit } = ROUTE_RATE_LIMITS.discountCodeTries
     for (let tried = 0; tried < limit; tried += 1) {
       await quote(d, { discountCode: `guess-${tried}` }, ip).expect(409)
     }
 
-    const res = await quote(d, { discountCode: 'one-more' }, ip)
-
-    expect(res.status).toBe(429)
-    expect(res.body).toMatchObject({ code: 'request.rate-limited' })
+    // A code that can be used is answered as one that cannot: nothing more is told of either.
+    for (const discountCode of ['one-more', 'early10']) {
+      const res = await quote(d, { discountCode }, ip)
+      expect(res.status).toBe(429)
+      expect(res.body).toMatchObject({ code: 'request.rate-limited' })
+    }
     // A cart with no code is still priced.
     await quote(d, {}, ip).expect(200)
+  })
+
+  // Using a code is no try of one: buyers behind one address price a cart with their code as
+  // often as they buy. A cart that cannot be had is told first, and tries no code either.
+  it('spends no try by a quote whose code can be used', async () => {
+    const d = await orderDesk(app)
+    await addDiscountCode(d.t.id, d.edition, { code: 'early10', ticketTypeIds: [d.standard] })
+    const ip = from()
+    const { limit } = ROUTE_RATE_LIMITS.discountCodeTries
+    for (let priced = 0; priced <= limit; priced += 1) {
+      const res = await quote(d, { discountCode: 'early10' }, ip).expect(200)
+      expect((res.body as Quote).totalMinor).toBe(9000)
+    }
+    for (let priced = 0; priced <= limit; priced += 1) {
+      const res = await quote(d, { discountCode: 'nobody-knows', addOnIds: [d.standard] }, ip)
+      expect(res.body).toMatchObject({ code: 'order.unavailable', params: { kind: 'add-on' } })
+    }
+
+    // Every try is still left to the address.
+    for (let tried = 0; tried < limit; tried += 1) {
+      await quote(d, { discountCode: `guess-${tried}` }, ip).expect(409)
+    }
+    await quote(d, { discountCode: 'early10' }, ip).expect(429)
+  })
+
+  // Sent together, the quotes of one address are not all answered before the first is counted.
+  it('is tried no more often by quotes sent together than by quotes sent one by one', async () => {
+    const d = await orderDesk(app)
+    const ip = from()
+    const { limit } = ROUTE_RATE_LIMITS.discountCodeTries
+
+    const answers = await Promise.all(
+      Array.from({ length: limit + 5 }, (_, tried) =>
+        quote(d, { discountCode: `guess-${tried}` }, ip),
+      ),
+    )
+
+    const told = answers.filter((res) => res.status === 409)
+    for (const res of told) expect(res.body).toMatchObject(refused)
+    expect(told.length).toBeGreaterThan(0)
+    expect(told.length).toBeLessThanOrEqual(limit)
+    expect(answers.filter((res) => res.status === 429)).toHaveLength(limit + 5 - told.length)
+    // Counted, the address is out of tries.
+    await quote(d, { discountCode: 'one-more' }, ip).expect(429)
   })
 
   // Placing an order is no way around the limit: one whose code cannot be used is a try as a

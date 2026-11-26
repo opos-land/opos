@@ -24,6 +24,10 @@ msgstr "{count, plural, one {# zamówienie jest do wyjaśnienia: płatność za 
 msgid "{count, plural, one {Permissions in the edition} other {Permissions in the editions}}"
 msgstr "{count, plural, one {Uprawnienia w edycji} few {Uprawnienia w edycjach} many {Uprawnienia w edycjach} other {Uprawnienia w edycjach}}"
 
+#: src/features/scanner/pages/edition-scanner-page.tsx
+msgid "{ends}, a day after the edition’s last day"
+msgstr "{ends}, dzień po ostatnim dniu edycji"
+
 #: src/features/program/components/speakers-editor.tsx
 msgid "{limit, plural, one {An item can have up to # speaker.} other {An item can have up to # speakers.}}"
 msgstr "{limit, plural, one {Punkt programu może mieć do # prelegenta.} few {Punkt programu może mieć do # prelegentów.} many {Punkt programu może mieć do # prelegentów.} other {Punkt programu może mieć do # prelegentów.}}"
@@ -174,6 +178,10 @@ msgstr "Skaner to telefon, który odczytuje kody QR kupujących przy wejściu i 
 #: src/features/catalog/components/size-charts-editor.tsx
 msgid "A size chart belongs to a value, such as a cut. Give charts to the values of one axis: the shop shows the chart of the value a buyer chose."
 msgstr "Tabela rozmiarów należy do wartości, na przykład do kroju. Dodaj tabele do wartości jednej osi: sklep pokazuje tabelę tej wartości, którą wybrał kupujący."
+
+#: src/features/scanner/pages/edition-scanner-page.tsx
+msgid "A stopped scanner gets no new pairing code."
+msgstr "Zatrzymany skaner nie dostaje nowego kodu parowania."
 
 #: src/features/scanner/model/labels.ts
 msgid "A teen enters only with the guardian’s consent on paper."
@@ -496,6 +504,10 @@ msgstr "Gadżet może mieć najwyżej 100 wariantów. Odznacz część kombinacj
 #: src/features/catalog/components/size-charts-editor.tsx
 msgid "An item without option axes has no size chart."
 msgstr "Gadżet bez osi nie ma tabeli rozmiarów."
+
+#: src/features/shop/components/consent-form.tsx
+msgid "An order has already accepted this consent, so its sentence cannot be changed. To ask for another sentence, hide this consent in the list of consents and add a new one."
+msgstr "Ta zgoda została już zaakceptowana w zamówieniu, więc jej zdania nie można zmienić. Jeśli sklep ma prosić o inne zdanie, ukryj tę zgodę na liście zgód i dodaj nową."
 
 #: src/features/orders/pages/orders-page.tsx
 msgid "An order’s number, a name, an email address or a QR code."
@@ -1748,8 +1760,8 @@ msgid "Last used"
 msgstr "Ostatnio używany"
 
 #: src/features/scanner/pages/new-scanner-page.tsx
-msgid "Left empty, the scanner’s access ends a day after the edition’s last day, and no later than your own access."
-msgstr "Jeśli zostawisz to pole puste, dostęp skanera skończy się dzień po ostatnim dniu edycji, nie później niż twój własny dostęp."
+msgid "Left empty, the scanner’s access ends a day after the edition’s last day, also when that day is changed later, and no later than your own access."
+msgstr "Jeśli zostawisz to pole puste, dostęp skanera skończy się dzień po ostatnim dniu edycji, także gdy ten dzień zostanie później zmieniony, ale nie później niż twój własny dostęp."
 
 #: src/features/discounts/pages/discount-codes-page.tsx
 msgid "Let it run again"
@@ -3220,6 +3232,14 @@ msgstr "Status"
 msgid "Stock"
 msgstr "Stan magazynowy"
 
+#: src/features/scanner/components/scanner-state.ts
+msgid "Stopped: its organizer cannot manage tickets now"
+msgstr "Zatrzymany: jego organizator nie może teraz zarządzać akredytacjami"
+
+#: src/features/scanner/components/scanner-state.ts
+msgid "Stopped: its organizer left the team"
+msgstr "Zatrzymany: jego organizator odszedł z zespołu"
+
 #: src/features/orders/pages/email-page.tsx
 msgid "Subject"
 msgstr "Temat"
@@ -3384,6 +3404,10 @@ msgstr "Adres konwentu ustala administrator platformy."
 #: src/features/shop/model/documents.ts
 msgid "The convention’s payment provider account is connected and ready to sell."
 msgstr "Konto konwentu u dostawcy płatności jest podłączone i gotowe do sprzedaży."
+
+#: src/features/shop/model/providers.ts
+msgid "The CRC key and the merchant ID are confirmed only by the first payment a buyer starts. You can correct the API key and the CRC key of this account at any time. A different merchant ID or point of sale ID is a different account: like any other account, you can give it only when no payment is under way."
+msgstr "Klucz CRC i ID sprzedawcy potwierdza dopiero pierwsza płatność rozpoczęta przez kupującego. Klucz API i klucz CRC tego konta możesz poprawić w każdej chwili. Inne ID sprzedawcy albo ID sklepu to już inne konto: tak jak każde inne konto podasz je dopiero wtedy, gdy żadna płatność nie jest w toku."
 
 #: src/features/shop/components/provider-account-section.tsx
 msgid "The credentials are checked with the provider, stored encrypted and never shown again."
@@ -4066,6 +4090,10 @@ msgstr "To zamówienie jest do wyjaśnienia"
 msgid "This phone is no scanner yet. Open the pairing link an organizer shows you in the panel, or read its QR code with the camera."
 msgstr "Ten telefon nie jest jeszcze skanerem. Otwórz link parowania, który organizator pokaże ci w panelu, albo odczytaj aparatem jego kod QR."
 
+#: src/features/scanner/pages/scanner-page.tsx
+msgid "This phone stays the scanner: it does not have to be paired again."
+msgstr "Ten telefon pozostaje skanerem: nie trzeba go parować ponownie."
+
 #: src/features/shop/components/provider-account-section.tsx
 msgid "This provider answers only calls from the IP addresses entered in its panel. Ask the OPOS administrators for the address to enter there before you connect the account."
 msgstr "Ten dostawca odpowiada tylko na wywołania z adresów IP wpisanych w jego panelu. Zanim podłączysz konto, zapytaj administratorów OPOS o adres, który trzeba tam wpisać."
@@ -4077,6 +4105,14 @@ msgstr "Ten dostawca odpowiada tylko na wywołania z adresów IP wpisanych w jeg
 #: src/features/scanner/pages/scanner-page.tsx
 msgid "This scanner no longer works: its access was revoked or has ended. Ask an organizer to pair this phone again."
 msgstr "Ten skaner już nie działa: jego dostęp został cofnięty albo wygasł. Poproś organizatora o ponowne sparowanie tego telefonu."
+
+#: src/features/scanner/pages/edition-scanner-page.tsx
+msgid "This scanner reads and marks nothing for now: the organizer who enabled it cannot manage the tickets of this edition at the moment, because their access has ended or their tickets permission was lowered. The scanner works again, on the phone that holds it, as soon as that organizer can."
+msgstr "Ten skaner na razie niczego nie odczyta ani nie oznaczy: organizator, który go włączył, nie może w tej chwili zarządzać akredytacjami tej edycji, bo jego dostęp wygasł albo obniżono mu uprawnienie do akredytacji. Skaner zacznie znowu działać, na telefonie, który jest teraz skanerem, gdy tylko ten organizator znów będzie mógł nimi zarządzać."
+
+#: src/features/scanner/pages/edition-scanner-page.tsx
+msgid "This scanner reads and marks nothing, for good: the organizer who enabled it left the team. Revoke it and enable a new scanner."
+msgstr "Ten skaner już niczego nie odczyta ani nie oznaczy: organizator, który go włączył, odszedł z zespołu. Cofnij dostęp tego skanera i włącz nowy."
 
 #: src/features/scanner/pages/edition-scanner-page.tsx
 msgid "This scanner was revoked or its access has ended: it gets no new pairing code. Enable a new scanner instead."
@@ -4214,6 +4250,7 @@ msgid "Transaction number"
 msgstr "Numer transakcji"
 
 #: src/features/auth/components/accept-invitation.tsx
+#: src/features/scanner/pages/scanner-page.tsx
 #: src/shared/ui/messages.tsx
 msgid "Try again"
 msgstr "Spróbuj ponownie"

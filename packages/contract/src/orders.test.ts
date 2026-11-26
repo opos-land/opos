@@ -217,7 +217,7 @@ describe('a manual order', () => {
     ['a name longer than 200 characters', { ...sale, holderName: 'n'.repeat(201) }],
     // A manual order asks for no email, stores no consent and has no total to agree on.
     ['an email', { ...sale, email: 'buyer@example.test' }],
-    ['a consent', { ...sale, consentIds: [] }],
+    ['a consent', { ...sale, consents: [] }],
     ['a total', { ...sale, expectedTotalMinor: 0 }],
   ])('refuses %s', (_, body) => {
     expect(manualOrderSchema.safeParse(body).success).toBe(false)

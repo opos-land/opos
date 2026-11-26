@@ -3,7 +3,8 @@ import { type OpenedOrderLink } from '@opos/contract'
 import { open, orderQrCodeOf, sealingKey } from '@opos/db/sealed'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { GlobalDbService } from '../../common/database/global-db.service'
-import { notFound, suspendedAsNotFound } from '../../common/errors/api-error'
+import { ApiError, notFound, suspendedAsNotFound } from '../../common/errors/api-error'
+import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
 import { ENV, type Env } from '../../config/env'
 import { hashOf } from '../checkout/codes'
 import { OrdersRepository } from '../checkout/orders.repository'
@@ -11,6 +12,10 @@ import { OrderLinksRepository, type OrderOfLink } from './order-links.repository
 
 /** A fresh link is sent for an order at most this often, however often it is asked for. */
 export const FRESH_LINK_EVERY_MS = 60 * 60_000
+
+/** Whether a link was refused because its token opens nothing: the answer of `open` to it. */
+export const opensNothing = (error: unknown) =>
+  error instanceof ApiError && error.code === 'request.not-found'
 
 /**
  * The order link (docs/specs/0009-buyer-self-service.md, K1-K5): an emailed link that opens one
@@ -27,6 +32,7 @@ export class OrderLinks {
     private readonly links: OrderLinksRepository,
     private readonly orders: OrdersRepository,
     private readonly context: TenantContextService,
+    private readonly limiter: RouteRateLimiter,
     @Inject(ENV) env: Pick<Env, 'PAYMENT_CREDENTIALS_KEY'>,
   ) {
     // The key that seals what the API alone opens; a QR code is sealed for its own row.
@@ -55,11 +61,16 @@ export class OrderLinks {
     })
   }
 
-  /** What the link opens: its order, or for an expired link only that it expired. */
+  /**
+   * What the link opens: its order, or for an expired link only that it expired. A token that
+   * finds its order is counted here against itself, by its hash, from whatever address it comes;
+   * one that finds nothing is refused as `opensNothing` tells, for the route to count.
+   */
   async open(token: string, now = new Date()): Promise<OpenedOrderLink> {
     const opened = await this.found<OpenedOrderLink>(
       token,
       async (order, expired) => {
+        await this.limiter.consume('orderLinkOpensOfLink', `link:${hashOf(token)}`)
         if (expired) return { state: 'expired' }
         const { id, tenantId, editionId } = order
         // The code is shown while the order is paid: a canceled one is refused at the gate.

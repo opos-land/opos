@@ -174,15 +174,51 @@ describe('an order link', () => {
     },
   )
 
-  it('is opened only so often from one address', async () => {
+  // A token that opens nothing proves nothing: it is counted against the address it came from.
+  it('is tried only so often from one address by tokens that open nothing', async () => {
+    const d = await orderDesk(app)
+    const placed = await d.paid()
+    const ended = await addOrderLinkWithToken(d.t.id, d.edition, placed.orderId, 'ended')
+    const token = await addOrderLinkWithToken(d.t.id, d.edition, placed.orderId)
     const ip = from()
     const { limit } = ROUTE_RATE_LIMITS.orderLinkOpens
-    for (let tried = 0; tried < limit; tried += 1) await open(unmade(), ip).expect(404)
+    for (let tried = 0; tried < limit; tried += 1) {
+      await open(tried % 2 === 0 ? unmade() : ended, ip).expect(404)
+    }
 
     const res = await open(unmade(), ip)
 
     expect(res.status).toBe(429)
     expect(res.body).toMatchObject({ code: 'request.rate-limited' })
+    // Refused before its token is looked up: a link opened from that address waits with it.
+    await open(token, ip).expect(429)
+    await open(token).expect(200)
+  })
+
+  // The attendees of a venue open their links from one address, to show the QR code.
+  it('spends nothing of its address when it opens its order, and is opened only so often itself', async () => {
+    const d = await orderDesk(app)
+    const placed = await d.paid()
+    const token = await addOrderLinkWithToken(d.t.id, d.edition, placed.orderId)
+    const other = await addOrderLinkWithToken(d.t.id, d.edition, placed.orderId)
+    const expired = await addOrderLinkWithToken(d.t.id, d.edition, placed.orderId, 'expired')
+    const ip = from()
+    const { limit } = ROUTE_RATE_LIMITS.orderLinkOpensOfLink
+    expect(limit).toBeGreaterThan(ROUTE_RATE_LIMITS.orderLinkOpens.limit)
+    for (let opened = 0; opened < limit; opened += 1) await open(token, ip).expect(200)
+    for (let opened = 0; opened < limit; opened += 1) {
+      expect((await open(expired, ip).expect(200)).body).toEqual({ state: 'expired' })
+    }
+
+    // Counted by the token, from whatever address it is opened.
+    for (const res of [await open(token, ip), await open(token), await open(expired)]) {
+      expect(res.status).toBe(429)
+      expect(res.body).toMatchObject({ code: 'request.rate-limited' })
+      expect(Number(res.headers['retry-after'])).toBeGreaterThan(0)
+    }
+    // Another link is opened from that address, and a token that opens nothing is still told so.
+    await open(other, ip).expect(200)
+    await open(unmade(), ip).expect(404)
   })
 })
 

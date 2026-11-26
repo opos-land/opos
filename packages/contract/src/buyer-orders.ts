@@ -106,13 +106,22 @@ export const myOrderSchema = z.object({
    * hold, by the shop's own clock. The list offers it by this, never by the clock of its device.
    */
   payable: z.boolean(),
+  /**
+   * Whether "Resend QR code" would send the confirmation now: the order is paid and its email
+   * is the account's. An order an org moved to another address has passed to another person,
+   * who alone is sent its QR code.
+   */
+  resendable: z.boolean(),
   /** The ticket holder, by whom a buyer tells their orders apart. */
   holderName: z.string(),
   edition: z.object({ id: z.uuid(), slug: z.string(), name: z.string() }),
   lines: z.array(linkedLineSchema),
   totalMinor: z.number().int(),
   currency: z.string(),
-  /** Null for an order that is not paid: nothing is added to it. */
+  /**
+   * Null for an order that is not paid, and for one an org moved to another address: nothing is
+   * added to it.
+   */
   bought: boughtSchema.nullable(),
 })
 
@@ -133,7 +142,7 @@ export const myOrdersContract = {
       path: '/orders/mine/{orderId}/resend-confirmation',
       successStatus: 204,
       summary:
-        "Send the confirmation of the account's own paid order again, with its QR code, to the order's email; refused with order.not-paid; any signed-in account",
+        "Send the confirmation of the account's own paid order again, with its QR code, to the order's email; refused with order.not-paid, and with order.passed-on for an order an org moved to another email; any signed-in account",
     })
     .input(z.object({ params: z.object({ orderId: z.string() }) })),
 }

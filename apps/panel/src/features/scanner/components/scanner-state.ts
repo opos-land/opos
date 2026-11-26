@@ -2,8 +2,9 @@ import { useLingui } from '@lingui/react/macro'
 import { type Scanner } from '@opos/contract'
 
 /**
- * How a scanner stands, in a word the list and its own page share: revoked, ended, paired with a
- * phone or still waiting for one. Whether it has ended is judged at `at`, the moment it was read.
+ * How a scanner stands, in a word the list and its own page share: revoked, ended, stopped by
+ * the organizer who enabled it, with the reason, paired with a phone or still waiting for one.
+ * Whether it has ended is judged at `at`, the moment it was read.
  */
 export function useScannerState() {
   const { t } = useLingui()
@@ -12,9 +13,13 @@ export function useScannerState() {
       ? t`Revoked`
       : Date.parse(scanner.expiresAt) <= at
         ? t`Ended`
-        : scanner.paired
-          ? t`Paired with a phone`
-          : t`Waiting for a phone`
+        : scanner.orgStanding === 'stopped'
+          ? t`Stopped: its organizer cannot manage tickets now`
+          : scanner.orgStanding === 'left'
+            ? t`Stopped: its organizer left the team`
+            : scanner.paired
+              ? t`Paired with a phone`
+              : t`Waiting for a phone`
 }
 
 /** Whether the scanner stands at `at`: neither revoked nor ended. */

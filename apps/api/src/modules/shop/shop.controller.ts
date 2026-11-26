@@ -75,10 +75,16 @@ export class ShopController {
   @Prepares(ConnectProviderPreparation)
   connectProviderAccount() {
     return implement(contract.shop.providerAccount.put).handler(async () => {
-      const { provider, credentials, answer } = this.context.prepared<CheckedCredentials>()
+      const { provider, credentials, answer, stored } = this.context.prepared<CheckedCredentials>()
       // Whatever the provider said of the new credentials, the stored ones stay while a payment
-      // that started with them is under way.
-      if (await this.accounts.paymentsUnderWay()) throw paymentsUnderWay()
+      // that started with them is under way, unless they were found to give way. That was found
+      // before this transaction, of the credentials stored then: others stored since stay.
+      if (await this.accounts.paymentsUnderWay()) {
+        const current = await this.accounts.find()
+        if (!stored?.givesWay || stored.credentials !== current?.credentials) {
+          throw paymentsUnderWay()
+        }
+      }
       if (answer.outcome === 'refused') throw credentialsRefused()
       if (answer.outcome === 'unavailable') throw providerUnavailable(answer.reason)
       // An open shop keeps a ready account: credentials that leave it not ready wait for the

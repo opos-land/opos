@@ -3,11 +3,13 @@ import {
   type MyOrder,
   type OpenedOrderLink,
   type PlacedOrder,
+  type Quote,
   type ScanResult,
   type StartedAttempt,
 } from '@opos/contract'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { ROUTE_RATE_LIMITS } from '../src/common/rate-limit/route-rate-limit'
 import { STAND_IN_TOKEN } from '../src/modules/checkout/bot-check'
 import { type FakeProvider } from '../src/modules/payments/fake-provider'
 import { PROVIDER_MODULES } from '../src/modules/payments/payment-providers'
@@ -17,6 +19,7 @@ import { deleteCreatedAccounts, session } from './auth'
 import { type OrderDesk, orderDesk } from './order-desk'
 import {
   addAddOn,
+  addDiscountCode,
   addEdition,
   addMerchandiseItem,
   addOrderLinkWithToken,
@@ -96,6 +99,10 @@ const more = (d: OrderDesk, who: Member, to: PlacedOrder, cart: Row, expectedTot
     expectedTotalMinor,
     extendsOrderId: to.orderId,
   })
+
+/** The account's quote of a cart in the edition's shop: for "Buy more", with the order added to. */
+const quote = (d: OrderDesk, who: Member, body: Row, edition = d.edition) =>
+  as(d, who, 'post', `/editions/${edition}/shop/quote`, body)
 
 /** A desk that also sells a workshop at 40.00 and a pin at 50.00 with the ticket type. */
 async function deskWithExtras() {
@@ -196,6 +203,44 @@ describe('"Resend QR code"', () => {
     await setPublished(d.edition, false)
     await resend(buyer, paid.orderId).expect(404)
     expect(await d.emails(paid.orderId)).toHaveLength(2)
+  })
+
+  // A changed email is the one way a ticket passes to another person
+  // (docs/specs/0006-order-management.md, C2 and C3): the order stays among those of the account
+  // it was on, which has nothing sent to its new holder from then on.
+  it('sends nothing of an order an org moved to another address, and the list says so', async () => {
+    const d = await orderDesk(app)
+    const buyer = await member()
+    const paid = await bought(d, buyer)
+    const unpaid = await placed(d, buyer)
+    const offered = async () =>
+      Object.fromEntries((await mine(d, buyer)).map((order) => [order.id, order.resendable]))
+    expect(await offered()).toEqual({ [paid.orderId]: true, [unpaid.orderId]: false })
+    await d
+      .head('put', `/orders/${paid.orderId}/email`, { email: 'new-holder@example.test' })
+      .expect(200)
+    const queued = await d.emails(paid.orderId)
+
+    // As often as an order's confirmation is sent again in an hour: a refusal spends no try.
+    for (let asked = 0; asked < ROUTE_RATE_LIMITS.confirmationResends.limit; asked += 1) {
+      const refused = await as(
+        d,
+        buyer,
+        'post',
+        `/orders/mine/${paid.orderId}/resend-confirmation`,
+      ).expect(409)
+      expect(refused.body).toMatchObject({ code: 'order.passed-on' })
+    }
+
+    expect(await d.emails(paid.orderId)).toEqual(queued)
+    // The order is still the account's to see, with no way to send its QR code.
+    expect(await offered()).toEqual({ [paid.orderId]: false, [unpaid.orderId]: false })
+    // The org of the edition still sends it to the address the order has now.
+    await d.head('post', `/orders/${paid.orderId}/resend-confirmation`).expect(200)
+    expect(await d.emails(paid.orderId)).toContainEqual([
+      'order-confirmation',
+      'new-holder@example.test',
+    ])
   })
 })
 
@@ -458,6 +503,141 @@ describe('"Buy more"', () => {
       .expect(400)
 
     expect(res.body).toMatchObject({ code: 'request.invalid' })
+  })
+
+  // A discount code lowers what is bought later as it lowers a first order: the account's quote
+  // prices the cart as an addition to the order it names, which the quote for anyone cannot.
+  it('is priced with a discount code as it is then placed: the same lines and the same total', async () => {
+    const { d, workshop, pin } = await deskWithExtras()
+    await addDiscountCode(d.t.id, d.edition, { code: 'craft20', percent: 20, addOnIds: [workshop] })
+    const buyer = await member()
+    const first = await bought(d, buyer)
+    const cart = { addOnIds: [workshop], items: [{ variantId: pin.variantId, quantity: 1 }] }
+
+    const res = await quote(d, buyer, {
+      ticket: null,
+      ...cart,
+      discountCode: 'CRAFT20',
+      extendsOrderId: first.orderId,
+    }).expect(200)
+
+    const priced = res.body as Quote
+    expect(priced.lines.map((line) => [line.kind, line.amountMinor])).toEqual([
+      ['add_on', 4000],
+      ['merchandise', 5000],
+      ['discount', -800],
+    ])
+    expect(priced.totalMinor).toBe(8200)
+    const added = await place(d, buyer, {
+      cart: { ticket: null, ...cart },
+      ageBand: null,
+      expectedTotalMinor: priced.totalMinor,
+      extendsOrderId: first.orderId,
+      discountCode: 'CRAFT20',
+    }).expect(201)
+    expect(added.body).toMatchObject({ status: 'awaiting-payment', totalMinor: 8200 })
+    // Asked of the quote for anyone, the same cart is an add-on with no ticket.
+    const open = await request(app.getHttpServer())
+      .post(`/public/tenants/${d.t.slug}/editions/${d.slug}/shop/quote`)
+      .send({ ticket: null, ...cart, discountCode: 'CRAFT20' })
+      .expect(409)
+    expect(open.body).toMatchObject({ code: 'order.unavailable', params: { kind: 'add-on' } })
+  })
+
+  it('is priced as it is placed without a code too, and for a first order as anyone’s cart is', async () => {
+    const { d, workshop, room } = await deskWithExtras()
+    const buyer = await member()
+    const first = await bought(d, buyer, {
+      cart: { ticket: { ticketTypeId: d.standard }, addOnIds: [room] },
+    })
+    const adding = { ticket: null, extendsOrderId: first.orderId }
+
+    const priced = await quote(d, buyer, { ...adding, addOnIds: [workshop] }).expect(200)
+    expect(priced.body).toMatchObject({ totalMinor: 4000, lines: [{ kind: 'add_on' }] })
+    // What placing refuses, the quote refuses alike: an add-on bought already, a ticket, nothing.
+    const again = await quote(d, buyer, { ...adding, addOnIds: [room] }).expect(409)
+    expect(again.body).toMatchObject({
+      code: 'order.unavailable',
+      params: { kind: 'add-on', id: room },
+    })
+    const empty = await quote(d, buyer, adding).expect(409)
+    expect(empty.body).toMatchObject({ code: 'order.unavailable', params: { kind: 'empty' } })
+    // With no order named it is the cart of a first order.
+    const ticket = await quote(d, buyer, { ticket: { ticketTypeId: d.standard } }).expect(200)
+    expect(ticket.body).toMatchObject({ totalMinor: 10000, lines: [{ kind: 'ticket' }] })
+  })
+
+  it('is priced for the account’s own paid order of the same edition alone', async () => {
+    const { d, workshop } = await deskWithExtras()
+    const [buyer, other] = [await member(), await member()]
+    const paid = await bought(d, buyer)
+    const unpaid = await placed(d, buyer)
+    const sibling = await addEdition(d.t.id)
+    await setPublished(sibling, true)
+    const cart = { ticket: null, addOnIds: [workshop] }
+
+    const notPaid = await quote(d, buyer, { ...cart, extendsOrderId: unpaid.orderId }).expect(409)
+    expect(notPaid.body).toMatchObject({ code: 'order.not-extendable' })
+    const elsewhere = await quote(d, buyer, { ...cart, extendsOrderId: paid.orderId }, sibling)
+    expect([elsewhere.status, (elsewhere.body as Row).code]).toEqual([409, 'order.not-extendable'])
+    // Another account's order is not there at all, and no edition that is not published.
+    const foreign = await quote(d, other, { ...cart, extendsOrderId: paid.orderId }).expect(404)
+    expect(foreign.body).toMatchObject({ code: 'request.not-found' })
+    await setPublished(sibling, false)
+    await quote(d, buyer, cart, sibling).expect(404)
+    // An order an org moved to another email is added to no longer.
+    await d
+      .head('put', `/orders/${paid.orderId}/email`, { email: 'new-holder@example.test' })
+      .expect(200)
+    const passed = await quote(d, buyer, { ...cart, extendsOrderId: paid.orderId }).expect(409)
+    expect(passed.body).toMatchObject({ code: 'order.not-extendable' })
+    // A visitor has no such quote.
+    await request(app.getHttpServer())
+      .post(`/editions/${d.edition}/shop/quote`)
+      .set('X-Tenant-Slug', d.t.slug)
+      .send(cart)
+      .expect(401)
+  })
+
+  // The tries of a discount code are one count of an address, whichever quote or order spends
+  // them: a code that is refused is a try, a code that can be used is none.
+  it('tries a discount code as the quote for anyone does', async () => {
+    const { d, workshop } = await deskWithExtras()
+    await addDiscountCode(d.t.id, d.edition, { code: 'craft20', percent: 20, addOnIds: [workshop] })
+    const buyer = await member()
+    const first = await bought(d, buyer)
+    const ip = '198.51.100.251'
+    const { limit } = ROUTE_RATE_LIMITS.discountCodeTries
+    const asked = (discountCode: string, addOnIds = [workshop]) =>
+      quote(d, buyer, { ticket: null, addOnIds, discountCode, extendsOrderId: first.orderId }).set(
+        'X-Forwarded-For',
+        ip,
+      )
+
+    for (let priced = 0; priced <= limit; priced += 1) await asked('craft20').expect(200)
+    // A cart that cannot be had is told first, and tries no code either.
+    for (let priced = 0; priced <= limit; priced += 1) {
+      const res = await asked('nobody-knows', [d.standard]).expect(409)
+      expect(res.body).toMatchObject({ code: 'order.unavailable', params: { kind: 'add-on' } })
+    }
+    for (let tried = 1; tried < limit; tried += 1) {
+      const res = await asked(`guess-${tried}`).expect(409)
+      expect(res.body).toMatchObject({ code: 'discount-code.refused' })
+    }
+    // The last try of the address is spent by the quote for anyone.
+    await request(app.getHttpServer())
+      .post(`/public/tenants/${d.t.slug}/editions/${d.slug}/shop/quote`)
+      .set('X-Forwarded-For', ip)
+      .send({ ticket: { ticketTypeId: d.standard }, discountCode: 'one-more-guess' })
+      .expect(409)
+
+    // A code that can be used is answered as one that cannot: nothing more is told of either.
+    const res = await asked('craft20').expect(429)
+    expect(res.body).toMatchObject({ code: 'request.rate-limited' })
+    // A cart with no code is still priced.
+    await quote(d, buyer, { ticket: null, addOnIds: [workshop], extendsOrderId: first.orderId })
+      .set('X-Forwarded-For', ip)
+      .expect(200)
   })
 
   // B4 and B5: the scanner shows both orders on the one code, each is canceled on its own, and

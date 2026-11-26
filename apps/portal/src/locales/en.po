@@ -1338,6 +1338,10 @@ msgstr "The changes are saved."
 msgid "The code was wrong."
 msgstr "The code was wrong."
 
+#: src/features/shop/components/summary-step.tsx
+msgid "The document has changed. Read it and accept this again."
+msgstr "The document has changed. Read it and accept this again."
+
 #: src/features/landing/pages/privacy-page.tsx
 msgid "The hash of a recovery code you have used: as a record, until you delete the account."
 msgstr "The hash of a recovery code you have used: as a record, until you delete the account."
@@ -1643,6 +1647,10 @@ msgstr "We cannot show this order here. The page opens in the browser the order 
 #: src/shared/ui/messages.tsx
 msgid "We could not find what you are looking for."
 msgstr "We could not find what you are looking for."
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "We could not place the order. Check the summary and try again."
+msgstr "We could not place the order. Check the summary and try again."
 
 #: src/features/auth/pages/confirm-page.tsx
 msgid "We could not sign you in"

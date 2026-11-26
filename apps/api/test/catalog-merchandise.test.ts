@@ -535,6 +535,109 @@ describe('the variants of an item', () => {
   })
 })
 
+// A list is put whole, so one built on an old reading would undo what someone else did since. A
+// request that says which variants its list was built on is refused once they are not the ones
+// the item has (docs/ARCHITECTURE.md, Modules waiting for their domain owner, the catalog).
+describe('the variants of an item put by a form that read them', () => {
+  /** A T-shirt with two variants, and those variants as a form read them. */
+  async function read(c: Convention) {
+    const made = await addShirt(c)
+    const at = `/merchandise-items/${made.id}/variants`
+    const small = combination(made, "Women's", 'S')
+    const medium = combination(made, "Men's", 'M')
+    const shirtRead = item(await c.as('put', at, { variants: [small, medium] }).expect(200))
+    const known = shirtRead.variants.map(({ id, hidden }) => ({ id, hidden }))
+    return { made, at, small, medium, known }
+  }
+
+  const changed = { code: 'catalog.variants-changed' }
+
+  it('are set while the item has the variants the form read, whatever their order', async () => {
+    const c = await convention()
+    const { made, at, small, known } = await read(c)
+    // The stock is no part of what the form says it read: another org's number stays in the way
+    // of nothing.
+    await c.as('put', `${at}/${known[0]!.id}/stock`, { stock: 7 }).expect(200)
+
+    const res = await c
+      .as('put', at, {
+        variants: [{ ...small, hidden: true }, combination(made, "Women's", 'M')],
+        known: [...known].reverse(),
+      })
+      .expect(200)
+
+    expect(variantsOf(item(res))).toEqual([
+      { labels: ["Women's", 'S'], stock: 7, hidden: true },
+      { labels: ["Women's", 'M'], stock: 0, hidden: false },
+    ])
+  })
+
+  it("are refused once someone added a variant: the other's variant is not deleted", async () => {
+    const c = await convention()
+    const { made, at, small, medium, known } = await read(c)
+    const added = combination(made, "Women's", 'M')
+    await c.as('put', at, { variants: [small, medium, added] }).expect(200)
+
+    const res = await c.as('put', at, { variants: [small, medium], known })
+
+    expect(res.status).toBe(409)
+    expect(res.body).toMatchObject(changed)
+    expect(await storedRows('merchandise_variants', c.t.id)).toHaveLength(3)
+  })
+
+  it('are refused once someone deleted a variant: it is not made again', async () => {
+    const c = await convention()
+    const { at, small, medium, known } = await read(c)
+    await c.as('put', at, { variants: [small] }).expect(200)
+
+    const res = await c.as('put', at, { variants: [small, medium], known })
+
+    expect(res.status).toBe(409)
+    expect(res.body).toMatchObject(changed)
+    expect(await storedRows('merchandise_variants', c.t.id)).toHaveLength(1)
+  })
+
+  it("are refused once someone hid a variant or showed it: the other's choice stays", async () => {
+    const c = await convention()
+    const { at, small, medium, known } = await read(c)
+    const hidden = item(
+      await c.as('put', at, { variants: [{ ...small, hidden: true }, medium] }).expect(200),
+    )
+
+    const res = await c.as('put', at, {
+      variants: [
+        { ...small, hidden: false },
+        { ...medium, hidden: true },
+      ],
+      known,
+    })
+
+    expect(res.status).toBe(409)
+    expect(res.body).toMatchObject(changed)
+    const now = item(await c.as('put', at, { variants: [small, medium] }).expect(200))
+    expect(variantsOf(now)).toEqual(variantsOf(hidden))
+  })
+
+  it('are refused before the list is read: a value that went with the change is not unknown', async () => {
+    const c = await convention()
+    const { made, at, small, medium, known } = await read(c)
+    // Someone took the value "M" away, and the variant that held it with it.
+    const axes = made.axes.map((axis) => ({
+      id: axis.id,
+      name: axis.name,
+      values: axis.values
+        .filter((value) => value.label !== 'M')
+        .map(({ id, label }) => ({ id, label })),
+    }))
+    await c.as('patch', `/merchandise-items/${made.id}`, { axes }).expect(200)
+
+    const res = await c.as('put', at, { variants: [small, medium], known })
+
+    expect(res.status).toBe(409)
+    expect(res.body).toMatchObject(changed)
+  })
+})
+
 describe('the stock of a variant', () => {
   it('is a number an org enters, or none while the variant is unlimited', async () => {
     const c = await convention()

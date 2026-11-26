@@ -15,6 +15,17 @@ export const PAIRING_MINUTES = 15
 /** How long after the edition's last day a scanner's access ends, unless the org sets less. */
 export const SCANNER_DAYS_AFTER_EDITION = 1
 
+/**
+ * How the org who enabled a scanner stands, judged when the scanner is read. A scanner opens
+ * nothing unless that org `writes` the tickets of its edition. `stopped`: the org is in the team
+ * with an access that has ended or without tickets write access to the edition, and the scanner
+ * works again, under the token its phone holds, once the org has both back. `left`: the org left
+ * the team, and nothing brings the scanner back.
+ */
+export const SCANNER_ORG_STANDINGS = ['writes', 'stopped', 'left'] as const
+
+export type ScannerOrgStanding = (typeof SCANNER_ORG_STANDINGS)[number]
+
 /** A scanner as the panel lists it. */
 export const scannerSchema = z.object({
   id: z.uuid(),
@@ -22,10 +33,17 @@ export const scannerSchema = z.object({
   name: z.string(),
   /** The org who enabled it, by the email of its account; null once that org left the team. */
   enabledBy: z.string().nullable(),
+  orgStanding: z.enum(SCANNER_ORG_STANDINGS),
   /** Whether a phone spent its pairing code. */
   paired: z.boolean(),
   lastUsedAt: timestamp.nullable(),
+  /**
+   * When its access ends: the end its org set or, with none, `SCANNER_DAYS_AFTER_EDITION` after
+   * the last day its edition has at the moment the scanner is read.
+   */
   expiresAt: timestamp,
+  /** Whether its org set no end: `expiresAt` then moves with the edition's last day. */
+  followsEdition: z.boolean(),
   revokedAt: timestamp.nullable(),
 })
 
@@ -96,6 +114,10 @@ export const pairedScannerSchema = z.object({
   conventionName: z.string(),
   /** The convention's time zone: the scanner shows every moment in it, never in the phone's. */
   timezone: z.string(),
+  /**
+   * When its access ends, as that stood when the phone was paired. The phone judges nothing by
+   * it: the end of a scanner that follows its edition moves, and the API judges every request.
+   */
   expiresAt: timestamp,
 })
 
@@ -236,7 +258,7 @@ export const scannerContract = {
       method: 'POST',
       path: '/scanner/scans',
       summary:
-        'Reads a QR code: every order on it that is not canceled, with what was handed out; refused with scan.not-valid and its reason',
+        'Reads a QR code: every order on it that is not canceled, with what was handed out; refused with scan.not-valid and its reason, and with scanner.stopped while the org who enabled the scanner cannot write the tickets of its edition',
     })
     .input(z.object({ body: scanSchema }))
     .output(scanResultSchema),
@@ -245,7 +267,7 @@ export const scannerContract = {
       method: 'POST',
       path: '/scanner/hand-outs',
       summary:
-        'Marks entry or lines of one order of a QR code as handed out; refused with scan.already-handed-out, its time and its scanner',
+        'Marks entry or lines of one order of a QR code as handed out; refused with scan.already-handed-out, its time and its scanner, and with scanner.stopped like a scan',
     })
     .input(z.object({ body: scanHandOutSchema }))
     .output(scanResultSchema),

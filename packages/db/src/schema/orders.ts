@@ -97,6 +97,11 @@ export const orders = pgTable(
     providerConsentAcceptedAt: timestamp({ withTimezone: true }),
     /** The hash of the token that opens the order's result page, for a day from its placing. */
     resultTokenHash: text().notNull(),
+    /**
+     * The hash of the key its checkout placed it with: the same checkout sent again finds this
+     * order and places no other. Empty for an order placed with no key, and for a manual one.
+     */
+    placementKeyHash: text(),
     /** The discount code the order used; its discount line carries the amount taken off. */
     discountCodeId: uuid(),
     /**
@@ -123,6 +128,8 @@ export const orders = pgTable(
     index('orders_tenant_edition_status_idx').on(t.tenantId, t.editionId, t.status),
     index('orders_tenant_email_idx').on(t.tenantId, t.email),
     index('orders_tenant_extends_idx').on(t.tenantId, t.extendsOrderId),
+    // One order a key in an edition: a checkout sent twice at once places one order.
+    uniqueIndex('orders_placement_key_unique').on(t.tenantId, t.editionId, t.placementKeyHash),
     // No cascade: an order outlives everything but a decision to purge it, so an edition that has
     // one is not deleted, and neither is its convention.
     foreignKey({
@@ -474,10 +481,20 @@ export const paymentAttempts = pgTable(
     failureCode: text(),
     failureMessage: text(),
     information: jsonb().$type<Record<string, string>>(),
+    /**
+     * When its provider gave its last word that nobody paid it: asked about it once more after
+     * its order expired, which an attempt nobody confirmed is once, or refusing to register it
+     * at all. Nobody asks about it from then on.
+     */
+    recheckedAt: timestamp({ withTimezone: true }),
     ...timestamps,
   },
   (t) => [
     index('payment_attempts_tenant_order_idx').on(t.tenantId, t.orderId),
+    // What the job that asks again reads: the attempts nobody confirmed that were not asked about.
+    index('payment_attempts_to_recheck_idx')
+      .on(t.tenantId, t.orderId)
+      .where(sql`${t.confirmedAt} is null and ${t.recheckedAt} is null`),
     foreignKey({
       name: 'payment_attempts_order_fk',
       columns: [t.orderId, t.tenantId, t.editionId],

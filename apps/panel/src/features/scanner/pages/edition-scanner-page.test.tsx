@@ -52,7 +52,9 @@ const scanner = (name: string, fields: object = {}) => ({
   paired: true,
   lastUsedAt: '2026-06-05T09:00:00.000Z',
   expiresAt: '2099-06-08T16:00:00.000Z',
+  followsEdition: false,
   revokedAt: null,
+  orgStanding: 'writes',
   ...fields,
 })
 
@@ -123,6 +125,19 @@ describe('the page of a scanner', () => {
     expect(about.getByText('head@convention-a.test')).toBeDefined()
     expect(about.getByText('at 2026-06-05T09:00:00.000Z')).toBeDefined()
     expect(about.getByText('at 2099-06-08T16:00:00.000Z')).toBeDefined()
+  })
+
+  // A scanner whose organizer set no end follows its edition: the page says where the date
+  // comes from, since it moves when the edition's dates do.
+  it('says that the end follows the edition for a scanner with no end of its own', async () => {
+    state.tickets = 'read'
+    readScanner.mockResolvedValue(gate({ followsEdition: true }))
+    view()
+
+    const about = within(await screen.findByRole('region', { name: 'Scanner' }))
+    expect(
+      about.getByText('at 2099-06-08T16:00:00.000Z, a day after the edition’s last day'),
+    ).toBeDefined()
   })
 
   it('tells what the scanner handed out, and lists the orders it marked last with a link to each', async () => {
@@ -261,6 +276,38 @@ describe('the page of a scanner', () => {
         params: { editionId: 'edition-2026', scannerId: 'id-gate' },
       }),
     )
+  })
+
+  // The organizer who enabled it cannot manage the tickets right now: the scanner opens nothing
+  // until they can, and no new pairing code would change that.
+  it('says why a scanner its organizer stops reads nothing, to a reader too, and gives it no new code', async () => {
+    state.tickets = 'read'
+    readScanner.mockResolvedValue(gate({ orgStanding: 'stopped' }))
+    view()
+
+    const about = within(await screen.findByRole('region', { name: 'Scanner' }))
+    expect(about.getByText('Stopped: its organizer cannot manage tickets now')).toBeDefined()
+    expect(about.getByText(/works again, on the phone that holds it/)).toBeDefined()
+    cleanup()
+
+    state.tickets = 'write'
+    view()
+    await screen.findByRole('region', { name: 'Scanner' })
+    expect(screen.queryByRole('button', { name: 'New pairing code' })).toBeNull()
+    expect(screen.getByText(/A stopped scanner gets no new pairing code/)).toBeDefined()
+    // It is revoked like any other.
+    expect(screen.getByRole('button', { name: 'Revoke the scanner' })).toBeDefined()
+  })
+
+  it('says that a scanner whose organizer left the team is stopped for good', async () => {
+    readScanner.mockResolvedValue(gate({ orgStanding: 'left', enabledBy: null }))
+    view()
+
+    const about = within(await screen.findByRole('region', { name: 'Scanner' }))
+    expect(about.getByText('Stopped: its organizer left the team')).toBeDefined()
+    expect(about.getByText(/Revoke it and enable a new scanner/)).toBeDefined()
+    expect(screen.queryByRole('button', { name: 'New pairing code' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Revoke the scanner' })).toBeDefined()
   })
 
   it('pairs no phone with a scanner that was revoked or has ended, and revokes it no more', async () => {

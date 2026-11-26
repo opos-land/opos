@@ -61,7 +61,15 @@ export interface StartRequest extends AttemptOf {
 
 export type StartAnswer =
   | { outcome: 'started'; redirectUrl: string }
-  /** Out of reach; `reason` goes to the log alone. */
+  /**
+   * The provider answered, and registered nothing: it knows no such attempt and will never
+   * confirm a payment of it. `reason` goes to the log alone.
+   */
+  | { outcome: 'refused'; reason: string }
+  /**
+   * Out of reach, or an answer that does not say: the provider may know the attempt after all.
+   * `reason` goes to the log alone.
+   */
   | { outcome: 'unavailable'; reason: string }
 
 /** A payment a provider reports of an attempt. */
@@ -114,6 +122,12 @@ export interface PaymentProviderModule {
    * with no call; none means the account is ready to sell.
    */
   missing(credentials: Credentials): string[]
+  /**
+   * Whether two sets of credentials name one account at the provider, read from them alone with
+   * no call: a payment started with the one is found and confirmed with the other, once it is
+   * right. Credentials that name no account are the same as none.
+   */
+  sameAccount(one: Credentials, other: Credentials): boolean
   /** What it requires of the shop's pages, with no call. */
   requirements(): ProviderRequirements
   /** The payment methods the shop names: a fixed list a provider. */

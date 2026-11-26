@@ -204,14 +204,17 @@ describe('RouteRateLimiter', () => {
       orderPlacements: { limit: 300, ttl: 3_600_000 },
       paymentAttempts: { limit: 300, ttl: 3_600_000 },
       paymentAttemptsOfOrder: { limit: 20, ttl: 3_600_000 },
+      providerNotifications: { limit: 1200, ttl: 60_000 },
       confirmationResends: { limit: 5, ttl: 3_600_000 },
       discountCodeTries: { limit: 30, ttl: 3_600_000 },
       salesExports: { limit: 30, ttl: 3_600_000 },
       orderLinkOpens: { limit: 60, ttl: 3_600_000 },
+      orderLinkOpensOfLink: { limit: 120, ttl: 3_600_000 },
       orderLinkRenewals: { limit: 10, ttl: 3_600_000 },
       scannerPairings: { limit: 30, ttl: 3_600_000 },
       scannerScans: { limit: 6000, ttl: 3_600_000 },
       scannerHandOuts: { limit: 6000, ttl: 3_600_000 },
+      scannerRefusals: { limit: 300, ttl: 3_600_000 },
       profileReports: { limit: 10, ttl: 3_600_000 },
     })
   })

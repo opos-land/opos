@@ -206,10 +206,27 @@ export type PricedLine = z.infer<typeof pricedLineSchema>
  */
 export const discountCodeEntry = z.string().trim().min(1).max(60)
 
+/**
+ * The most the lines of an order come to before a discount code, in minor units: the largest
+ * amount an order keeps. The prices and the quantities a cart may hold come to more.
+ */
+export const MAX_ORDER_TOTAL_MINOR = 2_147_483_647
+
 /** A cart to price, with the discount code the buyer entered. */
 export const quoteRequestSchema = cartSchema.extend({ discountCode: discountCodeEntry.optional() })
 
 export type QuoteRequest = z.infer<typeof quoteRequestSchema>
+
+/**
+ * A cart an account prices. With "Buy more" it names the account's own paid order it adds to,
+ * and is priced as that order is added to: it sells no ticket, and is offered what the order's
+ * ticket type offers.
+ */
+export const accountQuoteRequestSchema = quoteRequestSchema.extend({
+  extendsOrderId: z.uuid().optional(),
+})
+
+export type AccountQuoteRequest = z.infer<typeof accountQuoteRequestSchema>
 
 /** The terms of a discount code, as pricing a cart needs them. Only the API holds them. */
 export interface DiscountTerms {
@@ -233,8 +250,8 @@ export type Quote = z.infer<typeof quoteSchema>
 
 /**
  * Why a cart cannot be had as it stands: the shop is closed, the cart is empty,
- * merch-only orders are off, or one thing of it is not on offer, has run out or is asked for in
- * more than an order may take.
+ * merch-only orders are off, one thing of it is not on offer, has run out or is asked for in
+ * more than an order may take, or all of it comes to more than an order may.
  */
 export type CartProblem =
   | { kind: 'closed' }
@@ -242,6 +259,8 @@ export type CartProblem =
   | { kind: 'merch-only' }
   | { kind: 'supporter-price' }
   | { kind: 'ticket-type' | 'add-on' | 'variant'; id: string }
+  /** The lines come to more than `MAX_ORDER_TOTAL_MINOR`, before any discount code. */
+  | { kind: 'total-too-high' }
   /** The discount code applies to nothing in the cart, or its last use is taken. */
   | { kind: 'discount-code' }
 
@@ -379,6 +398,11 @@ export function priceCart(
     }
   }
 
+  // Everything of the cart can be had: what is left is whether an order keeps amounts this
+  // large. The lines are kept as priced, so a discount code brings none of them under it.
+  const sum = lines.reduce((total, line) => total + line.amountMinor, 0)
+  if (sum > MAX_ORDER_TOTAL_MINOR) return { problem: { kind: 'total-too-high' } }
+
   if (discount) {
     const off = discountOf(offer, lines, discount)
     if (off === null) return { problem: { kind: 'discount-code' } }
@@ -427,7 +451,10 @@ export function discountOf(
 export const HOLD_MINUTES = 30
 export const PRICE_GRACE_MINUTES = 30
 
-/** The most orders awaiting payment one email holds in an edition. */
+/**
+ * The most orders awaiting payment a buyer holds in an edition: an account those on it, a
+ * visitor those under the email that are on no account.
+ */
 export const MAX_UNPAID_ORDERS = 3
 
 /** How long the token of a placed order opens its result page. */
@@ -465,8 +492,15 @@ const placeOrderFields = {
     )
     .max(MAX_CUSTOM_FIELDS)
     .default([]),
-  /** The consents of the edition the buyer accepted. */
-  consentIds: z.array(z.uuid()).max(MAX_EDITION_CONSENTS).default([]),
+  /**
+   * The consents of the edition the buyer accepted, each as it was shown: with the version of the
+   * document it links, or null where it showed none. One the offer now shows with another version
+   * places no order.
+   */
+  consents: z
+    .array(z.strictObject({ consentId: z.uuid(), documentVersionId: z.uuid().nullable() }))
+    .max(MAX_EDITION_CONSENTS)
+    .default([]),
   /** The discount code the buyer entered at the Summary. */
   discountCode: discountCodeEntry.optional(),
   /** The provider's own consent, where its module requires one and there is something to pay. */
@@ -476,6 +510,15 @@ const placeOrderFields = {
   /** The total the buyer saw: an order is never placed at another. */
   expectedTotalMinor: z.number().int().min(0),
   botCheckToken: z.string().min(1).max(4000),
+  /**
+   * A random identifier the buyer's browser draws with its checkout and sends with every try to
+   * place it: a secret of the buyer's, as a result token is. A try whose key already placed an
+   * order of the edition for the same buyer places nothing: it is answered with that order and a
+   * new result token, which takes the place of the one before. A key that cannot answer so, as
+   * one whose order is under another address, is refused as an invalid field. An order sent
+   * with no key is placed each time it is sent.
+   */
+  placementKey: z.uuid().optional(),
 }
 
 /** An order placed by an account: under the account's own email, which no body names. */
@@ -588,6 +631,17 @@ export const startedAttemptSchema = z.object({ redirectUrl: z.url() })
 export type StartedAttempt = z.infer<typeof startedAttemptSchema>
 
 export const checkoutContract = {
+  quote: tenantRoute
+    .route({
+      method: 'POST',
+      path: '/editions/{editionId}/shop/quote',
+      summary:
+        "The lines and the total of the account's cart, with the line of a discount code where one is given; with the account's own paid order it adds to, priced as that order is added to; refused as the public quote refuses, or with order.not-extendable; any signed-in account",
+    })
+    .input(
+      z.object({ params: z.object({ editionId: z.string() }), body: accountQuoteRequestSchema }),
+    )
+    .output(quoteSchema),
   placeOrder: tenantRoute
     .route({
       method: 'POST',

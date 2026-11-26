@@ -54,8 +54,12 @@ describe('errorMessage', () => {
       'To zostało już zaakceptowane w zamówieniu, więc nie można tego usunąć. Zamiast usuwać, ukryj to: zniknie ze sklepu, a w zamówieniach pozostanie.',
     ],
     [
+      'consent.accepted',
+      'Ta zgoda została już zaakceptowana w zamówieniu, więc jej zdania nie można zmienić. Ukryj ją i dodaj nową zgodę z nowym zdaniem.',
+    ],
+    [
       'shop.payments-under-way',
-      'Zamówienie w tym konwencie oczekuje na płatność. Dane dostępowe zmienisz, gdy zostanie opłacone albo wygaśnie.',
+      'Płatność za zamówienie w tym konwencie może jeszcze zostać potwierdzona na tym koncie: zamówienie oczekuje na płatność albo wygasło w ciągu ostatnich 24 godzin, a płatność za nie została rozpoczęta. Do tego czasu możesz tylko poprawić dane dostępowe tego samego konta.',
     ],
     ['edition.has-orders', 'Ta edycja ma zamówienia, więc nie można jej usunąć.'],
     [
@@ -66,7 +70,15 @@ describe('errorMessage', () => {
       'order.total-changed',
       'Kwota twojego zamówienia się zmieniła. Sprawdź nową kwotę i ją potwierdź.',
     ],
+    [
+      'order.total-too-high',
+      'Kwota tego zamówienia jest większa, niż może mieć jedno zamówienie. Usuń z niego coś albo podziel je na kilka zamówień.',
+    ],
     ['order.consent-missing', 'Zaakceptuj każdą wymaganą zgodę, żeby złożyć zamówienie.'],
+    [
+      'order.consent-changed',
+      'Dokument jednej ze zgód zmienił się, odkąd ta strona została otwarta. Przeczytaj go i zaakceptuj zgodę ponownie, żeby złożyć zamówienie.',
+    ],
     [
       'order.email-refused',
       'Dostawca płatności nie przyjmuje tego adresu e-mail. Użyj krótszego adresu.',
@@ -86,6 +98,10 @@ describe('errorMessage', () => {
     [
       'order.not-extendable',
       'Do tego zamówienia nie można nic dokupić: dokupuje się tylko do własnego, opłaconego zamówienia.',
+    ],
+    [
+      'order.passed-on',
+      'To zamówienie przeniesiono na inny adres e-mail, więc jego kodu QR nie da się już wysłać z tego konta.',
     ],
     [
       'discount-code.in-use',
@@ -108,6 +124,10 @@ describe('errorMessage', () => {
     [
       'scanner.revoked',
       'Ten skaner już nie działa: jego dostęp został cofnięty albo wygasł. Sparuj telefon ponownie.',
+    ],
+    [
+      'scanner.stopped',
+      'Ten skaner jest chwilowo zatrzymany: organizator, który go włączył, nie może teraz zarządzać akredytacjami. Poproś organizatora o przywrócenie tego dostępu i spróbuj ponownie.',
     ],
     [
       'production.before-deadline',
@@ -155,6 +175,31 @@ describe('errorMessage', () => {
     expect(errorMessage('catalog.below-held')).not.toBe(unknownError)
     expect(i18n._({ ...errorMessage('catalog.below-held'), values: { held: 12 } })).toBe(
       'Zamówienia zajmują już więcej, niż wynosi ten limit: 12. Ustaw limit nie niższy od tej liczby.',
+    )
+  })
+
+  it('says in Polish that the variants changed under a form, and what to do', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage('catalog.variants-changed')).not.toBe(unknownError)
+    expect(i18n._(errorMessage('catalog.variants-changed'))).toBe(
+      'Warianty tego gadżetu zmieniły się, odkąd ta strona je wczytała. Formularz pokazuje je teraz w obecnej postaci: wprowadź swoje zmiany ponownie i zapisz.',
+    )
+  })
+
+  // The code answers a write that waited too long for its convention and one Postgres ended for
+  // another to go on, on any route: the sentence names no convention, since a route may have none.
+  it('says in Polish that a write gave way to another change, whatever it was changing', async () => {
+    const i18n = setupI18n()
+    await activateLocale(i18n, 'pl')
+
+    expect(errorMessage('request.busy')).not.toBe(unknownError)
+    expect(i18n._(errorMessage('request.busy'))).toBe(
+      'Nie można tego teraz zrobić, bo trwa inna zmiana. Spróbuj ponownie za chwilę.',
+    )
+    expect(errorMessage('request.busy').message).toBe(
+      'This cannot be done right now, because another change is under way. Try again in a moment.',
     )
   })
 

@@ -149,23 +149,46 @@ describe('a scanner', () => {
     localStorage.setItem('opos.scanner', JSON.stringify(paired))
   })
 
-  // A pairing link opened on a phone that is a scanner already pairs nothing, and its code
-  // stays in no address.
-  it('stays the scanner it is when a pairing link is opened on it, and drops the code', async () => {
+  // The phone that opens a pairing link becomes its scanner, whatever scanner it was before.
+  it('becomes the scanner of a pairing link opened on it, in place of the one it was', async () => {
+    device.pair.mockResolvedValue({ ...paired, token: 'the-new-token', name: 'Desk' })
     view('#another-code')
 
-    expect(await screen.findByRole('heading', { name: 'Main gate' })).toBeDefined()
-    await waitFor(() => expect(window.location.hash).toBe(''))
-    expect(device.pair).not.toHaveBeenCalled()
+    expect(await screen.findByRole('heading', { name: 'Desk' })).toBeDefined()
+    expect(device.pair).toHaveBeenCalledWith('another-code')
+    expect(screen.queryByRole('heading', { name: 'Main gate' })).toBeNull()
+    expect(JSON.parse(localStorage.getItem('opos.scanner')!)).toMatchObject({
+      token: 'the-new-token',
+      name: 'Desk',
+    })
+    expect(window.location.hash).toBe('')
+    // It reads as the scanner it became.
+    await read()
+    await waitFor(() => expect(device.scan).toHaveBeenCalledWith('the-new-token', CODE))
   })
 
-  it('drops the code of a link opened in the tab it scans in', async () => {
+  it('stays the scanner it is when the code of the link is refused, and says so', async () => {
+    device.pair.mockRejectedValue(new ORPCError('scanner.code-refused', { status: 403 }))
+    view('#an-old-code')
+
+    expect(await screen.findByText(/pairing code does not work/i)).toBeDefined()
+    expect(device.pair).toHaveBeenCalledWith('an-old-code')
+    expect(screen.getByRole('heading', { name: 'Main gate' })).toBeDefined()
+    expect(JSON.parse(localStorage.getItem('opos.scanner')!)).toMatchObject({ token: 'the-token' })
+    expect(window.location.hash).toBe('')
+  })
+
+  it('becomes the scanner of a link opened in the tab it scans in, and shows no order of the one it was', async () => {
+    device.pair.mockResolvedValue({ ...paired, token: 'the-new-token', name: 'Desk' })
     view()
-    expect(await screen.findByRole('heading', { name: 'Main gate' })).toBeDefined()
+    await read()
+    expect(await screen.findByText('Ada Lovelace')).toBeDefined()
 
     window.location.hash = '#another-code'
 
-    await waitFor(() => expect(window.location.hash).toBe(''))
+    expect(await screen.findByRole('heading', { name: 'Desk' })).toBeDefined()
+    expect(screen.queryByText('Ada Lovelace')).toBeNull()
+    expect(window.location.hash).toBe('')
   })
 
   it('reads a code and shows whom to let in and what to hand over', async () => {
@@ -341,6 +364,61 @@ describe('a scanner', () => {
 
     expect(await screen.findByText(/A QR code has 32 characters/)).toBeDefined()
     expect(device.scan).not.toHaveBeenCalled()
+  })
+
+  // A refusal that passes: the scanner and its token stand, and the organizer who enabled it
+  // cannot manage tickets at the moment.
+  it('keeps its token while it is stopped, says why, and reads again once it is not', async () => {
+    device.scan.mockRejectedValueOnce(new ORPCError('scanner.stopped', { status: 403 }))
+    view()
+
+    await read()
+
+    expect(await screen.findByText(/scanner is stopped for now/i)).toBeDefined()
+    expect(JSON.parse(localStorage.getItem('opos.scanner')!)).toMatchObject({ token: 'the-token' })
+    expect(screen.getByRole('heading', { name: 'Main gate' })).toBeDefined()
+    // Nothing is read meanwhile.
+    expect(screen.queryByLabelText('QR code')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(await screen.findByText('Ada Lovelace')).toBeDefined()
+    expect(device.scan).toHaveBeenLastCalledWith('the-token', CODE)
+    expect(screen.queryByText(/scanner is stopped for now/i)).toBeNull()
+  })
+
+  it('stays stopped while trying again is refused the same way, and is no scanner once the refusal lasts', async () => {
+    device.scan.mockRejectedValue(new ORPCError('scanner.stopped', { status: 403 }))
+    view()
+    await read()
+    fireEvent.click(await screen.findByRole('button', { name: 'Try again' }))
+
+    await waitFor(() => expect(device.scan).toHaveBeenCalledTimes(2))
+    expect(await screen.findByRole('button', { name: 'Try again' })).toBeDefined()
+    expect(localStorage.getItem('opos.scanner')).not.toBeNull()
+
+    device.scan.mockRejectedValue(new ORPCError('scanner.revoked', { status: 401 }))
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(await screen.findByText(/scanner no longer works/i)).toBeDefined()
+    expect(localStorage.getItem('opos.scanner')).toBeNull()
+  })
+
+  it('is stopped when a hand-out is refused so, and reads the order again once it is not', async () => {
+    device.handOut.mockRejectedValue(new ORPCError('scanner.stopped', { status: 403 }))
+    view()
+    await read()
+    fireEvent.click(await screen.findByRole('checkbox', { name: /Entry/ }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mark as handed out' }))
+
+    expect(await screen.findByText(/scanner is stopped for now/i)).toBeDefined()
+    expect(localStorage.getItem('opos.scanner')).not.toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(await screen.findByRole('checkbox', { name: /Entry/ })).toBeDefined()
+    expect(device.scan).toHaveBeenCalledTimes(2)
+    expect(device.scan).toHaveBeenLastCalledWith('the-token', CODE)
   })
 
   it('stops being a scanner once its access is revoked', async () => {

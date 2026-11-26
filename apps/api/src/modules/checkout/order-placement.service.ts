@@ -14,6 +14,7 @@ import { TicketTypesRepository } from '../catalog/ticket-types.repository'
 import { providerUnavailable } from '../shop/shop.errors'
 import {
   cartRefusal,
+  consentChanged,
   consentMissing,
   emailRefused,
   invalidOrder,
@@ -27,7 +28,8 @@ import { type StoredDiscount } from './discounts.repository'
 import { Discounts } from './discounts.service'
 import { OfferService } from './offer.service'
 import { OrderSettlement } from './order-settlement.service'
-import { OrdersRepository } from './orders.repository'
+import { type OwnOrder, OrdersRepository, type PlacedBefore } from './orders.repository'
+import { placementKeyHash } from './placement-key-lock'
 
 const MINUTE = 60_000
 
@@ -60,22 +62,22 @@ export class OrderPlacement {
     at = new Date(),
   ): Promise<PlacedOrder> {
     const email = buyer.email.trim().toLowerCase()
-    // "Buy more" (docs/specs/0009-buyer-self-service.md, B1-B3): the account's own paid order
-    // of this edition, its row locked before any limit. Another account's order is not there.
-    let first: { id: string; holderName: string } | undefined
-    let extending: Extending | undefined
-    if (input.extendsOrderId !== undefined) {
-      if (!buyer.accountId) throw notExtendable()
-      const own = await this.orders.own(tenantId, buyer.accountId, input.extendsOrderId, true)
-      if (!own) throw notFound('order')
-      // An order whose email an org changed passed to another person: the account it stays on
-      // adds nothing to it, and so never comes by the QR code its new holder was sent.
-      if (own.editionId !== editionId || own.status !== 'paid' || own.email !== email) {
-        throw notExtendable()
-      }
-      first = own
-      extending = await this.orders.boughtWith(tenantId, own.id)
+    // A checkout sent again places nothing: it is answered with the order its key placed. The
+    // key is looked up first, before any lock of a row and any limit, so what the order itself
+    // took, of a capacity, a discount code or the buyer's unpaid orders, refuses nothing here.
+    const keyHash =
+      input.placementKey === undefined ? null : placementKeyHash(input.placementKey, buyer)
+    if (keyHash !== null) {
+      const before = await this.orders.placedWith(tenantId, editionId, keyHash)
+      if (before) return this.again(tenantId, before, email, input.expectedTotalMinor)
     }
+    // "Buy more": the row of the order added to is locked before any limit.
+    const more =
+      input.extendsOrderId === undefined
+        ? undefined
+        : await this.extended(tenantId, editionId, buyer, input.extendsOrderId, true)
+    const first = more?.first
+    const extending = more?.extending
     // The limits next: what the offer then counts of them, no other order changes meanwhile.
     await this.orders.lockLimits(editionId, input.cart)
     const offer = await this.offers.of(tenantId, editionId, at)
@@ -106,7 +108,10 @@ export class OrderPlacement {
     if (totalMinor > 0 && !offer.provider) {
       throw providerUnavailable('no module of the provider is loaded in this environment')
     }
-    if ((await this.orders.unpaid(editionId, email)) >= MAX_UNPAID_ORDERS) {
+    // An account holds its own orders awaiting payment, a visitor those of the email on no
+    // account: what anyone places under an email never stands in the way of its account.
+    const counted = buyer.accountId ? { accountId: buyer.accountId } : { email }
+    if ((await this.orders.unpaid(editionId, counted)) >= MAX_UNPAID_ORDERS) {
       throw tooManyUnpaid(MAX_UNPAID_ORDERS)
     }
 
@@ -130,19 +135,18 @@ export class OrderPlacement {
         guardianConsentAcknowledgedAt: input.ageBand === 'teen' ? at : null,
         providerConsentAcceptedAt: !paid && offer.provider?.consent ? at : null,
         resultTokenHash: hashOf(resultToken),
+        placementKeyHash: keyHash,
         discountCodeId: discount?.id ?? null,
         extendsOrderId: first?.id ?? null,
       },
       lines,
     )
     const of = { tenantId, editionId, orderId: placed.id }
-    const versions = new Map(offer.consents.map((consent) => [consent.id, consent]))
     await this.orders.addHolderData(of, {
       answers: input.customFieldAnswers,
-      consents: input.consentIds.map((consentId) => ({
-        consentId,
-        documentVersionId: versions.get(consentId)?.documentVersionId ?? null,
-      })),
+      // Each consent with the version of its document the buyer was shown, which the check
+      // above found to be the one in force.
+      consents: input.consents,
       acceptedAt: at,
     })
     if (buyer.accountId) await this.orders.attach(of, buyer.accountId)
@@ -155,6 +159,66 @@ export class OrderPlacement {
       totalMinor,
       resultToken,
     }
+  }
+
+  /**
+   * The answer to a checkout whose key placed an order before: that order as it was answered
+   * first, with a new result token in place of the one whose answer never arrived. Knowing the
+   * key shows the same buyer asks, while the order is under the address it was placed under. A
+   * key is refused, with nothing told of its order, where the answer of a placed order would not
+   * be true of it: the order is under another address, the checkout comes to another total than
+   * the order was placed at, which its buyer has not seen, or the order neither awaits payment
+   * nor is paid any more.
+   */
+  private async again(
+    tenantId: string,
+    before: PlacedBefore,
+    email: string,
+    expectedTotalMinor: number,
+  ): Promise<PlacedOrder> {
+    if (
+      before.email !== email ||
+      before.totalMinor !== expectedTotalMinor ||
+      (before.status !== 'awaiting-payment' && before.status !== 'paid')
+    ) {
+      throw invalidOrder('placementKey', 'The placement key is not one this order can be sent with')
+    }
+    const resultToken = secretToken()
+    await this.orders.renewResultToken({ tenantId, orderId: before.id }, hashOf(resultToken))
+    return {
+      orderId: before.id,
+      number: before.number,
+      status: before.status,
+      totalMinor: before.totalMinor,
+      resultToken,
+    }
+  }
+
+  /**
+   * What "Buy more" adds to (docs/specs/0009-buyer-self-service.md, B1-B3): the account's own
+   * paid order of the edition, and what was bought on its QR code. Another account's order is
+   * not there. A quote reads it as placing does, which also locks its row.
+   */
+  async extended(
+    tenantId: string,
+    editionId: string,
+    buyer: Buyer,
+    orderId: string,
+    lock = false,
+  ): Promise<{ first: OwnOrder; extending: Extending }> {
+    if (!buyer.accountId) throw notExtendable()
+    const own = await this.orders.own(tenantId, buyer.accountId, orderId, lock)
+    if (!own) throw notFound('order')
+    // An order whose email an org changed passed to another person: the account it stays on
+    // adds nothing to it, and so never comes by the QR code its new holder was sent.
+    if (
+      own.editionId !== editionId ||
+      own.status !== 'paid' ||
+      own.email !== buyer.email.trim().toLowerCase()
+    ) {
+      throw notExtendable()
+    }
+    return { first: own, extending: await this.orders.boughtWith(tenantId, own.id) }
   }
 
   /**
@@ -236,18 +300,25 @@ export class OrderPlacement {
   }
 
   /**
-   * Every required consent of the edition, a teen's acknowledgement that the guardian's consent
-   * is brought on paper, and the provider's own consent while there is something to pay.
+   * Every consent accepted as the shop shows it now, every required consent of the edition, a
+   * teen's acknowledgement that the guardian's consent is brought on paper, and the provider's
+   * own consent while there is something to pay.
    */
   private checkConsents(offer: Offer, input: PlaceOrder, totalMinor: number) {
-    const known = new Set(offer.consents.map((consent) => consent.id))
-    const accepted = new Set(input.consentIds)
+    const shown = new Map(offer.consents.map((consent) => [consent.id, consent.documentVersionId]))
+    const accepted = new Set(input.consents.map((consent) => consent.consentId))
     if (
-      accepted.size !== input.consentIds.length ||
-      input.consentIds.some((id) => !known.has(id))
+      accepted.size !== input.consents.length ||
+      input.consents.some((consent) => !shown.has(consent.consentId))
     ) {
-      throw invalidOrder('consentIds', 'A consent is not one the edition asks for')
+      throw invalidOrder('consents', 'A consent is not one the edition asks for')
     }
+    // An order attests what its buyer was shown: a consent accepted with another version of its
+    // document than the one in force is accepted again, with that one.
+    const changed = input.consents.find(
+      (consent) => shown.get(consent.consentId) !== consent.documentVersionId,
+    )
+    if (changed) throw consentChanged(changed.consentId)
     const missing = offer.consents.find(
       (consent) => consent.isRequired && !accepted.has(consent.id),
     )

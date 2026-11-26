@@ -31,7 +31,14 @@ const draftSchema = z.object({
   answers: z.record(z.string(), z.string()),
   addOnIds: z.array(z.string()),
   items: z.array(z.object({ variantId: z.string(), quantity: z.number().int().min(1) })),
-  consentIds: z.array(z.string()),
+  /**
+   * The edition's consents the buyer accepted, each with the version of the document it showed
+   * then, or null where it showed none: an order attests a consent as its buyer saw it. A
+   * checkout kept without them goes on with none accepted.
+   */
+  consents: z
+    .array(z.object({ consentId: z.string(), documentVersionId: z.string().nullable() }))
+    .default([]),
   providerConsent: z.boolean(),
   guardianAcknowledged: z.boolean(),
   /** A buyer who is not signed in chose to go on without an account. */
@@ -57,10 +64,70 @@ const draftSchema = z.object({
     })
     .nullable()
     .default(null),
+  /**
+   * The key the checkout's order is placed with, sent with every try to place it: a try whose
+   * answer never came is sent again with the same key, and the shop answers with the order it
+   * placed then. It stands for what the checkout orders, so `rekeyed` draws a new one whenever
+   * that changes. A checkout kept without one draws its own.
+   */
+  placementKey: z.uuid().default(() => newPlacementKey()),
   step: z.enum(STEPS),
 })
 
 export type Draft = z.infer<typeof draftSchema>
+
+/**
+ * A placement key: a random UUID nobody can guess, from the browser's own source of randomness,
+ * which a page has also where it is served without TLS.
+ */
+export function newPlacementKey(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16))
+  bytes[6] = (bytes[6]! & 0x0f) | 0x40
+  bytes[8] = (bytes[8]! & 0x3f) | 0x80
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20),
+  ].join('-')
+}
+
+/**
+ * What the checkout orders, as a text two checkouts that order the same share: all of it but the
+ * step it is on and its placement key, whatever order the fields of an object were written in. Of
+ * the order "Buy more" adds to it holds which order that is alone. What is on that order's QR
+ * code already is nothing the checkout orders, and an order of this checkout placed with its
+ * answer lost joins it: the try sent again has to carry the key that order was placed with.
+ */
+const contentOf = (draft: Draft) =>
+  JSON.stringify(
+    {
+      ...draft,
+      extending: draft.extending && { orderId: draft.extending.orderId },
+      step: null,
+      placementKey: null,
+    },
+    (_, value: unknown) =>
+      typeof value === 'object' && value !== null && !Array.isArray(value)
+        ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => (a < b ? -1 : 1)))
+        : value,
+  )
+
+/**
+ * The checkout `after` as it goes on from `before`, which is null where it starts. The placement
+ * key stands for what the checkout orders: on another step it stays, and once anything else
+ * changed a new one is drawn. A try sent again unchanged is so answered with the order placed
+ * before, and a changed checkout places an order of its own, whatever the tab kept its key for.
+ */
+export function rekeyed(before: Draft | null, after: Draft): Draft {
+  const changed =
+    before !== null &&
+    after.placementKey === before.placementKey &&
+    contentOf(after) !== contentOf(before)
+  return changed ? { ...after, placementKey: newPlacementKey() } : after
+}
 
 export const emptyDraft = (ticketTypeId: string | null): Draft => ({
   ticketTypeId,
@@ -72,12 +139,13 @@ export const emptyDraft = (ticketTypeId: string | null): Draft => ({
   answers: {},
   addOnIds: [],
   items: [],
-  consentIds: [],
+  consents: [],
   providerConsent: false,
   guardianAcknowledged: false,
   asVisitor: false,
   discountCode: '',
   extending: null,
+  placementKey: newPlacementKey(),
   step: 'holder',
 })
 
@@ -191,17 +259,24 @@ export function resumeExtension(offer: Offer, kept: Draft, order: MyOrder): Draf
  * changes meanwhile: an add-on, a variant or a supporter price the checkout is no longer offered
  * leaves it, and `dropped` says that the order lost something. A consent and an answer the edition
  * no longer asks for leave it too, with nothing to say. None of them is on a step any more, so the
- * buyer could not take it out. What merely ran out stays, for its step to mark. A checkout whose
- * ticket type is gone from the offer stays whole: the listing moves it to another one.
+ * buyer could not take it out. A consent the shop now shows with another version of its document
+ * than the one it was accepted with is accepted no longer, and `changedConsents` names it: the
+ * buyer reads it and accepts it again. What merely ran out stays, for its step to mark. A checkout
+ * whose ticket type is gone from the offer stays whole: the listing moves it to another one.
  */
-export function fitToOffer(offer: Offer, draft: Draft): { draft: Draft; dropped: boolean } {
+export function fitToOffer(
+  offer: Offer,
+  draft: Draft,
+): { draft: Draft; dropped: boolean; changedConsents: string[] } {
   const type = ticketTypeOf(offer, draft)
-  if (!draft.extending && draft.ticketTypeId !== null && !type) return { draft, dropped: false }
+  if (!draft.extending && draft.ticketTypeId !== null && !type) {
+    return { draft, dropped: false, changedConsents: [] }
+  }
   const addOns = new Set(offeredAddOns(offer, draft).map((addOn) => addOn.id))
   const variants = new Set(
     offeredItems(offer, draft).flatMap((item) => item.variants.map((variant) => variant.id)),
   )
-  const consents = new Set(offer.consents.map((consent) => consent.id))
+  const shown = new Map(offer.consents.map((consent) => [consent.id, consent.documentVersionId]))
   const fields = new Set(offer.customFields.map((field) => field.id))
 
   const chosen = draft.supporterPriceMinor
@@ -209,7 +284,12 @@ export function fitToOffer(offer: Offer, draft: Draft): { draft: Draft; dropped:
     chosen !== null && type?.supporterPrices.includes(chosen) ? chosen : null
   const addOnIds = draft.addOnIds.filter((id) => addOns.has(id))
   const items = draft.items.filter((item) => variants.has(item.variantId))
-  const consentIds = draft.consentIds.filter((id) => consents.has(id))
+  const consents = draft.consents.filter(
+    (accepted) => shown.get(accepted.consentId) === accepted.documentVersionId,
+  )
+  const changedConsents = draft.consents
+    .filter((accepted) => shown.has(accepted.consentId) && !consents.includes(accepted))
+    .map((accepted) => accepted.consentId)
   const answers = Object.entries(draft.answers).filter(([fieldId]) => fields.has(fieldId))
 
   const dropped =
@@ -218,19 +298,20 @@ export function fitToOffer(offer: Offer, draft: Draft): { draft: Draft; dropped:
     items.length !== draft.items.length
   const same =
     !dropped &&
-    consentIds.length === draft.consentIds.length &&
+    consents.length === draft.consents.length &&
     answers.length === Object.keys(draft.answers).length
-  if (same) return { draft, dropped }
+  if (same) return { draft, dropped, changedConsents }
   return {
     draft: {
       ...draft,
       supporterPriceMinor,
       addOnIds,
       items,
-      consentIds,
+      consents,
       answers: Object.fromEntries(answers),
     },
     dropped,
+    changedConsents,
   }
 }
 
@@ -289,6 +370,24 @@ export function holderIssues(
   return issues
 }
 
+/** Whether the checkout holds the consent as accepted. */
+export const isAccepted = (draft: Pick<Draft, 'consents'>, consentId: string) =>
+  draft.consents.some((accepted) => accepted.consentId === consentId)
+
+/**
+ * The consents the checkout holds once `consent` is accepted or not: accepted with the version of
+ * its document the offer shows, which is the one the buyer reads beside it.
+ */
+export function withConsent(
+  draft: Pick<Draft, 'consents'>,
+  consent: Offer['consents'][number],
+  accepted: boolean,
+): Draft['consents'] {
+  const others = draft.consents.filter((own) => own.consentId !== consent.id)
+  if (!accepted) return others
+  return [...others, { consentId: consent.id, documentVersionId: consent.documentVersionId }]
+}
+
 /**
  * What the summary still misses before the order can be placed: the required consents not
  * accepted, the provider's own while there is something to pay, and a teen's acknowledgement
@@ -297,7 +396,7 @@ export function holderIssues(
 export function summaryIssues(offer: Offer, draft: Draft, totalMinor: number) {
   return {
     consents: offer.consents
-      .filter((consent) => consent.isRequired && !draft.consentIds.includes(consent.id))
+      .filter((consent) => consent.isRequired && !isAccepted(draft, consent.id))
       .map((consent) => consent.id),
     provider: totalMinor > 0 && !!offer.provider?.consent && !draft.providerConsent,
     guardian: draft.ageBand === 'teen' && !draft.guardianAcknowledged,
@@ -397,11 +496,12 @@ export function orderBody(
       : Object.entries(draft.answers)
           .map(([fieldId, answer]) => ({ fieldId, answer: answer.trim() }))
           .filter(({ answer }) => answer !== ''),
-    consentIds: draft.consentIds,
+    consents: draft.consents,
     providerConsentAccepted: draft.providerConsent,
     guardianConsentAcknowledged: draft.guardianAcknowledged,
     expectedTotalMinor,
     botCheckToken,
+    placementKey: draft.placementKey,
     ...(discountApplied &&
       draft.discountCode.trim() !== '' && { discountCode: draft.discountCode.trim() }),
     ...(draft.extending && { extendsOrderId: draft.extending.orderId }),

@@ -84,8 +84,9 @@ describe('enabling a scanner', () => {
       paired: false,
       lastUsedAt: null,
       revokedAt: null,
-      // A day after the edition's last day.
+      // A day after the edition's last day, which it follows: the org set no end.
       expiresAt: new Date(Date.parse(ENDS) + DAY).toISOString(),
+      followsEdition: true,
     })
     expect(scanner.pairingCode).toMatch(/^[A-Za-z0-9_-]{43}$/)
     const minutes = (Date.parse(scanner.pairingExpiresAt) - before) / 60_000
@@ -96,6 +97,8 @@ describe('enabling a scanner', () => {
       pairing_code_hash: hashOf(scanner.pairingCode),
       paired_at: null,
       token_hash: null,
+      // No end is written for it: the edition's last day is read whenever its end is.
+      expires_at: null,
     })
     // The code is answered once: the list never holds it.
     const listed = await c.head('get').expect(200)
@@ -120,7 +123,10 @@ describe('enabling a scanner', () => {
 
   it(`allows ${MAX_SCANNERS} scanners enabled at a time: a revoked and an ended one count no more`, async () => {
     const c = await convention()
-    for (let n = 1; n < MAX_SCANNERS; n += 1) await addScanner(c.t.id, c.edition)
+    // Half of them with an end of their own, half following the edition, which has not ended.
+    for (let n = 1; n < MAX_SCANNERS; n += 1) {
+      await addScanner(c.t.id, c.edition, n % 2 ? { expiresAt: null } : {})
+    }
     await addScanner(c.t.id, c.edition, { revoked: true })
     await addScanner(c.t.id, c.edition, { expiresAt: new Date(Date.now() - DAY).toISOString() })
     const last = enabled(await c.head('post', '', { name: 'The twentieth' }).expect(201))
@@ -141,7 +147,7 @@ describe('enabling a scanner', () => {
 
     const res = await c.head('post', '', { name: 'Desk', expiresAt: earlier }).expect(201)
 
-    expect(enabled(res).expiresAt).toBe(earlier)
+    expect(enabled(res)).toMatchObject({ expiresAt: earlier, followsEdition: false })
     for (const expiresAt of [
       new Date(Date.parse(ENDS) + 2 * DAY).toISOString(),
       new Date(Date.now() - DAY).toISOString(),
@@ -164,13 +170,91 @@ describe('enabling a scanner', () => {
 
     const res = await c.as(org, 'post', '', { name: 'Gate of the org' }).expect(201)
 
+    // The end of the org's own access is an end set for the scanner: it follows no edition.
     expect(enabled(res)).toMatchObject({
       enabledBy: org.email,
       expiresAt: leaves.toISOString(),
+      followsEdition: false,
     })
     const later = new Date(leaves.getTime() + DAY).toISOString()
     const refused = await c.as(org, 'post', '', { name: 'Later', expiresAt: later }).expect(422)
     expect(refused.body).toMatchObject({ code: 'scanner.outlives-org' })
+  })
+})
+
+// A scanner whose org set no end ends a day after the edition's last day, as that day stands
+// whenever the end is read: nothing is written to a scanner when its edition's dates change.
+describe('a scanner that follows its edition', () => {
+  const setDates = async (edition: string, startsAt: Date, endsAt: Date) => {
+    // The later date first or last, so that the edition never ends before it starts.
+    const [first, second] =
+      endsAt.getTime() > Date.parse(ENDS)
+        ? (['ends_at', 'starts_at'] as const)
+        : (['starts_at', 'ends_at'] as const)
+    const dates = { starts_at: startsAt.toISOString(), ends_at: endsAt.toISOString() }
+    await setColumn('editions', edition, first, dates[first])
+    await setColumn('editions', edition, second, dates[second])
+  }
+
+  it('ends a day after the last day the edition has now, while one with an end of its own stays', async () => {
+    const c = await convention()
+    const earlier = new Date(Date.parse(ENDS) - DAY).toISOString()
+    const follows = enabled(await c.head('post', '', { name: 'Follows' }).expect(201))
+    const set = enabled(await c.head('post', '', { name: 'Set', expiresAt: earlier }).expect(201))
+    const ends = async () =>
+      Object.fromEntries(
+        list(await c.head('get').expect(200)).map((scanner) => [scanner.name, scanner.expiresAt]),
+      )
+    expect(await ends()).toEqual({
+      Follows: new Date(Date.parse(ENDS) + DAY).toISOString(),
+      Set: earlier,
+    })
+
+    // The edition is moved three days later.
+    const later = new Date(Date.parse(ENDS) + 3 * DAY)
+    await setDates(c.edition, new Date(later.getTime() - 2 * DAY), later)
+
+    expect(await ends()).toEqual({
+      Follows: new Date(later.getTime() + DAY).toISOString(),
+      Set: earlier,
+    })
+    const page = await c.head('get', `/${follows.id}`).expect(200)
+    expect(page.body).toMatchObject({
+      expiresAt: new Date(later.getTime() + DAY).toISOString(),
+      followsEdition: true,
+    })
+    expect((await c.head('get', `/${set.id}`).expect(200)).body).toMatchObject({
+      followsEdition: false,
+    })
+    // Nothing was written to either scanner.
+    const kept = (await c.stored()).map((row) => [
+      row.name,
+      row.expires_at === null ? null : new Date(row.expires_at as string).toISOString(),
+    ])
+    expect(kept.sort()).toEqual([
+      ['Follows', null],
+      ['Set', earlier],
+    ])
+  })
+
+  it('has ended once that day has passed, and takes no new pairing code', async () => {
+    const c = await convention()
+    const follows = await addScanner(c.t.id, c.edition, { name: 'Follows', expiresAt: null })
+    await c.head('post', `/${follows.id}/pairing-code`).expect(200)
+
+    // The edition's last day was the day before yesterday.
+    const past = new Date(Date.now() - 2 * DAY)
+    await setDates(c.edition, new Date(past.getTime() - 2 * DAY), past)
+
+    const res = await c.head('post', `/${follows.id}/pairing-code`).expect(409)
+    expect(res.body).toMatchObject({ code: 'scanner.ended' })
+    const [listed] = list(await c.head('get').expect(200)).filter(
+      (scanner) => scanner.id === follows.id,
+    )
+    expect(listed!.expiresAt).toBe(new Date(past.getTime() + DAY).toISOString())
+    // No scanner is enabled for an edition whose scanners have all ended by its dates.
+    const late = await c.head('post', '', { name: 'Too late' }).expect(400)
+    expect(late.body).toMatchObject({ code: 'request.invalid', params: { field: 'expiresAt' } })
   })
 })
 
@@ -223,6 +307,40 @@ describe('the scanners of an edition', () => {
       ['A gate', c.t.head.email, true],
     ])
     expect(list(res)[2]!.revokedAt).not.toBeNull()
+  })
+
+  // A scanner opens nothing while the org who enabled it cannot write the tickets of its
+  // edition: the list says so of each, and tells an org who may come back from one who left.
+  it('are told with how the org who enabled each stands', async () => {
+    const c = await convention()
+    const [writer, reader, expired] = [await member(), await member(), await member()]
+    const writerId = await addOrg(c.t.id, writer)
+    await addEditionAccess(c.t.id, writerId, c.edition, { tickets: 'write' })
+    const readerId = await addOrg(c.t.id, reader)
+    await addEditionAccess(c.t.id, readerId, c.edition, { tickets: 'read' })
+    const expiredId = await addOrg(c.t.id, expired, { expiresAt: new Date(Date.now() - DAY) })
+    await addEditionAccess(c.t.id, expiredId, c.edition, { tickets: 'write' })
+    await addScanner(c.t.id, c.edition, { name: 'A of the head' })
+    await addScanner(c.t.id, c.edition, { name: 'B of a writer', membershipId: writerId })
+    const lowered = await addScanner(c.t.id, c.edition, {
+      name: 'C of a reader',
+      membershipId: readerId,
+    })
+    await addScanner(c.t.id, c.edition, { name: 'D of an expired', membershipId: expiredId })
+    await addScanner(c.t.id, c.edition, { name: 'E of nobody', membershipId: null })
+
+    const res = await c.head('get').expect(200)
+
+    expect(list(res).map((scanner) => [scanner.name, scanner.orgStanding])).toEqual([
+      ['A of the head', 'writes'],
+      ['B of a writer', 'writes'],
+      ['C of a reader', 'stopped'],
+      ['D of an expired', 'stopped'],
+      ['E of nobody', 'left'],
+    ])
+    // The scanner's own page tells the same, to an org who reads the tickets alone too.
+    const page = await c.as(reader, 'get', `/${lowered.id}`).expect(200)
+    expect(page.body).toMatchObject({ orgStanding: 'stopped', enabledBy: reader.email })
   })
 })
 

@@ -128,6 +128,24 @@ describe('toErrorResponse', () => {
     })
   })
 
+  it.each([
+    ['40P01', 'deadlock detected'],
+    ['40001', 'could not serialize access due to concurrent update'],
+  ])('answers a transaction Postgres ended with %s as a busy write, to send again', (code) => {
+    expect(toErrorResponse(endedBy(code))).toEqual({
+      status: 503,
+      body: { code: 'request.busy', message: 'The transaction gave way to another' },
+      headers: { 'Retry-After': '1' },
+    })
+  })
+
+  it('keeps any other failure of a query a 500', () => {
+    expect(toErrorResponse(endedBy('57014'))).toMatchObject({
+      status: 500,
+      body: { code: 'server.error' },
+    })
+  })
+
   it('hides the details of an unexpected error', () => {
     expect(toErrorResponse(new Error('connection refused at 10.0.0.1'))).toEqual({
       status: 500,
@@ -135,6 +153,17 @@ describe('toErrorResponse', () => {
     })
   })
 })
+
+/**
+ * A transaction Postgres ended, as drizzle throws it: the query error names the query and its
+ * parameters, and carries the driver's error, with its SQLSTATE, as its cause.
+ */
+function endedBy(code: string) {
+  return new Error(
+    'Failed query: update "orders" set "email" = $1 where "id" = $2\nparams: buyer@example.test,7',
+    { cause: Object.assign(new Error('ended by Postgres'), { code, severity: 'ERROR' }) },
+  )
+}
 
 describe('HttpExceptionFilter once the response is out', () => {
   const host = (response: object) =>
@@ -238,6 +267,28 @@ describe('HttpExceptionFilter on an expected 5xx', () => {
       'Supabase Auth is unavailable: fetch failed: connect ECONNREFUSED',
     )
     expect(JSON.stringify(json.mock.calls)).not.toContain('ECONNREFUSED')
+    warn.mockRestore()
+  })
+
+  it.each([
+    ['40P01', 'deadlock_detected'],
+    ['40001', 'serialization_failure'],
+  ])('logs a transaction Postgres ended with %s as a warning that names %s', (code, name) => {
+    const json = vi.fn()
+    const { response, host: busy } = host()
+    response.status.mockReturnValue({ json })
+    const error = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {})
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+
+    new HttpExceptionFilter().catch(endedBy(code), busy)
+
+    expect(response.setHeader).toHaveBeenCalledWith('Retry-After', '1')
+    expect(response.status).toHaveBeenCalledWith(503)
+    expect(json).toHaveBeenCalledWith(expect.objectContaining({ code: 'request.busy' }))
+    expect(error).not.toHaveBeenCalled()
+    // Neither the query nor what it was sent with: the name of the error alone.
+    expect(warn.mock.calls).toEqual([[`A transaction gave way to another: ${name}`]])
+    error.mockRestore()
     warn.mockRestore()
   })
 

@@ -1,8 +1,10 @@
 import { type NestExpressApplication } from '@nestjs/platform-express'
 import { type MerchandiseItem } from '@opos/contract'
 import request from 'supertest'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { FAKE_ACCOUNT, FakeProvider } from '../src/modules/payments/fake-provider'
 import { providerAccountLockKey } from '../src/modules/shop/provider-account-lock'
+import { LATE_CONFIRMATION_HOURS } from '../src/modules/shop/provider-account.repository'
 import { createApp } from './app'
 import { deleteCreatedAccounts, session } from './auth'
 import {
@@ -13,8 +15,10 @@ import {
   addEdition,
   addMerchandiseItem,
   addOrder,
+  addPaymentAttempt,
   addTicketType,
   closeTenantDb,
+  connectFake,
   deleteCreatedTenants,
   makeShopReady,
   type Member,
@@ -383,6 +387,39 @@ describe('a change that needs two of the rows an order takes', () => {
   })
 })
 
+// The fixed order of the locks keeps the routes out of each other's way; a transaction that takes
+// them another way round still can meet one. Postgres then ends one of the two for the other to go
+// on, and the request it ends is told to come again, not that the service failed.
+describe('a write Postgres ends for another transaction to go on', () => {
+  it('is busy for a moment: 503 request.busy with Retry-After, and nothing of it written', async () => {
+    const c = await convention()
+    const pin = await addMerchandiseItem(c.t.id, c.edition, { stock: 5 })
+    const other = await openTransaction()
+    try {
+      // The other way round: the item first, which the deletion takes after the variants.
+      await other.sql`select id from merchandise_items where id = ${pin.id} for update`
+      const answer = Promise.resolve(c.as('delete', `/merchandise-items/${pin.id}`))
+      // The deletion holds the variant by now and waits for the item.
+      await sleep(300)
+      // Each now waits for a row the other holds. The deletion waited first, so it is the one
+      // Postgres ends once it looks for a deadlock.
+      await other.sql`
+        select id from merchandise_variants where id = ${pin.variantId} for update
+      `
+      const res = await answer
+
+      expect(res.status).toBe(503)
+      expect(res.body).toMatchObject({ code: 'request.busy' })
+      expect(res.headers['retry-after']).toBe('1')
+    } finally {
+      await other.rollback()
+    }
+    expect(await storedRows('merchandise_items', c.t.id)).toHaveLength(1)
+    // The same request, sent again, passes.
+    await c.as('delete', `/merchandise-items/${pin.id}`).expect(204)
+  })
+})
+
 describe('what else an order keeps in place', () => {
   it('keeps the consent it accepted: it is hidden, never deleted', async () => {
     const c = await convention()
@@ -403,6 +440,77 @@ describe('what else an order keeps in place', () => {
     await c.as('delete', `/consents/${free}`).expect(204)
   })
 
+  // An order shows the sentence its buyer accepted: once one has, the sentence stays, and
+  // another one is a new consent.
+  it('keeps the sentence of the consent it accepted: hidden, moved or made optional, never reworded', async () => {
+    const c = await convention()
+    const terms = await addConsent(c.t.id, c.edition, { text: 'I accept the terms' })
+    const free = await addConsent(c.t.id, c.edition, { text: 'News', isRequired: false })
+    const order = await addOrder(c.t.id, c.edition)
+    await openTransaction().then(async ({ sql, commit }) => {
+      await sql`
+        insert into order_consents (tenant_id, edition_id, order_id, consent_id)
+        values (${c.t.id}, ${c.edition}, ${order.id}, ${terms})
+      `
+      await commit()
+    })
+    const list = async () =>
+      (await c.as('get', '/consents').expect(200)).body as Record<string, unknown>[]
+    const before = await list()
+    // An org is told which consents an order accepted before it tries.
+    expect(before).toMatchObject([
+      { id: terms, accepted: true },
+      { id: free, accepted: false },
+    ])
+
+    for (const body of [
+      { text: 'Send me offers of your partners' },
+      // Nothing of a refused change is kept.
+      { text: 'Send me offers of your partners', isRequired: false, hidden: true, position: 2 },
+    ]) {
+      const res = await c.as('patch', `/consents/${terms}`, body)
+      expect(res.status).toBe(409)
+      expect(res.body).toMatchObject({ code: 'consent.accepted' })
+    }
+    expect(await list()).toEqual(before)
+
+    // The same sentence sent again, as a form sends all its fields, changes nothing of it.
+    const kept = await c
+      .as('patch', `/consents/${terms}`, { text: 'I accept the terms', isRequired: false })
+      .expect(200)
+    expect(kept.body).toMatchObject({ text: 'I accept the terms', isRequired: false })
+    await c.as('patch', `/consents/${terms}`, { position: 2 }).expect(200)
+    const hidden = await c.as('patch', `/consents/${terms}`, { hidden: true }).expect(200)
+    expect(hidden.body).toMatchObject({ hidden: true, position: 2, accepted: true })
+    // A consent no order accepted is still reworded.
+    const reworded = await c.as('patch', `/consents/${free}`, { text: 'Other news' }).expect(200)
+    expect(reworded.body).toMatchObject({ text: 'Other news', accepted: false })
+  })
+
+  // Nothing is read first and written after: an order that accepts the consent while its
+  // sentence is being changed is waited for, and counts.
+  it('keeps the sentence of a consent an order is accepting at that moment', async () => {
+    const c = await convention()
+    const terms = await addConsent(c.t.id, c.edition, { text: 'I accept the terms' })
+    const order = await addOrder(c.t.id, c.edition)
+
+    const res = await whilePlacing(
+      // The order writes the consent it accepted, and has not committed.
+      (sql) => sql`
+        insert into order_consents (tenant_id, edition_id, order_id, consent_id)
+        values (${c.t.id}, ${c.edition}, ${order.id}, ${terms})
+      `,
+      () => c.as('patch', `/consents/${terms}`, { text: 'Send me offers of your partners' }),
+      () => Promise.resolve(),
+    )
+
+    expect(res.status).toBe(409)
+    expect(res.body).toMatchObject({ code: 'consent.accepted' })
+    expect(await storedRows('edition_consents', c.t.id)).toMatchObject([
+      { id: terms, text: 'I accept the terms' },
+    ])
+  })
+
   it('keeps its edition: an edition that has an order is not deleted', async () => {
     const c = await convention()
     await addOrder(c.t.id, c.edition)
@@ -415,32 +523,96 @@ describe('what else an order keeps in place', () => {
     await call(c.t.head, 'delete', `/editions/${empty}`, undefined, c.t.slug).expect(204)
   })
 
+  /** Gives the credentials of a fake account, as an org with shop write access does. */
+  const connect = (c: Awaited<ReturnType<typeof convention>>, credentials: object) =>
+    call(c.t.head, 'put', '/shop/provider-account', { provider: 'fake', credentials }, c.t.slug)
+  const storedAccount = async (c: Awaited<ReturnType<typeof convention>>) =>
+    (await storedRows('payment_provider_accounts', c.t.id))[0]
+
   it('keeps the credentials its payment started with while it awaits payment', async () => {
     const c = await convention()
     await makeShopReady(c.t.id, c.edition)
+    await connectFake(c.t.id)
+    const before = await storedAccount(c)
     const order = await addOrder(c.t.id, c.edition)
-    const connect = () =>
-      call(
-        c.t.head,
-        'put',
-        '/shop/provider-account',
-        { provider: 'fake', credentials: { account: 'another' } },
-        c.t.slug,
-      )
 
-    const res = await connect()
+    const res = await connect(c, { account: 'another' })
     expect(res.status).toBe(409)
     expect(res.body).toMatchObject({ code: 'shop.payments-under-way' })
-    expect(await storedRows('payment_provider_accounts', c.t.id)).toMatchObject([
-      { credentials: 'sealed' },
-    ])
+    expect(await storedAccount(c)).toEqual(before)
 
     // Once no order of the convention awaits payment, the credentials are given again.
     await openTransaction().then(async ({ sql, commit }) => {
       await sql`update orders set status = 'expired', holds = false where id = ${order.id}`
       await commit()
     })
-    expect((await connect()).status).toBe(200)
+    expect((await connect(c, { account: 'another' })).status).toBe(200)
+  })
+
+  // A payment under way is confirmed with the account it started with, whatever its keys are
+  // now: giving the credentials of that account again takes nothing from it.
+  it('takes credentials of the same account again while it awaits payment', async () => {
+    const c = await convention()
+    await makeShopReady(c.t.id, c.edition)
+    await connectFake(c.t.id)
+    const before = await storedAccount(c)
+    await addOrder(c.t.id, c.edition)
+
+    const res = await connect(c, { account: 'demo', secret: 'corrected' })
+
+    expect(res.status).toBe(200)
+    expect((await storedAccount(c))!.credentials).not.toBe(before!.credentials)
+  })
+
+  it('lets credentials that no longer open be replaced while it awaits payment', async () => {
+    const c = await convention()
+    // Sealed with a key this API does not hold, as after the key was replaced.
+    await makeShopReady(c.t.id, c.edition)
+    await addOrder(c.t.id, c.edition)
+
+    expect((await connect(c, { account: 'another' })).status).toBe(200)
+    expect((await storedAccount(c))!.credentials).not.toBe('sealed')
+  })
+
+  it('lets credentials the provider refuses be replaced while it awaits payment, and not ones it cannot be asked about', async () => {
+    const c = await convention()
+    await makeShopReady(c.t.id, c.edition)
+    await addOrder(c.t.id, c.edition)
+
+    // Out of reach is no refusal: the payment may still be confirmed with them.
+    await connectFake(c.t.id, FAKE_ACCOUNT.unavailable)
+    const kept = await connect(c, { account: 'another' })
+    expect(kept.status).toBe(409)
+    expect(kept.body).toMatchObject({ code: 'shop.payments-under-way' })
+
+    await connectFake(c.t.id, FAKE_ACCOUNT.refused)
+    expect((await connect(c, { account: 'another' })).status).toBe(200)
+  })
+
+  // The provider is asked before the route's transaction: what it said holds only of the
+  // credentials it was asked about.
+  it('keeps credentials stored after the provider refused the ones before them', async () => {
+    const c = await convention()
+    await makeShopReady(c.t.id, c.edition)
+    await connectFake(c.t.id, FAKE_ACCOUNT.refused)
+    await addOrder(c.t.id, c.edition)
+    const asked = vi
+      .spyOn(FakeProvider.prototype, 'connect')
+      .mockImplementation(async (credentials) => {
+        if (credentials.account !== FAKE_ACCOUNT.refused) return { outcome: 'accepted' }
+        // Another org connects an account the provider accepts, while this one is asked.
+        await connectFake(c.t.id, 'meanwhile')
+        return { outcome: 'refused' }
+      })
+
+    try {
+      const res = await connect(c, { account: 'another' })
+
+      expect(res.status).toBe(409)
+      expect(res.body).toMatchObject({ code: 'shop.payments-under-way' })
+    } finally {
+      asked.mockRestore()
+    }
   })
 
   it('keeps those credentials from being disconnected while it awaits payment', async () => {
@@ -455,11 +627,129 @@ describe('what else an order keeps in place', () => {
     expect(await storedRows('payment_provider_accounts', c.t.id)).toHaveLength(1)
   })
 
+  // A payment made counts whenever its confirmation comes, and it is read with the account the
+  // convention holds then: an expired order that a payment was started for keeps the account a
+  // day longer.
+  describe('once it expired with a payment attempt nobody confirmed', () => {
+    const HOUR = 3_600_000
+    /**
+     * An order whose hold ended so long ago, expired, with an attempt of the status given.
+     * `marked` says when the attempt was marked as one nobody asks about again: within the hold,
+     * as one its provider refused to register is, or an hour after it, as one the provider was
+     * asked about once more is.
+     */
+    async function expired(
+      endedAgo: number,
+      attempt?: 'ended' | 'failed',
+      marked?: 'in-hold' | 'after-hold',
+    ) {
+      const c = await convention()
+      await makeShopReady(c.t.id, c.edition)
+      await connectFake(c.t.id)
+      const holdEndsAt = Date.now() - endedAgo
+      const order = await addOrder(c.t.id, c.edition, {
+        status: 'expired',
+        holds: false,
+        holdEndsAt: new Date(holdEndsAt).toISOString(),
+      })
+      if (attempt) {
+        const markedAt = holdEndsAt + (marked === 'in-hold' ? -60_000 : HOUR)
+        await addPaymentAttempt(c.t.id, c.edition, order.id, {
+          status: attempt,
+          recheckedAt: marked ? new Date(markedAt).toISOString() : null,
+        })
+      }
+      return c
+    }
+    const disconnect = (c: Awaited<ReturnType<typeof convention>>) =>
+      call(c.t.head, 'delete', '/shop/provider-account', undefined, c.t.slug)
+    const within = LATE_CONFIRMATION_HOURS * HOUR - 60_000
+    const past = LATE_CONFIRMATION_HOURS * HOUR + 60_000
+
+    // The expiry ends an attempt that was started; a failed one keeps its reason.
+    it.each(['ended', 'failed'] as const)(
+      'keeps the account for a day from the end of its hold: an attempt that %s',
+      async (attempt) => {
+        const c = await expired(within, attempt)
+        const before = await storedAccount(c)
+
+        for (const res of [await connect(c, { account: 'another' }), await disconnect(c)]) {
+          expect(res.status).toBe(409)
+          expect(res.body).toMatchObject({ code: 'shop.payments-under-way' })
+        }
+        expect(await storedAccount(c)).toEqual(before)
+        // The same account given again goes on confirming a late payment.
+        expect((await connect(c, { account: 'demo', secret: 'corrected' })).status).toBe(200)
+      },
+    )
+
+    it('lets the account change once that day has passed', async () => {
+      const replaced = await expired(past, 'ended')
+      expect((await connect(replaced, { account: 'another' })).status).toBe(200)
+
+      const disconnected = await expired(past, 'failed')
+      expect((await disconnect(disconnected)).status).toBe(204)
+    })
+
+    it('lets the account change at once when no payment was started for it', async () => {
+      const replaced = await expired(within)
+      expect((await connect(replaced, { account: 'another' })).status).toBe(200)
+
+      const disconnected = await expired(within)
+      expect((await disconnect(disconnected)).status).toBe(204)
+    })
+
+    // The provider refused to register the attempt, which it does while the order still awaits
+    // payment: it knows no such attempt, and confirms nothing of it.
+    it('lets the account change at once when the provider refused to register its attempts', async () => {
+      const replaced = await expired(within, 'ended', 'in-hold')
+      expect((await connect(replaced, { account: 'another' })).status).toBe(200)
+
+      const disconnected = await expired(within, 'failed', 'in-hold')
+      expect((await disconnect(disconnected)).status).toBe(204)
+    })
+
+    // Asked once more after the order expired, the provider answered that nobody paid the
+    // attempt. That is not its last word: a transfer booked later is confirmed with the account.
+    it('keeps the account for the whole day when the provider, asked again, said nobody paid', async () => {
+      const c = await expired(within, 'ended', 'after-hold')
+      const before = await storedAccount(c)
+
+      for (const res of [await connect(c, { account: 'another' }), await disconnect(c)]) {
+        expect(res.status).toBe(409)
+        expect(res.body).toMatchObject({ code: 'shop.payments-under-way' })
+      }
+      expect(await storedAccount(c)).toEqual(before)
+
+      const later = await expired(past, 'failed', 'after-hold')
+      expect((await connect(later, { account: 'another' })).status).toBe(200)
+    })
+
+    it('keeps the account while one of its attempts may still be confirmed', async () => {
+      const c = await expired(within, 'ended', 'in-hold')
+      const [order] = await storedRows('orders', c.t.id)
+      await addPaymentAttempt(c.t.id, c.edition, String(order!.id), { status: 'ended' })
+
+      expect((await connect(c, { account: 'another' })).status).toBe(409)
+      expect((await disconnect(c)).status).toBe(409)
+    })
+
+    // Only an attempt nobody confirmed may still be confirmed.
+    it('lets the account change at once when its attempts were all confirmed', async () => {
+      const c = await expired(within)
+      const [order] = await storedRows('orders', c.t.id)
+      await addPaymentAttempt(c.t.id, c.edition, String(order!.id), { status: 'refused' })
+
+      expect((await connect(c, { account: 'another' })).status).toBe(200)
+    })
+  })
+
   // An order with something to pay shares the lock on the account while it is placed, so a
   // change of the credentials at that moment waits, counts the order and is refused.
   it('makes a change of the credentials wait for an order being placed', async () => {
     const c = await convention()
     await makeShopReady(c.t.id, c.edition)
+    await connectFake(c.t.id)
     const change = await whilePlacing(
       (sql) => sql`select pg_advisory_xact_lock_shared(${providerAccountLockKey(c.t.id)}::bigint)`,
       () =>

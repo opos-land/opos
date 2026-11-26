@@ -149,6 +149,22 @@ export function postgresCode(exception: unknown): string | undefined {
 }
 
 /**
+ * The errors Postgres ends a transaction with so that another goes on, by SQLSTATE: one of two
+ * that waited for each other, and one it could not put in an order with the rest. All of it is
+ * rolled back, and the same request passes once it is sent again.
+ */
+const gaveWayErrors: Record<string, string> = {
+  '40001': 'serialization_failure',
+  '40P01': 'deadlock_detected',
+}
+
+/** The name of the Postgres error behind a transaction that gave way to another, if it is one. */
+export function gaveWay(exception: unknown): string | undefined {
+  const code = postgresCode(exception)
+  return code === undefined ? undefined : gaveWayErrors[code]
+}
+
+/**
  * The first invalid field of an input oRPC refused. Every route takes the detailed input, so a path
  * starts with params, query or body and the field is below it; an unknown key names itself.
  */
@@ -182,6 +198,14 @@ export function toErrorResponse(exception: unknown): {
   if (known) {
     const { status, code, message, params } = known
     return { status, body: { code, params, message } }
+  }
+  // Busy for a moment, as a write that waited too long for its tenant: the client sends it again.
+  if (gaveWay(exception)) {
+    return {
+      status: 503,
+      body: { code: 'request.busy', message: 'The transaction gave way to another' },
+      headers: { 'Retry-After': '1' },
+    }
   }
 
   if (exception instanceof ApiError) {
@@ -234,8 +258,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
     const { status, body, headers } = toErrorResponse(exception)
     if (status >= 500) {
-      if (exception instanceof ApiError && exception.expected) this.logger.warn(exception.logLine)
-      else this.logger.error(exception)
+      const ended = gaveWay(exception)
+      // The error itself holds the query and what it was sent with: the log gets its name alone.
+      if (ended) this.logger.warn(`A transaction gave way to another: ${ended}`)
+      else if (exception instanceof ApiError && exception.expected) {
+        this.logger.warn(exception.logLine)
+      } else this.logger.error(exception)
     }
     for (const [name, value] of Object.entries(headers ?? {})) response.setHeader(name, value)
     response.status(status).json(body)

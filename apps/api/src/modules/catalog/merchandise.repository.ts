@@ -25,7 +25,7 @@ import { TenantContextService } from '../../common/als/tenant-context.service'
 import { notFound } from '../../common/errors/api-error'
 import { moved } from '../../common/order'
 import { isUuid } from '../../common/uuid'
-import { invalidField, limitReached } from './catalog.errors'
+import { invalidField, limitReached, variantsChanged } from './catalog.errors'
 import { PICTURE_KIND, SIZE_CHART_KIND } from '../files/kinds'
 import { arrange, hiddenAt, orderOf } from './places'
 
@@ -47,6 +47,20 @@ type NewAxes = readonly { name: string; values: readonly { label: string }[] }[]
 
 /** What names a variant among those of its item: its values, whatever order they came in. */
 export const variantKey = (valueIds: readonly string[]) => [...valueIds].sort().join(' ')
+
+type KnownVariants = NonNullable<PutVariants['known']>
+
+/**
+ * Whether the variants an item has are the ones a request says its list was built on: the same
+ * variants, each hidden or shown as it was read.
+ */
+export function asKnown(current: KnownVariants, known: KnownVariants) {
+  const read = new Map(known.map((variant) => [variant.id, variant.hidden]))
+  return (
+    current.length === known.length &&
+    current.every((variant) => read.get(variant.id) === variant.hidden)
+  )
+}
 
 /** The files a change let go of, for the caller to release in the same transaction. */
 export interface ReleasedFiles {
@@ -456,9 +470,12 @@ export class MerchandiseRepository {
 
   /**
    * Makes the variants of the item those of the list. One the item has keeps its row and its
-   * stock, a new one is out of stock, one left out goes.
+   * stock, a new one is out of stock, one left out goes. A list built on variants the item no
+   * longer has is refused before anything else of it is read: the item was read under the
+   * tenant's write lock, so nobody changes them between this check and the writes.
    */
-  async putVariants(item: MerchandiseItem, { variants }: PutVariants) {
+  async putVariants(item: MerchandiseItem, { variants, known }: PutVariants) {
+    if (known && !asKnown(item.variants, known)) throw variantsChanged()
     if (item.axes.length === 0) {
       throw invalidField('variants', 'An item without axes has its one variant')
     }

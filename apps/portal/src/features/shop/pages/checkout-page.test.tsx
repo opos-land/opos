@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
+import { MAX_ORDER_TOTAL_MINOR } from '@opos/contract'
 import { ORPCError } from '@orpc/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
@@ -38,9 +39,18 @@ vi.mock('../api/shop', () => ({
     queryKey: ['my-orders', slug],
     queryFn: () => api.mine(slug) as unknown,
   }),
-  discountQuoteOptions: (_: string, __: string, cart: object, discountCode: string) => ({
-    queryKey: ['quote', cart, discountCode],
-    queryFn: () => api.quote(cart, discountCode) as unknown,
+  discountQuoteOptions: (
+    _: object,
+    cart: object,
+    discountCode: string,
+    extendsOrderId?: string,
+  ) => ({
+    queryKey: ['quote', cart, discountCode, extendsOrderId ?? null],
+    // The order a "Buy more" checkout adds to is named only by such a checkout.
+    queryFn: () =>
+      (extendsOrderId === undefined
+        ? api.quote(cart, discountCode)
+        : api.quote(cart, discountCode, extendsOrderId)) as unknown,
   }),
   startPaymentAttempt: api.start,
 }))
@@ -92,10 +102,19 @@ const kept = (changes: Partial<Draft> = {}): Draft => ({
   ...changes,
 })
 
+/** The terms as a buyer accepted them: with the version of the document the offer shows. */
+const termsAccepted = { consentId: ids.terms, documentVersionId: ids.termsVersion }
+
 const type = (label: string | RegExp, value: string) =>
   fireEvent.change(screen.getByLabelText(label), { target: { value } })
 const press = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }))
 const stepHeading = (name: string) => screen.findByRole('heading', { name, level: 2 })
+/** The shop's refusal of the placement key an order was sent with. */
+const keyRefused = () =>
+  new ORPCError('request.invalid', { status: 400, data: { field: 'placementKey' } })
+/** The placement key of each order sent to the shop, in the order they were sent. */
+const sentKeys = () =>
+  api.place.mock.calls.map((call) => (call[1] as { placementKey?: string }).placementKey)
 
 /** Fills the first step as a visitor does and goes on. */
 async function fillHolder() {
@@ -287,7 +306,7 @@ describe('CheckoutPage', () => {
         step: 'summary',
         email: '',
         emailConfirmation: '',
-        consentIds: [ids.terms],
+        consents: [termsAccepted],
         providerConsent: true,
       }),
     )
@@ -433,7 +452,8 @@ describe('CheckoutPage', () => {
       cart: { ticket: { ticketTypeId: ids.standard } },
       holderName: 'Ada',
       email: 'ada@example.test',
-      consentIds: [ids.terms],
+      // The consent with the version of the terms that was on the page.
+      consents: [{ consentId: ids.terms, documentVersionId: ids.termsVersion }],
       providerConsentAccepted: true,
       expectedTotalMinor: 12000,
     })
@@ -449,7 +469,7 @@ describe('CheckoutPage', () => {
     saveDraft(
       'convention-a',
       '2027',
-      kept({ step: 'summary', consentIds: [ids.terms], providerConsent: true }),
+      kept({ step: 'summary', consents: [termsAccepted], providerConsent: true }),
     )
     view()
     await stepHeading('Summary')
@@ -467,6 +487,171 @@ describe('CheckoutPage', () => {
     expect(order.disabled).toBe(true)
   })
 
+  // The answer to a placed order may never arrive: the buyer is told of a failure and presses
+  // again. The checkout is sent with the key it was sent with before, by which the shop finds
+  // the order it placed and places no second one.
+  it('sends the same placement key when the buyer tries again after a failure', async () => {
+    const lost = new TypeError('Failed to fetch')
+    api.place.mockRejectedValueOnce(lost)
+    const begun = kept({ step: 'summary', consents: [termsAccepted], providerConsent: true })
+    saveDraft('convention-a', '2027', begun)
+    view()
+    await stepHeading('Summary')
+
+    press('Order and pay')
+    await waitFor(() => expect(api.notify).toHaveBeenCalledWith(lost))
+    // Another step and back is the same checkout.
+    press('Back')
+    await stepHeading('Merch')
+    press('Next')
+    await stepHeading('Summary')
+    press('Order and pay')
+    await waitFor(() => expect(api.leave).toHaveBeenCalled())
+
+    expect(begun.placementKey).toMatch(/^[0-9a-f-]{36}$/)
+    expect(sentKeys()).toEqual([begun.placementKey, begun.placementKey])
+  })
+
+  // The key stands for what the checkout orders. Changed after a try whose answer never came, it
+  // is an order the shop has not placed: answered with the one placed before, the buyer would
+  // pay for what the Summary no longer shows.
+  it('sends another placement key once the buyer changed the checkout after a failure', async () => {
+    const lost = new TypeError('Failed to fetch')
+    api.place.mockRejectedValueOnce(lost)
+    const begun = kept({ step: 'summary', consents: [termsAccepted], providerConsent: true })
+    saveDraft('convention-a', '2027', begun)
+    view()
+    await stepHeading('Summary')
+
+    press('Order and pay')
+    await waitFor(() => expect(api.notify).toHaveBeenCalledWith(lost))
+    fireEvent.click(screen.getByRole('checkbox', { name: /news/ }))
+    press('Order and pay')
+    await waitFor(() => expect(api.leave).toHaveBeenCalled())
+
+    const [first, second] = sentKeys()
+    expect(first).toBe(begun.placementKey)
+    expect(second).toMatch(/^[0-9a-f-]{36}$/)
+    expect(second).not.toBe(first)
+    expect(api.place.mock.calls[1]?.[1]).toMatchObject({
+      consents: [termsAccepted, { consentId: ids.news, documentVersionId: null }],
+    })
+  })
+
+  // A tab the buyer duplicated holds the same checkout with the same key. Taken up there for
+  // another ticket type, it is another order.
+  it('draws another placement key for a kept checkout begun again with another ticket type', async () => {
+    const begun = kept({ step: 'summary', consents: [termsAccepted], providerConsent: true })
+    saveDraft('convention-a', '2027', begun)
+
+    view(`?ticketType=${ids.supporter}`)
+    await stepHeading('Ticket holder')
+
+    const held = loadDraft('convention-a', '2027')
+    expect(held).toMatchObject({ ticketTypeId: ids.supporter, holderName: 'Ada' })
+    expect(held?.placementKey).toMatch(/^[0-9a-f-]{36}$/)
+    expect(held?.placementKey).not.toBe(begun.placementKey)
+  })
+
+  // A key the shop refuses answers no try of this checkout any more, as when the order it placed
+  // has expired since. The key is nothing the buyer entered or can correct: the checkout is sent
+  // once more with a new one, and the buyer is told nothing of it.
+  it('sends the checkout once more by itself, with another key, once the shop refuses its key', async () => {
+    api.place.mockRejectedValueOnce(keyRefused())
+    const begun = kept({ step: 'summary', consents: [termsAccepted], providerConsent: true })
+    saveDraft('convention-a', '2027', begun)
+    view()
+    await stepHeading('Summary')
+
+    press('Order and pay')
+    await waitFor(() => expect(api.leave).toHaveBeenCalledWith('https://provider.test/pay/1'))
+
+    expect(api.place).toHaveBeenCalledTimes(2)
+    const [first, second] = sentKeys()
+    expect(first).toBe(begun.placementKey)
+    expect(second).toMatch(/^[0-9a-f-]{36}$/)
+    expect(second).not.toBe(first)
+    // The same order, as the Summary shows it.
+    const [sent, again] = api.place.mock.calls.map((call) => ({
+      ...(call[1] as object),
+      placementKey: null,
+    }))
+    expect(again).toEqual(sent)
+    expect(api.notify).not.toHaveBeenCalled()
+    // The order is placed: the checkout is forgotten, with the key it was placed with.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)))
+    expect(loadDraft('convention-a', '2027')).toBeNull()
+  })
+
+  // The second try is a try like any other: its answer may never arrive too. The checkout keeps
+  // the key it was sent with, so the buyer's next try is answered with the order it placed.
+  it('keeps the button off during the second try, and the key it was sent with after it', async () => {
+    const lost = new TypeError('Failed to fetch')
+    let lose = () => {}
+    api.place.mockRejectedValueOnce(keyRefused())
+    api.place.mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          lose = () => reject(lost)
+        }),
+    )
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({ step: 'summary', consents: [termsAccepted], providerConsent: true }),
+    )
+    view()
+    await stepHeading('Summary')
+    const order = screen.getByRole<HTMLButtonElement>('button', { name: 'Order and pay' })
+
+    press('Order and pay')
+    await waitFor(() => expect(api.place).toHaveBeenCalledTimes(2))
+    expect(order.disabled).toBe(true)
+    expect(api.notify).not.toHaveBeenCalled()
+    await waitFor(() => expect(loadDraft('convention-a', '2027')?.placementKey).toBe(sentKeys()[1]))
+
+    lose()
+    await waitFor(() => expect(api.notify).toHaveBeenCalledWith(lost))
+    expect(api.notify).toHaveBeenCalledTimes(1)
+    expect(order.disabled).toBe(false)
+    press('Order and pay')
+    await waitFor(() => expect(api.leave).toHaveBeenCalled())
+
+    expect(api.place).toHaveBeenCalledTimes(3)
+    expect(sentKeys()[2]).toBe(sentKeys()[1])
+  })
+
+  // Once more, never on and on: a second refusal of the key is told in words the buyer can act
+  // on, not as data they entered wrong.
+  it('tells the buyer the order could not be placed once the shop refuses the second key too', async () => {
+    api.place.mockRejectedValueOnce(keyRefused()).mockRejectedValueOnce(keyRefused())
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({ step: 'summary', consents: [termsAccepted], providerConsent: true }),
+    )
+    view()
+    await stepHeading('Summary')
+    const told = 'We could not place the order. Check the summary and try again.'
+
+    press('Order and pay')
+    expect((await screen.findByText(told)).getAttribute('role')).toBe('alert')
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)))
+
+    expect(api.place).toHaveBeenCalledTimes(2)
+    expect(api.notify).not.toHaveBeenCalled()
+    expect(screen.getByRole('heading', { name: 'Summary', level: 2 })).toBeDefined()
+    const order = screen.getByRole<HTMLButtonElement>('button', { name: 'Order and pay' })
+    expect(order.disabled).toBe(false)
+
+    // The buyer's own next try is sent with a key the shop has not refused.
+    press('Order and pay')
+    await waitFor(() => expect(api.leave).toHaveBeenCalled())
+    expect(screen.queryByText(told)).toBeNull()
+    expect(api.place).toHaveBeenCalledTimes(3)
+    expect(new Set(sentKeys()).size).toBe(3)
+  })
+
   // Back from the provider's page, a browser may show the checkout again out of its memory, as
   // it was left: its order is placed and its button stays off, so the order's result takes over.
   it('opens the result of the placed order once the browser brings the page back', async () => {
@@ -477,7 +662,7 @@ describe('CheckoutPage', () => {
     saveDraft(
       'convention-a',
       '2027',
-      kept({ step: 'summary', consentIds: [ids.terms], providerConsent: true }),
+      kept({ step: 'summary', consents: [termsAccepted], providerConsent: true }),
     )
     view()
     await stepHeading('Summary')
@@ -592,7 +777,7 @@ describe('CheckoutPage', () => {
       kept({
         step: 'summary',
         discountCode: 'EARLY10',
-        consentIds: [ids.terms],
+        consents: [termsAccepted],
         providerConsent: true,
       }),
     )
@@ -622,7 +807,7 @@ describe('CheckoutPage', () => {
       kept({
         step: 'summary',
         discountCode: 'LAST-USE',
-        consentIds: [ids.terms],
+        consents: [termsAccepted],
         providerConsent: true,
       }),
     )
@@ -640,7 +825,7 @@ describe('CheckoutPage', () => {
     saveDraft(
       'convention-a',
       '2027',
-      kept({ step: 'summary', ageBand: 'teen', consentIds: [ids.terms], providerConsent: true }),
+      kept({ step: 'summary', ageBand: 'teen', consents: [termsAccepted], providerConsent: true }),
     )
     view()
     await stepHeading('Summary')
@@ -666,7 +851,7 @@ describe('CheckoutPage', () => {
       totalMinor: 0,
       resultToken: 'token-1',
     })
-    saveDraft('convention-a', '2027', kept({ step: 'summary', consentIds: [ids.terms] }))
+    saveDraft('convention-a', '2027', kept({ step: 'summary', consents: [termsAccepted] }))
     view()
     await stepHeading('Summary')
 
@@ -692,7 +877,7 @@ describe('CheckoutPage', () => {
       kept({
         step: 'summary',
         addOnIds: [ids.workshop],
-        consentIds: [ids.terms],
+        consents: [termsAccepted],
         providerConsent: true,
       }),
     )
@@ -718,7 +903,7 @@ describe('CheckoutPage', () => {
     saveDraft(
       'convention-a',
       '2027',
-      kept({ step: 'summary', consentIds: [ids.terms], providerConsent: true }),
+      kept({ step: 'summary', consents: [termsAccepted], providerConsent: true }),
     )
     view()
     await stepHeading('Summary')
@@ -763,6 +948,31 @@ describe('CheckoutPage', () => {
     expect(screen.getByText(/Total: .*120[.,]00/)).toBeDefined()
   })
 
+  // What a cart may hold at the prices an org may set comes to more than one order may. Nothing
+  // of it ran out: the Summary says what is wrong, and the buyer takes something out.
+  it('says at the Summary that the order comes to more than one order can, and offers none to place', async () => {
+    const dear = offer()
+    dear.addOns[0]!.amountMinor = MAX_ORDER_TOTAL_MINOR
+    api.offer.mockResolvedValue(dear)
+    saveDraft('convention-a', '2027', kept({ step: 'summary', addOnIds: [ids.workshop] }))
+    view()
+    await stepHeading('Summary')
+
+    expect(screen.getByRole('alert').textContent).toMatch(
+      /This order comes to more than one order can\. Remove something from it/,
+    )
+    expect(screen.queryByText(/no longer available/)).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Order/ })).toBeNull()
+    press('Back')
+    await stepHeading('Merch')
+    press('Back')
+    await stepHeading('Add-ons')
+    // Nothing ran out, so nothing is marked as if it had.
+    expect(screen.queryByText('It ran out while you were ordering.')).toBeNull()
+    fireEvent.click(screen.getByRole('checkbox', { name: /Painting workshop/ }))
+    expect(screen.getByText(/Total: .*120[.,]00/)).toBeDefined()
+  })
+
   // The tab keeps a checkout for days, and the shop changes meanwhile: what it no longer
   // offers is on no step, so the buyer could not take it out.
   it('takes out of a kept checkout what the shop no longer offers, and says so', async () => {
@@ -772,7 +982,11 @@ describe('CheckoutPage', () => {
     saveDraft(
       'convention-a',
       '2027',
-      kept({ step: 'summary', addOnIds: [ids.workshop, ids.room], consentIds: ['gone'] }),
+      kept({
+        step: 'summary',
+        addOnIds: [ids.workshop, ids.room],
+        consents: [{ consentId: 'gone', documentVersionId: null }],
+      }),
     )
     view()
     await stepHeading('Summary')
@@ -782,7 +996,7 @@ describe('CheckoutPage', () => {
     expect(screen.getByRole('button', { name: 'Order and pay' })).toBeDefined()
     expect(loadDraft('convention-a', '2027')).toMatchObject({
       addOnIds: [ids.room],
-      consentIds: [],
+      consents: [],
     })
   })
 
@@ -799,7 +1013,7 @@ describe('CheckoutPage', () => {
       kept({
         step: 'summary',
         addOnIds: [ids.workshop],
-        consentIds: [ids.terms],
+        consents: [termsAccepted],
         providerConsent: true,
       }),
     )
@@ -825,7 +1039,7 @@ describe('CheckoutPage', () => {
     saveDraft(
       'convention-a',
       '2027',
-      kept({ step: 'summary', consentIds: [ids.terms], providerConsent: true }),
+      kept({ step: 'summary', consents: [termsAccepted], providerConsent: true }),
     )
     view()
     await stepHeading('Summary')
@@ -857,7 +1071,7 @@ describe('CheckoutPage', () => {
       kept({
         step: 'summary',
         discountCode: 'EARLY10',
-        consentIds: [ids.terms],
+        consents: [termsAccepted],
         providerConsent: true,
       }),
     )
@@ -880,13 +1094,89 @@ describe('CheckoutPage', () => {
     })
   })
 
+  // An order attests a consent as its buyer saw it: with a new version of its document
+  // published meanwhile nothing is placed, and the buyer reads and accepts the consent again.
+  it('unticks a consent whose document changed while the buyer was ordering, and says so', async () => {
+    const refused = new ORPCError('order.consent-changed', {
+      status: 409,
+      data: { consent: ids.terms },
+    })
+    api.place.mockRejectedValueOnce(refused)
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({ step: 'summary', consents: [termsAccepted], providerConsent: true }),
+    )
+    view()
+    await stepHeading('Summary')
+    const terms = () => screen.getByRole('checkbox', { name: /shop terms/ })
+    expect(terms().getAttribute('aria-checked')).toBe('true')
+    expect(screen.queryByText(/document has changed/)).toBeNull()
+    const newVersion = '00000000-0000-4000-8000-000000000099'
+    const republished = offer()
+    republished.consents[0]!.documentVersionId = newVersion
+    api.offer.mockResolvedValue(republished)
+
+    press('Order and pay')
+
+    // Still on the step the consent is accepted on, with the consent to accept again.
+    await waitFor(() => expect(api.notify).toHaveBeenCalledWith(refused))
+    await waitFor(() => expect(terms().getAttribute('aria-checked')).toBe('false'))
+    expect(screen.getByRole('heading', { name: 'Summary', level: 2 })).toBeDefined()
+    expect(screen.getByText(/document has changed/)).toBeDefined()
+    expect(api.leave).not.toHaveBeenCalled()
+    expect(loadDraft('convention-a', '2027')).toMatchObject({ consents: [] })
+    // The link opens the version in force now.
+    await waitFor(() =>
+      expect(
+        screen.getByRole('link', { name: 'Read the document' }).getAttribute('href'),
+      ).toContain(newVersion),
+    )
+
+    fireEvent.click(terms())
+    expect(screen.queryByText(/document has changed/)).toBeNull()
+    press('Order and pay')
+
+    await waitFor(() => expect(api.leave).toHaveBeenCalled())
+    expect(api.place.mock.calls[1]![1]).toMatchObject({
+      consents: [{ consentId: ids.terms, documentVersionId: newVersion }],
+    })
+  })
+
+  // The tab keeps a checkout for days: a consent accepted with a version that is no longer the
+  // newest is one the buyer has not seen.
+  it('opens a kept checkout with a consent unticked once its document changed, and says so', async () => {
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({
+        step: 'summary',
+        consents: [
+          { consentId: ids.terms, documentVersionId: '00000000-0000-4000-8000-000000000098' },
+          { consentId: ids.news, documentVersionId: null },
+        ],
+        providerConsent: true,
+      }),
+    )
+    view()
+    await stepHeading('Summary')
+
+    expect(screen.getByRole('checkbox', { name: /shop terms/ }).getAttribute('aria-checked')).toBe(
+      'false',
+    )
+    expect(screen.getByRole('checkbox', { name: /news/ }).getAttribute('aria-checked')).toBe('true')
+    expect(screen.getByText(/document has changed/)).toBeDefined()
+    press('Order and pay')
+    expect(api.place).not.toHaveBeenCalled()
+  })
+
   it('says so when the bot check failed, and lets the buyer try again', async () => {
     const failed = new ORPCError('bot-check.failed', { status: 403 })
     api.place.mockRejectedValueOnce(failed)
     saveDraft(
       'convention-a',
       '2027',
-      kept({ step: 'summary', consentIds: [ids.terms], providerConsent: true }),
+      kept({ step: 'summary', consents: [termsAccepted], providerConsent: true }),
     )
     view()
     await stepHeading('Summary')
@@ -1015,6 +1305,7 @@ describe('CheckoutPage, adding to a paid order', () => {
     placedAt: '2027-05-01T10:00:00.000Z',
     holdEndsAt: null,
     payable: false,
+    resendable: true,
     holderName: 'Ada Lovelace',
     edition: { id: 'edition-1', slug: '2027', name: 'Convention A 2027' },
     lines: [],
@@ -1104,6 +1395,116 @@ describe('CheckoutPage, adding to a paid order', () => {
     expect(body).not.toHaveProperty('email')
     // Its own checkout is forgotten; the edition's other one is not touched.
     await waitFor(() => expect(loadDraft('convention-a', '2027', 'order-first')).toBeNull())
+  })
+
+  // The order a try placed, with its answer lost, is on the QR code of the order it adds to by
+  // the time the page is loaded again. The checkout orders what it ordered: it is sent with the
+  // key it was sent with before, and the shop answers with the order it placed then.
+  it('sends the same placement key after a reload, with its own lost order on the QR code since', async () => {
+    const lost = new TypeError('Failed to fetch')
+    api.place.mockRejectedValueOnce(lost)
+    const begun = {
+      ...kept({
+        step: 'summary',
+        asVisitor: false,
+        holderName: 'Ada Lovelace',
+        consents: [termsAccepted],
+        providerConsent: true,
+      }),
+      ticketTypeId: null,
+      ageBand: null,
+      answers: {},
+      items: [{ variantId: ids.shirtM, quantity: 1 }],
+      extending: {
+        orderId: 'order-first',
+        number: 'ABCDEFGHJK',
+        holderName: 'Ada Lovelace',
+        ticketTypeId: ids.standard,
+        addOnIds: [ids.room],
+        itemIds: [ids.pin],
+      },
+    }
+    saveDraft('convention-a', '2027', begun)
+    more()
+    await stepHeading('Summary')
+    press('Order and pay')
+    await waitFor(() => expect(api.notify).toHaveBeenCalledWith(lost))
+
+    cleanup()
+    api.mine.mockResolvedValue([
+      paid({
+        bought: { ticketTypeId: ids.standard, addOnIds: [ids.room], itemIds: [ids.pin, ids.shirt] },
+      }),
+    ])
+    more()
+    await stepHeading('Summary')
+    press('Order and pay')
+    await waitFor(() => expect(api.leave).toHaveBeenCalled())
+
+    expect(loadDraft('convention-a', '2027', 'order-first')).toBeNull()
+    expect(begun.placementKey).toMatch(/^[0-9a-f-]{36}$/)
+    expect(sentKeys()).toEqual([begun.placementKey, begun.placementKey])
+    expect(api.place.mock.calls[1]?.[1]).toMatchObject({
+      extendsOrderId: 'order-first',
+      cart: { ticket: null, addOnIds: [], items: [{ variantId: ids.shirtM, quantity: 1 }] },
+    })
+  })
+
+  // A discount code lowers what is bought later as it lowers a first order: the shop prices the
+  // cart as an addition to the order, which only the account's own quote can.
+  it('takes a discount code: priced for the order it adds to, and placed with the code and that total', async () => {
+    api.quote.mockResolvedValue({
+      currency: 'PLN',
+      lines: [
+        {
+          kind: 'add_on',
+          addOnId: ids.workshop,
+          name: 'Painting workshop',
+          variant: [],
+          quantity: 1,
+          unitAmountMinor: 4000,
+          amountMinor: 4000,
+        },
+        {
+          kind: 'discount',
+          name: 'craft20',
+          variant: [],
+          quantity: 1,
+          unitAmountMinor: -800,
+          amountMinor: -800,
+        },
+      ],
+      totalMinor: 3200,
+    })
+    more()
+    await stepHeading('Add-ons')
+    fireEvent.click(screen.getByRole('checkbox', { name: /Painting workshop/ }))
+    press('Next')
+    await stepHeading('Merch')
+    press('Next')
+    await stepHeading('Summary')
+
+    type('Discount code', 'CRAFT20')
+    press('Apply the code')
+
+    expect(await screen.findByRole('rowheader', { name: 'Discount code CRAFT20' })).toBeDefined()
+    expect(api.quote).toHaveBeenCalledWith(
+      { ticket: null, addOnIds: [ids.workshop], items: [] },
+      'CRAFT20',
+      'order-first',
+    )
+    const total = screen.getByRole('rowheader', { name: 'Total due' }).closest('tr')!
+    expect(within(total).getByText(/32[.,]00/)).toBeDefined()
+    press('Select all required')
+    fireEvent.click(screen.getByRole('checkbox', { name: /terms of the provider/ }))
+    press('Order and pay')
+
+    await waitFor(() => expect(api.place).toHaveBeenCalled())
+    expect(api.place.mock.calls[0]![1]).toMatchObject({
+      extendsOrderId: 'order-first',
+      discountCode: 'CRAFT20',
+      expectedTotalMinor: 3200,
+    })
   })
 
   it('places nothing with nothing chosen, and says so at the Summary', async () => {

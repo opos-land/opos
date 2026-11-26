@@ -22,13 +22,25 @@ import {
   orders,
   ticketTypes,
 } from '@opos/db'
-import { and, asc, count, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  count,
+  eq,
+  exists,
+  inArray,
+  isNotNull,
+  isNull,
+  notExists,
+  sql,
+} from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { isUuid } from '../../common/uuid'
 import { providerAccountLockKey } from '../shop/provider-account-lock'
 import { orderNumber } from './codes'
-import { unpaidOrdersLockKey } from './unpaid-orders-lock'
+import { placementKeyLockKey } from './placement-key-lock'
+import { type UnpaidOrdersOf, unpaidOrdersLockKey } from './unpaid-orders-lock'
 
 /** An order as it is written when it is placed. */
 export interface NewOrder {
@@ -47,6 +59,8 @@ export interface NewOrder {
   guardianConsentAcknowledgedAt: Date | null
   providerConsentAcceptedAt: Date | null
   resultTokenHash: string
+  /** The hash of the key its checkout placed it with; none for an order sent with no key. */
+  placementKeyHash?: string | null
   /** Why an org recorded it in the panel, and what it noted of it. */
   manualReason?: ManualReason
   note?: string | null
@@ -63,6 +77,15 @@ export interface OwnOrder {
   status: OrderStatus
   email: string | null
   holderName: string
+}
+
+/** The order a placement key placed, as a checkout sent again is answered with it. */
+export interface PlacedBefore {
+  id: string
+  number: string
+  status: OrderStatus
+  email: string | null
+  totalMinor: number
 }
 
 /** What kinds of email an order sends. */
@@ -95,6 +118,50 @@ export class OrdersRepository {
         ),
       )
     return row
+  }
+
+  /**
+   * The order of the edition a placement key placed, by the key's hash, or undefined. It is read
+   * under a lock of the key in the edition, held until the transaction ends: the same checkout
+   * sent at the same moment waits here, and then finds the order the first one placed. The lock
+   * is the first a placing takes: whoever waits for it holds no other, so it stands in no other
+   * lock's way.
+   */
+  async placedWith(
+    tenantId: string,
+    editionId: string,
+    keyHash: string,
+  ): Promise<PlacedBefore | undefined> {
+    const tx = this.context.tx()
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(${placementKeyLockKey(editionId, keyHash)}::bigint)`,
+    )
+    const [row] = await tx
+      .select({
+        id: orders.id,
+        number: orders.number,
+        status: orders.status,
+        email: orders.email,
+        totalMinor: orders.totalMinor,
+      })
+      .from(orders)
+      .where(
+        and(
+          eq(orders.tenantId, tenantId),
+          eq(orders.editionId, editionId),
+          eq(orders.placementKeyHash, keyHash),
+        ),
+      )
+    return row
+  }
+
+  /** Gives the order another result token: the one before opens nothing from here on. */
+  async renewResultToken(order: { tenantId: string; orderId: string }, resultTokenHash: string) {
+    await this.context
+      .tx()
+      .update(orders)
+      .set({ resultTokenHash })
+      .where(and(eq(orders.tenantId, order.tenantId), eq(orders.id, order.orderId)))
   }
 
   /**
@@ -154,24 +221,38 @@ export class OrdersRepository {
   }
 
   /**
-   * How many orders of the edition await payment under the email. The count is taken under a
-   * lock of the email in the edition, held until the order is written: another order of the same
-   * email waits here, whatever its cart, and then counts this one. It comes after the order's
-   * other locks, so no order waits for it while it holds a row another needs.
+   * How many orders of the edition await payment for the buyer: those on the account, or for a
+   * visitor those under the email that are on no account. Anyone places a visitor's order under
+   * any email, so such orders never count against the account whose email it is. The count is
+   * taken under a lock of the account or the email in the edition, held until the order is
+   * written: another order of the same buyer waits here, whatever its cart, and then counts
+   * this one. It comes after the order's other locks, so no order waits for it while it holds a
+   * row another needs.
    */
-  async unpaid(editionId: string, email: string): Promise<number> {
+  async unpaid(editionId: string, buyer: UnpaidOrdersOf): Promise<number> {
     const tx = this.context.tx()
     await tx.execute(
-      sql`select pg_advisory_xact_lock(${unpaidOrdersLockKey(editionId, email)}::bigint)`,
+      sql`select pg_advisory_xact_lock(${unpaidOrdersLockKey(editionId, buyer)}::bigint)`,
     )
+    const attached = tx
+      .select({ orderId: orderAccounts.orderId })
+      .from(orderAccounts)
+      .where(
+        and(
+          eq(orderAccounts.orderId, orders.id),
+          'accountId' in buyer ? eq(orderAccounts.accountId, buyer.accountId) : undefined,
+        ),
+      )
     const [row] = await tx
       .select({ unpaid: count() })
       .from(orders)
       .where(
         and(
           eq(orders.editionId, editionId),
-          eq(orders.email, email),
           eq(orders.status, 'awaiting-payment'),
+          'accountId' in buyer
+            ? exists(attached)
+            : and(eq(orders.email, buyer.email), notExists(attached)),
         ),
       )
     return row!.unpaid

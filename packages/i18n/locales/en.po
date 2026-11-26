@@ -48,6 +48,10 @@ msgstr "A payment arrived for your order {number} for {conventionName}, which wa
 msgid "A payment arrived that your order {number} does not need"
 msgstr "A payment arrived that your order {number} does not need"
 
+#: src/errors.ts
+msgid "A payment for an order of this convention may still be confirmed with this account: the order is waiting for payment, or it expired within the last 24 hours with a payment started. Until then you can only correct the credentials of the same account."
+msgstr "A payment for an order of this convention may still be confirmed with this account: the order is waiting for payment, or it expired within the last 24 hours with a payment started. Until then you can only correct the credentials of the same account."
+
 #: src/order-emails.ts
 msgid "A payment of {paid} arrived for the order {number} of {conventionName}, which was not waiting for one, and the payment provider could not refuse it."
 msgstr "A payment of {paid} arrived for the order {number} of {conventionName}, which was not waiting for one, and the payment provider could not refuse it."
@@ -131,12 +135,12 @@ msgid "An administrator took this profile down. It cannot be published until it 
 msgstr "An administrator took this profile down. It cannot be published until it is restored."
 
 #: src/errors.ts
-msgid "An order has already accepted this, so it cannot be deleted. Hide it instead: it leaves the shop and stays on its orders."
-msgstr "An order has already accepted this, so it cannot be deleted. Hide it instead: it leaves the shop and stays on its orders."
+msgid "An order has already accepted this consent, so its sentence cannot be changed. Hide it and add a new consent with the new sentence."
+msgstr "An order has already accepted this consent, so its sentence cannot be changed. Hide it and add a new consent with the new sentence."
 
 #: src/errors.ts
-msgid "An order of this convention is waiting for payment. You can replace the credentials once it is paid or expires."
-msgstr "An order of this convention is waiting for payment. You can replace the credentials once it is paid or expires."
+msgid "An order has already accepted this, so it cannot be deleted. Hide it instead: it leaves the shop and stays on its orders."
+msgstr "An order has already accepted this, so it cannot be deleted. Hide it instead: it leaves the shop and stays on its orders."
 
 #: src/errors.ts
 msgid "An order used this discount code, so it cannot be deleted. End it instead: buyers can no longer use it, and it stays on its orders."
@@ -968,6 +972,10 @@ msgid "The decision was made on the administrators’ own initiative, with no re
 msgstr "The decision was made on the administrators’ own initiative, with no report."
 
 #: src/errors.ts
+msgid "The document of one of the consents has changed since this page was opened. Read it and accept the consent again to place the order."
+msgstr "The document of one of the consents has changed since this page was opened. Read it and accept the consent again to place the order."
+
+#: src/errors.ts
 msgid "The link has expired. Ask for a new one."
 msgstr "The link has expired. Ask for a new one."
 
@@ -1088,6 +1096,10 @@ msgid "The two-factor authentication of this account has changed since the admin
 msgstr "The two-factor authentication of this account has changed since the administrator role was granted. Ask for the role to be granted again."
 
 #: src/errors.ts
+msgid "The variants of this merchandise item have changed since this page read them. The form shows them as they are now: make your changes again and save."
+msgstr "The variants of this merchandise item have changed since this page read them. The form shows them as they are now: make your changes again and save."
+
+#: src/errors.ts
 msgid "There is no room for more files. Remove the ones you no longer need."
 msgstr "There is no room for more files. Remove the ones you no longer need."
 
@@ -1120,6 +1132,10 @@ msgid "This can be done only with a paid order."
 msgstr "This can be done only with a paid order."
 
 #: src/errors.ts
+msgid "This cannot be done right now, because another change is under way. Try again in a moment."
+msgstr "This cannot be done right now, because another change is under way. Try again in a moment."
+
+#: src/errors.ts
 msgid "This change would delete something an order holds. Hide it instead: it leaves the offer and stays on its orders."
 msgstr "This change would delete something an order holds. Hide it instead: it leaves the offer and stays on its orders."
 
@@ -1134,10 +1150,6 @@ msgstr "This convention already has an edition with this address."
 #: src/errors.ts
 msgid "This convention has orders, which are kept for at least five years. It cannot be deleted."
 msgstr "This convention has orders, which are kept for at least five years. It cannot be deleted."
-
-#: src/errors.ts
-msgid "This convention is being changed right now. Try again in a moment."
-msgstr "This convention is being changed right now. Try again in a moment."
 
 #: src/errors.ts
 msgid "This convention is suspended. Contact the OPOS administrators to learn more."
@@ -1224,12 +1236,20 @@ msgid "This order cannot be corrected this way: only a paid order is corrected, 
 msgstr "This order cannot be corrected this way: only a paid order is corrected, and a manual order has no email address."
 
 #: src/errors.ts
+msgid "This order comes to more than one order can. Remove something from it or split it into several orders."
+msgstr "This order comes to more than one order can. Remove something from it or split it into several orders."
+
+#: src/errors.ts
 msgid "This order does not need review any more. Check its status."
 msgstr "This order does not need review any more. Check its status."
 
 #: src/errors.ts
 msgid "This order does not wait for a payment any more. Check its status."
 msgstr "This order does not wait for a payment any more. Check its status."
+
+#: src/errors.ts
+msgid "This order was moved to another email address, so its QR code can no longer be sent from this account."
+msgstr "This order was moved to another email address, so its QR code can no longer be sent from this account."
 
 #: src/errors.ts
 msgid "This pairing code does not work: it was already used or it expired. Ask an organizer for a new one."
@@ -1250,6 +1270,10 @@ msgstr "This QR code is not valid."
 #: src/errors.ts
 msgid "This request cannot be made from this address. Reload the page and try again."
 msgstr "This request cannot be made from this address. Reload the page and try again."
+
+#: src/errors.ts
+msgid "This scanner is stopped for now: the organizer who enabled it cannot manage tickets at the moment. Ask an organizer to restore that access, then try again."
+msgstr "This scanner is stopped for now: the organizer who enabled it cannot manage tickets at the moment. Ask an organizer to restore that access, then try again."
 
 #: src/errors.ts
 msgid "This scanner no longer works: its access was revoked or expired. Pair the phone again."

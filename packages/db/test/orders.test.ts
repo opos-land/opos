@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createEdition, createTenant, createUser, inTenant, migrator } from './db'
+import { globalReads } from '../src/verify'
+import { createEdition, createTenant, createUser, global, inTenant, migrator } from './db'
 
 // Orders and what they hold (docs/specs/0004-checkout-and-orders.md): an order with its lines,
 // answers, consents, QR code, payment attempts, emails and links. Every row is its tenant's and
@@ -137,6 +138,22 @@ describe('orders', () => {
       /orders_tenant_number_unique/,
     )
     await order(b, { number: taken })
+  })
+
+  // A checkout sent again finds the order it placed by the hash of its key: one order of an
+  // edition carries it, and an order placed with no key carries none.
+  it('carries the hash of its placement key alone in its edition, and none where it had no key', async () => {
+    const [a, b] = await Promise.all([place(), place()])
+    const taken = 'd'.repeat(64)
+    await order(a, { placement_key_hash: taken })
+
+    await expect(order(a, { placement_key_hash: taken })).rejects.toThrow(
+      /orders_placement_key_unique/,
+    )
+    await order(await sibling(a), { placement_key_hash: taken })
+    await order(b, { placement_key_hash: taken })
+    await order(a, { placement_key_hash: null })
+    await order(a, { placement_key_hash: null })
   })
 
   it.each([
@@ -465,6 +482,95 @@ describe('payment_attempts', () => {
       paid_amount_minor: null,
     })
   })
+
+  // An attempt of an expired order nobody confirmed is asked about at its provider once more,
+  // and marked when it was: the application role writes that moment within its tenant.
+  it('is marked once its provider was asked again after its order expired', async () => {
+    const at = await place()
+    const expired = await order(at, { status: 'expired', holds: false })
+    const id = await attempt(at, expired, { status: 'ended' })
+
+    await inTenant(
+      at.tenant,
+      (sql) => sql`update payment_attempts set rechecked_at = now() where id = ${id}`,
+    )
+
+    const [row] = await migrator<{ rechecked_at: Date | null }[]>`
+      select rechecked_at from payment_attempts where id = ${id}
+    `
+    expect(row!.rechecked_at).toBeInstanceOf(Date)
+  })
+
+  // A provider that refused to register an attempt gave its last word of it at once: the mark
+  // waits for no expiry, and is written as the attempt ends.
+  it('is marked while its order awaits payment when its provider refused to register it', async () => {
+    const at = await place()
+    const id = await attempt(at, await order(at))
+
+    await inTenant(
+      at.tenant,
+      (sql) =>
+        sql`update payment_attempts set status = 'ended', rechecked_at = now() where id = ${id}`,
+    )
+
+    const [row] = await migrator<{ status: string; rechecked_at: Date | null }[]>`
+      select status, rechecked_at from payment_attempts where id = ${id}
+    `
+    expect(row!.status).toBe('ended')
+    expect(row!.rechecked_at).toBeInstanceOf(Date)
+  })
+
+  // The job that asks again finds its attempts across tenants, by identifiers and the moments
+  // that say whether one is still to ask: nothing a provider said of a payment.
+  it('is found across tenants while nobody confirmed it or asked again, by identifiers alone', async () => {
+    const at = await place()
+    const expired = await order(at, {
+      status: 'expired',
+      holds: false,
+      hold_ends_at: '2026-01-01T00:00:00Z',
+    })
+    const [open, asked, confirmed] = [
+      await attempt(at, expired, { status: 'ended' }),
+      await attempt(at, expired, { status: 'ended', rechecked_at: new Date() }),
+      await attempt(at, expired, { status: 'paid', confirmed_at: new Date() }),
+    ]
+
+    const found = await global<{ id: string; tenant_id: string }[]>`
+      select a.id, a.tenant_id from payment_attempts a
+      join orders o on o.id = a.order_id and o.tenant_id = a.tenant_id
+      where a.id in ${global([open, asked, confirmed])} and o.status = 'expired'
+        and a.confirmed_at is null and a.rechecked_at is null
+    `
+
+    expect(found).toEqual([{ id: open, tenant_id: at.tenant }])
+    const reads = globalReads
+      .filter((read) => read.startsWith('payment_attempts.'))
+      .map((read) => read.split('.')[1])
+    expect(reads.sort()).toEqual([
+      'confirmed_at',
+      'id',
+      'order_id',
+      'provider',
+      'rechecked_at',
+      'tenant_id',
+    ])
+    for (const column of [
+      'status',
+      'paid_amount_minor',
+      'paid_at',
+      'provider_reference',
+      'failure_message',
+      'information',
+    ]) {
+      await expect(
+        global.unsafe(`select ${column} from payment_attempts limit 1`),
+        column,
+      ).rejects.toThrow(/permission denied/)
+    }
+    await expect(
+      global.unsafe('update payment_attempts set rechecked_at = now() where false'),
+    ).rejects.toThrow(/permission denied/)
+  })
 })
 
 describe('order_emails and order_links', () => {
@@ -564,7 +670,8 @@ describe('what the application role changes of an order', () => {
       `update orders set manual_reason = 'desk'`,
       `update orders set note = 'changed'`,
       `update orders set placed_at = now()`,
-      `update orders set result_token_hash = '${HASH}'`,
+      // The key an order was placed with is written once, with the order.
+      `update orders set placement_key_hash = '${HASH}'`,
       `update order_lines set amount_minor = 1`,
       `update order_lines set unit_amount_minor = 1`,
       `update order_lines set quantity = 5`,
@@ -594,6 +701,23 @@ describe('what the application role changes of an order', () => {
       await sql`update orders set status = 'paid', paid_at = now(), holds = true, hold_ends_at = null`
       await sql`update payment_attempts set status = 'paid', paid_amount_minor = 10000, paid_at = now()`
     })
+  })
+
+  // A checkout sent again is answered with its order and a new result token, which takes the
+  // place of the one whose answer never arrived.
+  it('gives an order another result token', async () => {
+    const at = await place()
+    const mine = await order(at)
+
+    await inTenant(
+      at.tenant,
+      (sql) => sql`update orders set result_token_hash = ${'b'.repeat(64)} where id = ${mine}`,
+    )
+
+    const [row] = await migrator<{ hash: string }[]>`
+      select result_token_hash as hash from orders where id = ${mine}
+    `
+    expect(row!.hash).toBe('b'.repeat(64))
   })
 
   // Order management (docs/specs/0006-order-management.md): what an org corrects, cancels,

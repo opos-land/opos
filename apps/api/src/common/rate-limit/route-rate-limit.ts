@@ -6,7 +6,10 @@ import { type RateLimit } from './rate-limit'
 /**
  * The endpoints with a limit of their own, on top of the default. Each one counts in
  * its handler, once the route's guards and permission check have passed, against the tracker it
- * names.
+ * names. A scanner's routes skip the default and count in their guard instead, before anything
+ * of the request is read; a provider's notifications skip it too, for a limit of their own. A
+ * limit counts against what the request proves, and against the client address only where it
+ * proves nothing or guesses (docs/ARCHITECTURE.md, API conventions).
  */
 export const ROUTE_RATE_LIMITS = {
   /** Sign-up, resend, sign-in, verify, forgot and Google: one counter, per client address. */
@@ -36,17 +39,31 @@ export const ROUTE_RATE_LIMITS = {
    * asks the provider about every earlier attempt of the order, from the address OPOS shares.
    */
   paymentAttemptsOfOrder: { limit: 20, ttl: 3_600_000 },
+  /**
+   * What a payment provider tells of an attempt, per client address, in place of the default
+   * limit: a provider tells of every convention's payments from a few addresses of its own, and
+   * of many at once when a sale opens.
+   */
+  providerNotifications: { limit: 1200, ttl: 60_000 },
   /** Resending an order's confirmation, per order: each one is an email to its buyer. */
   confirmationResends: { limit: 5, ttl: 3_600_000 },
   /**
-   * A quote that tries a discount code, and an order whose code cannot be used: one counter, per
-   * client address. A code is guessed by nobody, and an order that uses its code spends nothing.
+   * A quote and an order whose discount code cannot be used: one counter, per client address. A
+   * code is guessed by nobody, and a quote or an order that uses its code spends nothing.
    */
   discountCodeTries: { limit: 30, ttl: 3_600_000 },
   /** The files of an edition's sales, per account: they hold names and email addresses. */
   salesExports: { limit: 30, ttl: 3_600_000 },
-  /** `POST /public/order-links/open`, per client address: a token is guessed by nobody. */
+  /**
+   * `POST /public/order-links/open` with a token that opens nothing, per client address: a token
+   * is guessed by nobody. A token that opens its order spends nothing of its address.
+   */
   orderLinkOpens: { limit: 60, ttl: 3_600_000 },
+  /**
+   * `POST /public/order-links/open` with a token that opens its order, per link, by the hash of
+   * its token: the attendees behind a venue's address each open their own.
+   */
+  orderLinkOpensOfLink: { limit: 120, ttl: 3_600_000 },
   /** `POST /public/order-links/renew`, per client address. */
   orderLinkRenewals: { limit: 10, ttl: 3_600_000 },
   /** `POST /scanner/pair`, per client address: a pairing code is guessed by nobody. */
@@ -55,6 +72,12 @@ export const ROUTE_RATE_LIMITS = {
   scannerScans: { limit: 6000, ttl: 3_600_000 },
   /** `POST /scanner/hand-outs`, per scanner. */
   scannerHandOuts: { limit: 6000, ttl: 3_600_000 },
+  /**
+   * A request of a scanner's route whose token names no scanner, per client address: a token is
+   * guessed by nobody. A scanner's routes skip the default limit, which the scanners of a venue
+   * would share with each other and with every visitor behind its address.
+   */
+  scannerRefusals: { limit: 300, ttl: 3_600_000 },
   /** A report of a profile, per client address: each one may be an email to an address it names. */
   profileReports: { limit: 10, ttl: 3_600_000 },
 } satisfies Record<string, RateLimit>

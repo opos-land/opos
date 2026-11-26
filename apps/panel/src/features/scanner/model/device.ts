@@ -15,13 +15,13 @@ export const codeFromHash = (hash: string): string | null => hash.replace(/^#/, 
 /**
  * The scanner this phone is, or null: its token and what it shows of itself, kept in the storage
  * of the panel's origin on this phone. It is no session of an account, and opens the scanner's
- * routes alone. One whose access has ended is nobody.
+ * routes alone. Whether its access has ended is the API's to say, at every request: the end the
+ * phone was told when it was paired moves with the dates of the scanner's edition.
  */
-export function readDevice(now = new Date()): PairedScanner | null {
+export function readDevice(): PairedScanner | null {
   try {
     const stored = pairedScannerSchema.safeParse(JSON.parse(localStorage.getItem(KEY) ?? 'null'))
-    if (!stored.success || Date.parse(stored.data.expiresAt) <= now.getTime()) return null
-    return stored.data
+    return stored.success ? stored.data : null
   } catch {
     return null
   }

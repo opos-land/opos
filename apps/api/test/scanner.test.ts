@@ -2,6 +2,7 @@ import { type NestExpressApplication } from '@nestjs/platform-express'
 import { type PairedScanner, type ScanResult } from '@opos/contract'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { ROUTE_RATE_LIMITS, RouteRateLimiter } from '../src/common/rate-limit/route-rate-limit'
 import { createApp } from './app'
 import { deleteCreatedAccounts, session } from './auth'
 import {
@@ -55,6 +56,9 @@ const handOut = (token: string, code: string, orderId: string, lineIds: string[]
 const pair = (code: string) => post('/scanner/pair', null, { code })
 const result = (res: { body: unknown }) => res.body as ScanResult
 const revoked = { code: 'scanner.revoked' }
+// A refusal that passes: the scanner and its token stand, and the org behind it cannot write the
+// tickets of its edition at this moment.
+const stopped = { code: 'scanner.stopped' }
 const notValid = (reason: string) => ({ code: 'scan.not-valid', params: { reason } })
 
 /** A tenant of its own with an edition, a ticket type with perks and a paired scanner. */
@@ -146,8 +150,9 @@ describe('a scanner', () => {
   })
 
   // A device's access ends no later than that of the org who enabled it: their tickets write
-  // access to the scanner's edition, not their place in the team alone.
-  it('reads nothing once its org has no tickets write access to its edition, whoever paired it since', async () => {
+  // access to the scanner's edition, not their place in the team alone. The org is still in the
+  // team, so the refusal is one that passes, told apart from that of a revoked scanner.
+  it('is stopped while its org has no tickets write access to its edition, whoever paired it since', async () => {
     const g = await gate()
     const order = await g.paid()
     const org = await member()
@@ -161,7 +166,19 @@ describe('a scanner', () => {
 
     // Lowered to read: the org stays in the team, and the scanner stops.
     await setColumn('edition_memberships', String(access!.id), 'tickets_access', 'read')
-    expect((await scan(ofOrg.token, order.code).expect(401)).body).toMatchObject(revoked)
+    expect((await scan(ofOrg.token, order.code).expect(403)).body).toMatchObject(stopped)
+    const [line] = await g.lines(order.id)
+    expect(
+      (await handOut(ofOrg.token, order.code, order.id, [String(line!.id)]).expect(403)).body,
+    ).toMatchObject(stopped)
+    expect((await g.lines(order.id))[0]!.handed_out_at).toBeNull()
+    // A stopped scanner was not used: the panel tells when it last read something.
+    const used = async () =>
+      (await storedRows('scanner_devices', g.t.id)).find((row) => row.id === ofOrg.id)!.last_used_at
+    const before = await used()
+    await scan(ofOrg.token, order.code).expect(403)
+    expect(await used()).toEqual(before)
+    // Given back, the same token works again.
     await setColumn('edition_memberships', String(access!.id), 'tickets_access', 'write')
     await scan(ofOrg.token, order.code).expect(200)
 
@@ -178,12 +195,12 @@ describe('a scanner', () => {
     const removing = await openTransaction()
     await removing.sql`delete from edition_memberships where id = ${String(access!.id)}`
     await removing.commit()
-    expect((await scan(paired.token, order.code).expect(401)).body).toMatchObject(revoked)
+    expect((await scan(paired.token, order.code).expect(403)).body).toMatchObject(stopped)
     // A head's scanner holds every edition's access by the role itself.
     await scan(g.token, order.code).expect(200)
   })
 
-  it('reads nothing once it is revoked, once it has ended, and once its org has', async () => {
+  it('reads nothing once it is revoked or has ended, is stopped while its org’s access has ended, and is no scanner once its org left', async () => {
     const g = await gate()
     const order = await g.paid()
     const org = await member()
@@ -199,17 +216,17 @@ describe('a scanner', () => {
     for (const token of [ended.token, gone.token]) {
       expect((await scan(token, order.code).expect(401)).body).toMatchObject(revoked)
     }
-    // The org's access ends: so does the scanner's.
+    // The org's access ends: the scanner stops until it is extended.
     await setColumn(
       'tenant_memberships',
       orgId,
       'expires_at',
       new Date(Date.now() - DAY).toISOString(),
     )
-    expect((await scan(ofOrg.token, order.code).expect(401)).body).toMatchObject(revoked)
+    expect((await scan(ofOrg.token, order.code).expect(403)).body).toMatchObject(stopped)
     await setColumn('tenant_memberships', orgId, 'expires_at', null)
     await scan(ofOrg.token, order.code).expect(200)
-    // The org leaves the team.
+    // The org leaves the team: nothing brings the scanner back, and it is told as a revoked one.
     await removeMembership(orgId)
     expect((await scan(ofOrg.token, order.code).expect(401)).body).toMatchObject(revoked)
     expect(
@@ -219,6 +236,53 @@ describe('a scanner', () => {
         ]).expect(401)
       ).body,
     ).toMatchObject(revoked)
+  })
+
+  // A scanner whose org set no end follows its edition: it works until a day after the
+  // edition's last day, wherever that day is moved after the scanner was enabled.
+  it('follows its edition when its org set no end: it works until a day after the last day the edition has now', async () => {
+    const g = await gate()
+    const order = await g.paid()
+    const follows = await addScanner(g.t.id, g.edition, { expiresAt: null })
+    await scan(follows.token, order.code).expect(200)
+    const lastDay = (at: number) =>
+      setColumn('editions', g.edition, 'ends_at', new Date(at).toISOString())
+
+    // The edition began long ago, and its last day was the day before yesterday.
+    await setColumn(
+      'editions',
+      g.edition,
+      'starts_at',
+      new Date(Date.now() - 30 * DAY).toISOString(),
+    )
+    await lastDay(Date.now() - 2 * DAY)
+    expect((await scan(follows.token, order.code).expect(401)).body).toMatchObject(revoked)
+    // An end an org set is only ever an earlier one: a scanner whose own end is later ends a
+    // day after the edition's last day too.
+    expect((await scan(g.token, order.code).expect(401)).body).toMatchObject(revoked)
+
+    // The edition is prolonged: its last day was half a day ago, and the scanners work again.
+    await lastDay(Date.now() - DAY / 2)
+    await scan(follows.token, order.code).expect(200)
+    await scan(g.token, order.code).expect(200)
+    // An earlier end of its own holds whatever the edition's dates are.
+    const early = await addScanner(g.t.id, g.edition, {
+      expiresAt: new Date(Date.now() - 60_000).toISOString(),
+    })
+    expect((await scan(early.token, order.code).expect(401)).body).toMatchObject(revoked)
+  })
+
+  it('tells a phone it pairs the end it has by its edition now', async () => {
+    const g = await gate()
+    const code = 'follows-code-'.padEnd(43, 'x')
+    await addScanner(g.t.id, g.edition, { pairingCode: code, expiresAt: null })
+    // A week later than the edition ended when the scanner was enabled.
+    const ends = new Date('2027-06-10T12:00:00.000Z')
+    await setColumn('editions', g.edition, 'ends_at', ends.toISOString())
+
+    const res = await pair(code).expect(200)
+
+    expect((res.body as PairedScanner).expiresAt).toBe(new Date(ends.getTime() + DAY).toISOString())
   })
 
   it('reads nothing of a suspended convention', async () => {
@@ -482,5 +546,88 @@ describe('a hand-out', () => {
     const [line] = (await g.lines(order.id)).filter((row) => row.id === entry)
     expect(line).toMatchObject({ handed_out_at: null, handed_out_by: null })
     await handOut(g.token, order.code, order.id, [entry]).expect(200)
+  })
+})
+
+// docs/ARCHITECTURE.md, API conventions: a request of a scanner's route counts against the
+// scanner its token names, and against the client address only when the token names none. The
+// scanners of a venue ask from one address, with every visitor on its network.
+describe('the rate limits of a scanner’s routes', () => {
+  let limited: NestExpressApplication
+  /** The default limit of this API: anything counted against it is refused at once. */
+  const DEFAULT = 3
+
+  beforeAll(async () => {
+    limited = await createApp({}, [], { limit: DEFAULT, ttl: 60_000 })
+    await limited.listen(0, '127.0.0.1')
+  })
+
+  afterAll(async () => {
+    await limited.close()
+  })
+
+  const scanFrom = (ip: string, token: string | null, body: object) => {
+    const req = request(limited.getHttpServer()).post('/scanner/scans').set('X-Forwarded-For', ip)
+    return (token === null ? req : req.set('Authorization', `Bearer ${token}`)).send(body)
+  }
+  const limitedResponse = (res: request.Response) => {
+    expect(res.status).toBe(429)
+    expect(res.body).toMatchObject({ code: 'request.rate-limited' })
+    expect(Number(res.headers['retry-after'])).toBeGreaterThan(0)
+  }
+
+  it('share no default limit with the scanners and the visitors behind one address', async () => {
+    const g = await gate()
+    const side = await addScanner(g.t.id, g.edition, { name: 'Side gate' })
+    const order = await g.paid()
+    const ip = '203.0.113.60'
+    const visit = () => request(limited.getHttpServer()).get('/health').set('X-Forwarded-For', ip)
+    for (let visited = 0; visited < DEFAULT; visited += 1) await visit().expect(200)
+    limitedResponse(await visit())
+
+    for (let read = 0; read <= DEFAULT; read += 1) {
+      await scanFrom(ip, g.token, { code: order.code }).expect(200)
+      await scanFrom(ip, side.token, { code: order.code }).expect(200)
+    }
+    const entry = (await g.lines(order.id)).find((line) => line.kind === 'ticket')!
+    await request(limited.getHttpServer())
+      .post('/scanner/hand-outs')
+      .set('X-Forwarded-For', ip)
+      .set('Authorization', `Bearer ${g.token}`)
+      .send({ code: order.code, orderId: order.id, lineIds: [String(entry.id)] })
+      .expect(200)
+  })
+
+  it('count a request with no scanner’s token against its address, refused then before a token is looked up', async () => {
+    const g = await gate()
+    const order = await g.paid()
+    const ip = '203.0.113.61'
+    const { limit } = ROUTE_RATE_LIMITS.scannerRefusals
+    for (let refused = 0; refused < limit; refused += 1) {
+      const token = refused % 2 === 0 ? null : 'x'.repeat(43)
+      expect((await scanFrom(ip, token, { code: order.code }).expect(401)).body).toMatchObject(
+        revoked,
+      )
+    }
+
+    limitedResponse(await scanFrom(ip, 'y'.repeat(43), { code: order.code }))
+    limitedResponse(await scanFrom(ip, null, { code: order.code }))
+    // Refused before its token is looked up: a scanner behind that address waits with it.
+    limitedResponse(await scanFrom(ip, g.token, { code: order.code }))
+    await scanFrom('203.0.113.62', g.token, { code: order.code }).expect(200)
+  })
+
+  it('count every request of a scanner against the scanner, whatever its body', async () => {
+    const g = await gate()
+    const side = await addScanner(g.t.id, g.edition, { name: 'Side gate' })
+    const ip = '203.0.113.63'
+    const limiter = limited.get(RouteRateLimiter)
+    for (let read = 0; read < ROUTE_RATE_LIMITS.scannerScans.limit; read += 1) {
+      await limiter.consume('scannerScans', `scanner:${g.scanner.id}`)
+    }
+
+    limitedResponse(await scanFrom(ip, g.token, {}))
+    // Another scanner behind the address has its own.
+    await scanFrom(ip, side.token, {}).expect(400)
   })
 })

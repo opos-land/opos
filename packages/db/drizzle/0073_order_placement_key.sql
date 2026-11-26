@@ -1,0 +1,2 @@
+ALTER TABLE "orders" ADD COLUMN "placement_key_hash" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "orders_placement_key_unique" ON "orders" USING btree ("tenant_id","edition_id","placement_key_hash");

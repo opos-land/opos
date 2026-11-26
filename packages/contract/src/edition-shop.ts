@@ -172,6 +172,8 @@ export const consentSchema = z.object({
   position: z.number().int().positive(),
   /** Hidden from the shop; the orders that accepted it keep it. */
   hidden: z.boolean(),
+  /** Whether an order accepted it: its sentence then stays as those orders' buyers saw it. */
+  accepted: z.boolean(),
 })
 
 export type Consent = z.infer<typeof consentSchema>
@@ -190,6 +192,7 @@ export type CreateConsent = z.infer<typeof createConsentSchema>
 /**
  * A place past the end is the last one; the others make room in their order. The document a
  * consent links is set with it and never changed: a consent that should link another is a new one.
+ * So is one that should say something else once an order accepted it: its sentence stays.
  */
 export const updateConsentSchema = z
   .strictObject({
@@ -318,7 +321,7 @@ export const consentRoutes = {
       method: 'PATCH',
       path: '/editions/{editionId}/consents/{consentId}',
       summary:
-        'Change the sentence of a consent or whether it is required, move it to a place of the list, hide it or show it; the document it links stays; needs tickets=write',
+        'Change the sentence of a consent or whether it is required, move it to a place of the list, hide it or show it; the document it links stays; refused with consent.accepted for another sentence once an order accepted the consent; needs tickets=write',
     })
     .input(consent.extend({ body: updateConsentSchema }))
     .output(consentSchema),

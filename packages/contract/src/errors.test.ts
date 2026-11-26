@@ -66,6 +66,18 @@ describe('errorCodes', () => {
     expect(errorCodes).toContain(code)
   })
 
+  it('lists the code of a list of variants built on a reading the item has moved on from', () => {
+    expect(errorCodes).toContain('catalog.variants-changed')
+  })
+
+  // What placing an order refuses of a cart (docs/specs/0004-checkout-and-orders.md).
+  it.each(['order.unavailable', 'order.total-changed', 'order.total-too-high'])(
+    'lists %s of a cart that is not placed as it stands',
+    (code) => {
+      expect(errorCodes).toContain(code)
+    },
+  )
+
   // What an org does with an order (docs/specs/0006-order-management.md, Routes).
   it.each([
     'order.not-correctable',
@@ -85,6 +97,7 @@ describe('errorCodes', () => {
     'scanner.outlives-org',
     'scanner.code-refused',
     'scanner.revoked',
+    'scanner.stopped',
     'scanner.ended',
     'scan.not-valid',
   ])('lists %s of the scanner', (code) => {
@@ -94,6 +107,16 @@ describe('errorCodes', () => {
   // docs/specs/0009-buyer-self-service.md, Routes.
   it('lists order.not-extendable of "Buy more"', () => {
     expect(errorCodes).toContain('order.not-extendable')
+  })
+
+  // An order an org moved to another address is sent nowhere at its old account's asking.
+  it('lists order.passed-on of "Resend QR code"', () => {
+    expect(errorCodes).toContain('order.passed-on')
+  })
+
+  // A consent whose document changed since its buyer was shown it places no order.
+  it('lists order.consent-changed of a consent accepted as it no longer is', () => {
+    expect(errorCodes).toContain('order.consent-changed')
   })
 
   // docs/specs/0008-discount-codes.md, Routes.

@@ -17,14 +17,22 @@ import {
 } from '../../../shared/ui'
 import { useCurrentTenant } from '../../tenants'
 import { catalogKey, putStockOptions, putVariantsOptions } from '../api/catalog'
-import { stockWrites, type VariantRow, variantRows, variantsPlan } from '../model/merchandise'
+import {
+  knownVariants,
+  stockWrites,
+  type VariantRow,
+  variantRows,
+  variantsPlan,
+} from '../model/merchandise'
 
 const SAVED = { success: msg`The variants and their stock are saved.` }
 
 /**
  * The variants of an item and the stock of each: every combination of its axes as a row, ticked
  * while it exists. Saving sets which variants exist, then the stock of each one whose number was
- * changed here; the outcome is told once, when all of it is done.
+ * changed here; the outcome is told once, when all of it is done. The save names the variants the
+ * rows were filled with: where someone changed them since, the API refuses it, the refusal is told
+ * as every failed write is, and the rows are filled anew with the variants as they are.
  */
 export function VariantsEditor({ item, canWrite }: { item: MerchandiseItem; canWrite: boolean }) {
   const { t } = useLingui()
@@ -50,7 +58,10 @@ export function VariantsEditor({ item, canWrite }: { item: MerchandiseItem; canW
       // An item without axes keeps its one variant: only its stock is set.
       const saved = bare
         ? item
-        : await putVariants.mutateAsync({ params, body: { variants: plan.variants } })
+        : await putVariants.mutateAsync({
+            params,
+            body: { variants: plan.variants, known: knownVariants(item) },
+          })
       for (const { variantId, stock } of stockWrites(item, saved, plan.stocks)) {
         await putStock.mutateAsync({ params: { ...params, variantId }, body: { stock } })
       }
@@ -58,8 +69,11 @@ export function VariantsEditor({ item, canWrite }: { item: MerchandiseItem; canW
     } catch {
       // The failed write told its own failure; what was saved before it is read again below.
     } finally {
-      setPending(false)
-      await queryClient.invalidateQueries({ queryKey: catalogKey(api) })
+      // The save stays off until the item is read again: one sent before would name the variants
+      // as they were, and be refused for the change this one made.
+      await queryClient
+        .invalidateQueries({ queryKey: catalogKey(api) })
+        .finally(() => setPending(false))
     }
   }
 

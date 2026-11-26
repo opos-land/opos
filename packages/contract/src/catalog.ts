@@ -453,6 +453,16 @@ export const putVariantsSchema = z.strictObject({
       }),
     )
     .max(MAX_OPTION_VALUES ** 2),
+  /**
+   * The variants the list was built on, as the item was read: each with whether it was hidden. A
+   * request that names them is refused by a code of its own once they are not the variants the
+   * item has, since its list would undo what someone else did meanwhile; one that leaves them
+   * out is taken as it stands. The stock is no part of it: each number is set on its own.
+   */
+  known: z
+    .array(z.strictObject({ id: z.uuid(), hidden: z.boolean() }))
+    .max(MAX_ITEM_VARIANTS)
+    .optional(),
 })
 
 export type PutVariants = z.infer<typeof putVariantsSchema>

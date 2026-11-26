@@ -46,7 +46,10 @@ export async function buy(
         fieldId: field.id,
         answer: 'Poznań',
       })),
-      consentIds: offer.consents.map((consent) => consent.id),
+      consents: offer.consents.map((consent) => ({
+        consentId: consent.id,
+        documentVersionId: consent.documentVersionId,
+      })),
       providerConsentAccepted: true,
       expectedTotalMinor: 12000 + (shirt ? 8000 : 0),
       botCheckToken: BOT_CHECK_STAND_IN,

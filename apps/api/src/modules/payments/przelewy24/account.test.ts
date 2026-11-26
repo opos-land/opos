@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { accountOf, FIELDS, providerDate, reasonOf } from './account'
+import { accountOf, FIELDS, providerDate, reasonOf, sameAccount } from './account'
 
 const given = {
   merchantId: '123456',
@@ -37,6 +37,31 @@ describe('the credentials of a Przelewy24 account', () => {
     ['an answer left out', { abandonedPaymentEmailOff: undefined }],
   ])('are no account with %s', (_, changes) => {
     expect(accountOf({ ...given, ...changes } as Record<string, string>)).toBeUndefined()
+  })
+})
+
+describe('two sets of credentials of Przelewy24', () => {
+  // A payment is found and confirmed by the merchant, the point of sale and the environment it
+  // was registered in: the keys and the org's answers may change, and it is still that account.
+  it('name one account when the merchant, the point of sale and the environment are the same', () => {
+    expect(
+      sameAccount(given, {
+        ...given,
+        crc: 'another-crc',
+        apiKey: 'another-api-key',
+        abandonedPaymentEmailOff: 'false',
+      }),
+    ).toBe(true)
+  })
+
+  it.each([
+    ['another merchant', { merchantId: '654321' }],
+    ['another point of sale', { posId: '654321' }],
+    ['the sandbox of the same merchant', { sandbox: 'true' }],
+    ['no account at all', { crc: '' }],
+  ])('name two accounts with %s', (_, changes) => {
+    expect(sameAccount(given, { ...given, ...changes })).toBe(false)
+    expect(sameAccount({ ...given, ...changes }, given)).toBe(false)
   })
 })
 

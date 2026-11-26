@@ -8,6 +8,7 @@ import {
   type PlacedOrder,
 } from '@opos/contract'
 import { formatDateTime, isLocale } from '@opos/i18n'
+import { errorMessage } from '@opos/i18n/errors'
 import { ORPCError } from '@orpc/client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
@@ -61,8 +62,10 @@ import {
   fitToOffer,
   holderIssues,
   loadDraft,
+  newPlacementKey,
   orderBody,
   quoteOf,
+  rekeyed,
   resumeExtension,
   saveDraft,
   type StepId,
@@ -76,6 +79,12 @@ import { keepResultToken } from '../model/result-token'
 
 /** The cart of a checkout that holds nothing: never priced, it only shapes a query that is off. */
 const NO_CART: Cart = { ticket: null, addOnIds: [], items: [] }
+
+/** Whether the shop refused the placement key an order was sent with, saying nothing of why. */
+const keyRefused = (error: unknown) =>
+  error instanceof ORPCError &&
+  errorCode(error) === 'request.invalid' &&
+  (error.data as { field?: unknown } | undefined)?.field === 'placementKey'
 
 /** The ticket type the address asks for: an identifier, `none` for merchandise alone, or nothing. */
 const asked = (value: string | null) =>
@@ -204,11 +213,33 @@ function Checkout({
         )
     // The tab may have kept it for long: what the shop no longer offers leaves it.
     const fitted = start.draft && fitToOffer(offer, start.draft)
-    return { ...start, draft: fitted ? fitted.draft : null, dropped: !!fitted?.dropped }
+    return {
+      ...start,
+      // Begun with another content than the tab kept, it is placed with a key of its own.
+      draft: fitted ? rekeyed(kept, fitted.draft) : null,
+      dropped: !!fitted?.dropped,
+      changedConsents: fitted?.changedConsents ?? [],
+    }
   })
-  const [draft, setDraft] = useState(begun.draft)
+  const [draft, setKept] = useState(begun.draft)
+  /**
+   * Every change of the checkout: one of what it orders draws a new placement key, so the order
+   * placed for what it was is never the answer to what it is now.
+   */
+  const setDraft = (next: Draft | ((current: Draft | null) => Draft | null)) =>
+    setKept((current) => {
+      const after = typeof next === 'function' ? next(current) : next
+      return after && rekeyed(current, after)
+    })
   /** Whether the checkout lost something the shop no longer offers: the buyer is told. */
   const [dropped, setDropped] = useState(begun.dropped)
+  /**
+   * The consents whose document changed since the buyer accepted them, so that they are accepted
+   * no longer: each says so on the Summary until the buyer accepts it again.
+   */
+  const [changedConsents, setChangedConsents] = useState<readonly string[]>(begun.changedConsents)
+  const consentsChanged = (ids: readonly string[]) =>
+    setChangedConsents((held) => [...new Set([...held, ...ids])])
   const [fittedTo, setFittedTo] = useState(offer)
   // The offer was read again, as it is after the shop refused an order: the checkout follows it.
   if (fittedTo !== offer) {
@@ -216,6 +247,7 @@ function Checkout({
     const fitted = draft && fitToOffer(offer, draft)
     if (fitted && fitted.draft !== draft) setDraft(fitted.draft)
     if (fitted?.dropped) setDropped(true)
+    if (fitted && fitted.changedConsents.length > 0) consentsChanged(fitted.changedConsents)
   }
   /** Whether the buyer still has to say what becomes of the merchandise chosen before. */
   const [asking, setAsking] = useState(begun.ask)
@@ -230,12 +262,19 @@ function Checkout({
   /** The order this checkout placed, once it has. */
   const placedId = useRef<string | null>(null)
 
+  /**
+   * The shop refused the checkout's placement key twice over: the order is not placed, and the
+   * Summary says so until the buyer tries again.
+   */
+  const [unplaced, setUnplaced] = useState(false)
+
   const change = (changes: Partial<Draft>) =>
     setDraft((current) => (current ? { ...current, ...changes } : current))
 
-  // Kept in the tab on every change, so a reload resumes on the same step with the same data.
+  // Kept in the tab on every change, so a reload resumes on the same step with the same data. A
+  // checkout whose order is placed is over: a change still on its way then keeps nothing.
   useEffect(() => {
-    if (draft) saveDraft(tenantSlug, editionSlug, draft, accountId)
+    if (draft && placedId.current === null) saveDraft(tenantSlug, editionSlug, draft, accountId)
   }, [draft, tenantSlug, editionSlug, accountId])
 
   const step = draft?.step
@@ -245,10 +284,16 @@ function Checkout({
   }, [step])
 
   // A discount code is priced by the shop, which alone knows its terms: the Summary asks for
-  // the cart's price with the code, again whenever the cart or the code changes.
+  // the cart's price with the code, again whenever the cart or the code changes. "Buy more"
+  // names the order it adds to, so the cart is priced as it is then placed.
   const entered = draft?.discountCode.trim() ?? ''
   const coded = useQuery({
-    ...discountQuoteOptions(tenantSlug, editionSlug, draft ? cartOf(draft) : NO_CART, entered),
+    ...discountQuoteOptions(
+      { slug: tenantSlug, editionSlug, editionId },
+      draft ? cartOf(draft) : NO_CART,
+      entered,
+      draft?.extending?.orderId,
+    ),
     enabled: draft !== null && entered !== '',
     retry: false,
   })
@@ -256,12 +301,28 @@ function Checkout({
   const place = useMutation({
     mutationFn: async (order: { draft: Draft; totalMinor: number; withCode: boolean }) => {
       const at = { slug: tenantSlug, editionSlug, editionId }
-      const placed: PlacedOrder = await placeOrder(
-        at,
-        orderBody(order.draft, order.totalMinor, BOT_CHECK_STAND_IN, signedIn, order.withCode),
-        signedIn,
-      )
+      const send = (sent: Draft): Promise<PlacedOrder> =>
+        placeOrder(
+          at,
+          orderBody(sent, order.totalMinor, BOT_CHECK_STAND_IN, signedIn, order.withCode),
+          signedIn,
+        )
+      const placed = await send(order.draft).catch((error: unknown) => {
+        if (!keyRefused(error)) throw error
+        // The key placed an order this checkout is no longer answered with, as one that expired
+        // since. It is nothing the buyer entered or can correct: the same order is sent once
+        // more with a new key, and only that once. The checkout keeps the new key, unless it
+        // changed meanwhile and drew its own: the answer to this try may never arrive too.
+        const placementKey = newPlacementKey()
+        setDraft((current) =>
+          current?.placementKey === order.draft.placementKey
+            ? { ...current, placementKey }
+            : current,
+        )
+        return send({ ...order.draft, placementKey })
+      })
       // The order is placed: the checkout is over, and its result page opens with the token.
+      placedId.current = placed.orderId
       keepResultToken(placed.orderId, placed.resultToken)
       clearDraft(tenantSlug, editionSlug, order.draft.extending?.orderId)
       if (placed.status === 'paid') return { placed, redirectUrl: null }
@@ -277,16 +338,26 @@ function Checkout({
     // The page shows what came of it itself.
     meta: { success: false, failure: false },
     onSuccess: ({ placed, redirectUrl }) => {
-      placedId.current = placed.orderId
       if (redirectUrl) leaveTo(redirectUrl)
       else void navigate(`${shop}/result/${placed.orderId}`, { replace: true })
     },
     onError: (error) => {
       const code = errorCode(error)
       const data: unknown = error instanceof ORPCError ? error.data : undefined
-      const named = (data ?? {}) as { kind?: unknown; id?: unknown; totalMinor?: unknown }
+      const named = (data ?? {}) as {
+        kind?: unknown
+        id?: unknown
+        totalMinor?: unknown
+        consent?: unknown
+      }
       // What the shop offers changed: it is read again, and the buyer sees it as it is now.
       void queryClient.invalidateQueries({ queryKey: offerKey(tenantSlug, editionSlug) })
+      if (keyRefused(error)) {
+        // The second key in a row: nothing more is sent by itself. The Summary says that the
+        // order is not placed, and the buyer's own next try is sent with a new key.
+        change({ placementKey: newPlacementKey() })
+        return setUnplaced(true)
+      }
       if (code === 'order.unavailable' && named.kind === 'discount-code') {
         // The code was used up or ended since it was applied: asked again, the shop refuses
         // it, and the Summary says so beside the code.
@@ -307,6 +378,21 @@ function Checkout({
         return setNewTotal(named.totalMinor)
       }
       if (code === 'order.email-refused') change({ step: 'holder' })
+      if (code === 'order.consent-changed' && typeof named.consent === 'string') {
+        // The document of a consent changed since the buyer accepted it. The consent is
+        // accepted no longer and says so on its step, the Summary, where the offer read again
+        // links the version in force: the buyer reads it and accepts the consent again.
+        const consentId = named.consent
+        consentsChanged([consentId])
+        setDraft(
+          (current) =>
+            current && {
+              ...current,
+              step: 'summary',
+              consents: current.consents.filter((own) => own.consentId !== consentId),
+            },
+        )
+      }
       notifyFailure(error)
     },
   })
@@ -441,6 +527,7 @@ function Checkout({
       // browser still leaves for the provider or for the result.
       if (placing) return
       setNewTotal(null)
+      setUnplaced(false)
       place.mutate({ draft, totalMinor, withCode: applied })
       return
     }
@@ -570,9 +657,15 @@ function Checkout({
               </Trans>
             </p>
           )}
+          {current === 'summary' && problem?.kind === 'total-too-high' && (
+            // Nothing of it ran out: it is all of it together that one order cannot hold.
+            <p className="text-destructive" role="alert">
+              {i18n._(errorMessage('order.total-too-high'))}
+            </p>
+          )}
           {current === 'summary' &&
             problem &&
-            !['ticket-type', 'merch-only'].includes(problem.kind) && (
+            !['ticket-type', 'merch-only', 'total-too-high'].includes(problem.kind) && (
               <p className="text-destructive" role="alert">
                 <Trans>
                   Something you chose is no longer available. Go back to its step and change it.
@@ -597,6 +690,7 @@ function Checkout({
                 totalMinor={totalMinor}
                 email={account?.email ?? draft.email.trim().toLowerCase()}
                 marked={tried.has('summary')}
+                changedConsents={changedConsents}
                 discount={discount}
                 joins={draft.extending?.number}
                 change={change}
@@ -604,6 +698,11 @@ function Checkout({
               {nothingMore && tried.has('summary') && (
                 <p className="text-destructive" role="alert">
                   <Trans>Choose at least one add-on or item to order.</Trans>
+                </p>
+              )}
+              {unplaced && (
+                <p className="text-destructive" role="alert">
+                  <Trans>We could not place the order. Check the summary and try again.</Trans>
                 </p>
               )}
             </>

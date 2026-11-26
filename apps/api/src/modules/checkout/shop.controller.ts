@@ -1,5 +1,5 @@
 import { Controller, Inject } from '@nestjs/common'
-import { contract, placeOrderSchema, priceCart, SHOP_CURRENCY } from '@opos/contract'
+import { contract, placeOrderSchema } from '@opos/contract'
 import { Implement, implement } from '@orpc/nest'
 import { TenantContextService } from '../../common/als/tenant-context.service'
 import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
@@ -8,13 +8,12 @@ import { PublicRepository } from '../public/public.repository'
 import { BOT_CHECK, type BotCheck } from './bot-check'
 import {
   botCheckFailed,
-  cartRefusal,
-  discountCodeRefused,
+  quoteRefusedForDiscountCode,
   refusedForDiscountCode,
 } from './checkout.errors'
-import { Discounts } from './discounts.service'
 import { OfferService } from './offer.service'
 import { OrderPlacement } from './order-placement.service'
+import { Quotes } from './quotes.service'
 
 /**
  * The shop of an edition for anyone (docs/specs/0004-checkout-and-orders.md): its offer and the
@@ -28,7 +27,7 @@ export class ShopPublicController {
     private readonly editions: PublicRepository,
     private readonly offers: OfferService,
     private readonly placement: OrderPlacement,
-    private readonly discounts: Discounts,
+    private readonly quotes: Quotes,
     @Inject(BOT_CHECK) private readonly botCheck: BotCheck,
     private readonly limiter: RouteRateLimiter,
     private readonly context: TenantContextService,
@@ -49,39 +48,27 @@ export class ShopPublicController {
     )
   }
 
-  /**
-   * A cart is priced against the offer as it stands now, by the function the portal runs too. A
-   * discount code is looked up here alone: its terms never leave the API, and the quote carries
-   * what it takes off as a line. Every code that cannot be used is refused alike.
-   */
+  /** The price of anyone's cart, with the discount code the buyer entered. */
   @Implement(contract.public.shopQuote)
   quote() {
     return implement(contract.public.shopQuote).handler(async ({ input }) => {
       const address = this.context.clientAddress()
       await this.limiter.consume('shopQuotes', `ip:${address}`)
-      const { discountCode, ...cart } = input.body
-      if (discountCode !== undefined) {
-        await this.limiter.consume('discountCodeTries', `ip:${address}`)
-      }
-      const priced = await this.convention.within(input.params.slug, async (tenant) => {
-        const edition = await this.editions.edition(input.params.editionSlug)
-        const offer = await this.offers.of(tenant.id, edition.id)
-        if (discountCode === undefined) return priceCart(offer, cart)
-        const code = await this.discounts.usable(edition.id, discountCode, new Date())
-        // What cannot be had of the cart is told first, as it is without a code.
-        const plain = priceCart(offer, cart)
-        if ('problem' in plain) return plain
-        if (!code || !(await this.discounts.hasUse(edition.id, code.id))) {
-          throw discountCodeRefused()
-        }
-        return priceCart(offer, cart, code)
-      })
-      if ('problem' in priced) {
-        throw priced.problem.kind === 'discount-code'
-          ? discountCodeRefused()
-          : cartRefusal(priced.problem)
-      }
-      return { currency: SHOP_CURRENCY, ...priced }
+      const price = () =>
+        this.convention.within(input.params.slug, async (tenant) => {
+          const edition = await this.editions.edition(input.params.editionSlug)
+          return this.quotes.of(tenant.id, edition.id, input.body)
+        })
+      if (input.body.discountCode === undefined) return price()
+      // A code that is refused is a try of one, counted with an order's; one that can be used
+      // is none. An address out of tries is refused before its code is looked at, and quotes
+      // sent together are counted as those sent one by one.
+      return this.limiter.counting(
+        'discountCodeTries',
+        `ip:${address}`,
+        price,
+        quoteRefusedForDiscountCode,
+      )
     })
   }
 

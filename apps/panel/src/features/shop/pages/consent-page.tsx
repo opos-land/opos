@@ -26,8 +26,9 @@ import { ConsentForm } from '../components/consent-form'
 /**
  * One consent of an edition (`/editions/:editionSlug/documents/consents/:consentId`), for a member
  * with tickets=write in the edition: the sentence a buyer accepts and whether the buyer must, and
- * its deletion. The document it links is linked for good. Its place among the consents and whether
- * the shop asks for it are changed in their list.
+ * its deletion. The document it links is linked for good, and so is its sentence once an order
+ * accepted it. Its place among the consents and whether the shop asks for it are changed in their
+ * list.
  */
 export function ConsentPage() {
   const { t } = useLingui()
@@ -86,8 +87,13 @@ export function ConsentPage() {
           pending={update.isPending}
           submitLabel={<Trans>Save the consent</Trans>}
           linksDocument={false}
+          sentenceFixed={consent.accepted}
           onSubmit={({ text: sentence, isRequired }) =>
-            update.mutate({ params, body: { text: sentence, isRequired } })
+            // The sentence of a consent an order accepted stays, and is not sent.
+            update.mutate({
+              params,
+              body: consent.accepted ? { isRequired } : { text: sentence, isRequired },
+            })
           }
         />
       </Section>

@@ -29,6 +29,14 @@ describe('the fake provider', () => {
       outcome: 'unavailable',
     })
   })
+
+  // Its `account` is what a real provider's merchant is: anything else of the credentials may
+  // change, and they still name that account.
+  it('takes two sets of credentials for one account when their `account` is the same', () => {
+    expect(fake.sameAccount({ account: 'demo' }, { account: 'demo', secret: 'new' })).toBe(true)
+    expect(fake.sameAccount({ account: 'demo' }, { account: 'another' })).toBe(false)
+    expect(fake.sameAccount({ anything: 'at all' }, { anything: 'at all' })).toBe(false)
+  })
 })
 
 describe('a payment at the fake provider', () => {
@@ -72,6 +80,14 @@ describe('a payment at the fake provider', () => {
     const { provider, answer } = await started({ account: FAKE_ACCOUNT.startUnavailable })
 
     expect(answer).toMatchObject({ outcome: 'unavailable' })
+    expect(provider.started('a1')).toBeUndefined()
+  })
+
+  // Out of reach, a provider may know the attempt after all; one that refused never will.
+  it('refuses to start for the account that stands for that, and knows no such attempt', async () => {
+    const { provider, answer } = await started({ account: FAKE_ACCOUNT.startRefused })
+
+    expect(answer).toMatchObject({ outcome: 'refused' })
     expect(provider.started('a1')).toBeUndefined()
   })
 

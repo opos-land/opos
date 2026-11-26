@@ -10,11 +10,13 @@ import { ApiError } from '../../common/errors/api-error'
 export const shopOpen = () => new ApiError(409, 'shop.open', 'A shop of the convention is open')
 
 /**
- * An order of the convention awaits payment: a payment under way is confirmed with the
- * credentials it started with, so they stay as they are until it is paid or expires.
+ * A payment of the convention is under way: an order awaits payment, or expired a short while
+ * ago with a payment attempt nobody confirmed. It is confirmed with the account it started with,
+ * which is not disconnected until then, and gives way to new credentials only where the payment
+ * loses nothing by it.
  */
 export const paymentsUnderWay = () =>
-  new ApiError(409, 'shop.payments-under-way', 'An order of the convention awaits payment')
+  new ApiError(409, 'shop.payments-under-way', 'A payment of the convention is under way')
 
 /** The provider refused the credentials it was given: nothing of them is stored. */
 export const credentialsRefused = () =>
@@ -58,3 +60,10 @@ export const tooManyConsents = () =>
   new ApiError(409, 'consent.too-many', 'The edition holds the most consents it can', {
     limit: MAX_EDITION_CONSENTS,
   })
+
+/**
+ * The sentence of a consent an order accepted stays as that order's buyer saw it: another
+ * sentence is a new consent. Not the refusal of a deletion, which is `consent.in-use`.
+ */
+export const consentAccepted = () =>
+  new ApiError(409, 'consent.accepted', 'An order accepted the consent: its sentence stays')

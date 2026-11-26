@@ -265,6 +265,27 @@ describe('a payment attempt', () => {
     expect(await s.order(placed.orderId)).toMatchObject({ status: 'awaiting-payment', holds: true })
   })
 
+  // The mark of a refused attempt is told from the mark of one asked about again by its moment:
+  // within the order's hold. It is the moment the start was found to be within the hold, never
+  // the one the provider answered at, which may come after the hold has ended.
+  it('marks a refused attempt within the hold of its order, however late the provider answers', async () => {
+    const s = await shop()
+    const placed = await s.place()
+    vi.spyOn(fake(), 'start').mockImplementation(async () => {
+      // The hold ends while the provider answers.
+      await setColumn('orders', placed.orderId, 'hold_ends_at', new Date().toISOString())
+      return { outcome: 'refused', reason: 'the provider is asked to refuse' }
+    })
+
+    await s.start(placed).expect(503)
+
+    const [attempt] = await s.attempts()
+    const order = await s.order(placed.orderId)
+    expect(attempt).toMatchObject({ status: 'ended', confirmed_at: null })
+    const moment = (stored: unknown) => new Date(stored as string | Date).getTime()
+    expect(moment(attempt!.rechecked_at)).toBeLessThanOrEqual(moment(order.hold_ends_at))
+  })
+
   it('starts again while none was paid: the buyer tries again without entering anything anew', async () => {
     const s = await shop()
     const placed = await s.place()

@@ -633,22 +633,30 @@ describe('what else an order keeps in place', () => {
   describe('once it expired with a payment attempt nobody confirmed', () => {
     const HOUR = 3_600_000
     /**
-     * An order whose hold ended so long ago, expired, with an attempt of the status given;
-     * `answered` when its provider gave its last word that nobody paid it.
+     * An order whose hold ended so long ago, expired, with an attempt of the status given.
+     * `marked` says when the attempt was marked as one nobody asks about again: within the hold,
+     * as one its provider refused to register is, or an hour after it, as one the provider was
+     * asked about once more is.
      */
-    async function expired(endedAgo: number, attempt?: 'ended' | 'failed', answered = false) {
+    async function expired(
+      endedAgo: number,
+      attempt?: 'ended' | 'failed',
+      marked?: 'in-hold' | 'after-hold',
+    ) {
       const c = await convention()
       await makeShopReady(c.t.id, c.edition)
       await connectFake(c.t.id)
+      const holdEndsAt = Date.now() - endedAgo
       const order = await addOrder(c.t.id, c.edition, {
         status: 'expired',
         holds: false,
-        holdEndsAt: new Date(Date.now() - endedAgo).toISOString(),
+        holdEndsAt: new Date(holdEndsAt).toISOString(),
       })
       if (attempt) {
+        const markedAt = holdEndsAt + (marked === 'in-hold' ? -60_000 : HOUR)
         await addPaymentAttempt(c.t.id, c.edition, order.id, {
           status: attempt,
-          recheckedAt: answered ? new Date().toISOString() : null,
+          recheckedAt: marked ? new Date(markedAt).toISOString() : null,
         })
       }
       return c
@@ -691,18 +699,34 @@ describe('what else an order keeps in place', () => {
       expect((await disconnect(disconnected)).status).toBe(204)
     })
 
-    // The provider answered that nobody paid the attempt: asked about it once more after the
-    // order expired, or refusing to register it at all. It confirms nothing of it any more.
-    it('lets the account change at once when the provider answered that nobody paid its attempts', async () => {
-      const replaced = await expired(within, 'ended', true)
+    // The provider refused to register the attempt, which it does while the order still awaits
+    // payment: it knows no such attempt, and confirms nothing of it.
+    it('lets the account change at once when the provider refused to register its attempts', async () => {
+      const replaced = await expired(within, 'ended', 'in-hold')
       expect((await connect(replaced, { account: 'another' })).status).toBe(200)
 
-      const disconnected = await expired(within, 'failed', true)
+      const disconnected = await expired(within, 'failed', 'in-hold')
       expect((await disconnect(disconnected)).status).toBe(204)
     })
 
+    // Asked once more after the order expired, the provider answered that nobody paid the
+    // attempt. That is not its last word: a transfer booked later is confirmed with the account.
+    it('keeps the account for the whole day when the provider, asked again, said nobody paid', async () => {
+      const c = await expired(within, 'ended', 'after-hold')
+      const before = await storedAccount(c)
+
+      for (const res of [await connect(c, { account: 'another' }), await disconnect(c)]) {
+        expect(res.status).toBe(409)
+        expect(res.body).toMatchObject({ code: 'shop.payments-under-way' })
+      }
+      expect(await storedAccount(c)).toEqual(before)
+
+      const later = await expired(past, 'failed', 'after-hold')
+      expect((await connect(later, { account: 'another' })).status).toBe(200)
+    })
+
     it('keeps the account while one of its attempts may still be confirmed', async () => {
-      const c = await expired(within, 'ended', true)
+      const c = await expired(within, 'ended', 'in-hold')
       const [order] = await storedRows('orders', c.t.id)
       await addPaymentAttempt(c.t.id, c.edition, String(order!.id), { status: 'ended' })
 

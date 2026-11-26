@@ -83,12 +83,14 @@ export class PaymentAttempts {
       }
     }
 
-    const attemptId = await this.context.withTenant(tenant.id, async () => {
+    const { attemptId, startedAt } = await this.context.withTenant(tenant.id, async () => {
       // The order as it is now, alone, and its opener judged again: it may have been paid or
       // expired, its edition taken back or its token run out while the provider was asked.
       const order = await this.opened(tenant.id, orderId, opener, new Date(), true)
-      this.payable(order, new Date())
-      return this.payments.addAttempt(order, first.provider)
+      // The moment the attempt is found to start within the hold of its order.
+      const startedAt = new Date()
+      this.payable(order, startedAt)
+      return { attemptId: await this.payments.addAttempt(order, first.provider), startedAt }
     })
     const { order } = first
     const token = 'token' in opener ? opener.token : undefined
@@ -114,12 +116,15 @@ export class PaymentAttempts {
     if (answer.outcome !== 'started') {
       // Kept as an attempt that ended with no payment. A provider that answered it registered
       // nothing gave its last word of the attempt: marked, it is not asked about again and keeps
-      // no account in place once its order expires. One that did not answer may know it.
+      // no account in place once its order expires. One that did not answer may know it. The
+      // mark is the moment the attempt started, which is within the hold whenever the provider
+      // answers: a mark not after the end of the hold is what tells a refused attempt from one
+      // asked about again (ProviderAccountRepository.paymentsUnderWay).
       const refused = answer.outcome === 'refused'
       await this.context.withTenant(tenant.id, () =>
         this.payments.changeAttempt(attemptId, {
           status: 'ended',
-          ...(refused && { recheckedAt: new Date() }),
+          ...(refused && { recheckedAt: startedAt }),
         }),
       )
       throw providerUnavailable(answer.reason)

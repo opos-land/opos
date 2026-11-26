@@ -692,7 +692,9 @@ describe('the credentials of a Przelewy24 account with a payment under way', () 
     const kept = await connect(s.t, 'przelewy24', s.credentials).expect(409)
     expect(kept.body).toMatchObject({ code: 'shop.payments-under-way' })
 
-    await endHold(placed.orderId)
+    // The hold ends now, after the refusal, as it does for every attempt: one starts only
+    // within the hold, and the refusal is told by a mark from before the hold's end.
+    await setColumn('orders', placed.orderId, 'hold_ends_at', new Date().toISOString())
     expect(await expiry(s.t.id)).toMatchObject({ expired: 1 })
 
     await connect(s.t, 'przelewy24', s.credentials).expect(200)

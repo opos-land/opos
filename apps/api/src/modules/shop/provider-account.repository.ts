@@ -65,11 +65,16 @@ export class ProviderAccountRepository {
    * Whether a payment of the convention is under way: an order awaits payment, or one expired
    * whose hold ended within the last LATE_CONFIRMATION_HOURS and which has a payment attempt
    * its provider may still confirm, since a payment made counts whenever its confirmation comes.
-   * That is an attempt nobody confirmed and whose provider has not given its last word that
-   * nobody paid it: refusing to register it, or asked about it once more after the order
-   * expired. The lock on the tenant's provider account is taken first, alone, and an order with
-   * something to pay shares it while it is placed: one being placed is waited for and counted,
-   * and one placed after waits for the change of the credentials.
+   * That is an attempt nobody confirmed, but for one its provider refused to register: the
+   * provider knows no such attempt and confirms nothing of it. An attempt the provider was asked
+   * about once more after the order expired counts on, whatever it answered: "not paid" is not
+   * its last word, and a transfer booked later is confirmed with the account. The two share one
+   * mark and differ by its moment. A refusal is marked with the moment the attempt started,
+   * which is within the hold; asking again is marked an hour after the end of the hold at the
+   * earliest. So an attempt marked after the end of its order's hold may still be confirmed, as
+   * one not marked at all. The lock on the tenant's provider account is taken first, alone, and
+   * an order with something to pay shares it while it is placed: one being placed is waited for
+   * and counted, and one placed after waits for the change of the credentials.
    */
   async paymentsUnderWay(now = new Date()): Promise<boolean> {
     const tx = this.context.tx()
@@ -84,7 +89,10 @@ export class ProviderAccountRepository {
           eq(paymentAttempts.tenantId, tenantId),
           eq(paymentAttempts.orderId, orders.id),
           isNull(paymentAttempts.confirmedAt),
-          isNull(paymentAttempts.recheckedAt),
+          or(
+            isNull(paymentAttempts.recheckedAt),
+            gt(paymentAttempts.recheckedAt, orders.holdEndsAt),
+          ),
         ),
       )
     const [order] = await tx

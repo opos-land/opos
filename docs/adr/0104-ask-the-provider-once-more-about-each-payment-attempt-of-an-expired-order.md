@@ -104,9 +104,9 @@ tickets module: its domain owner confirms it.
 - With several API processes, each asks on its own clock, and two that find the same attempt at
   the same moment may each ask. The payment is taken once: the order's lock lets one of them
   write it.
-- A provider account is kept while an attempt of an expired order may still be confirmed (0093):
-  until the attempt carries the mark, and for the 24 hours this question may be asked in at
-  most.
+- A provider account is kept for 24 hours from the end of the hold of an expired order with an
+  attempt nobody confirmed (0093), whatever this question is answered: an answer that nobody
+  paid frees nothing, and only an attempt its provider refused to register keeps no account.
 - What stays open: a payment made later than an hour after the hold whose settlement answer is
   lost, an attempt of an order the expiry left waiting for more than 24 hours past its hold, an
   attempt no run reached with a question within the 24 hours, and the other attempts of an

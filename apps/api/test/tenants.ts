@@ -791,7 +791,7 @@ export async function addPaymentAttempt(
     moneyWith?: 'convention' | 'buyer' | null
     providerReference?: string | null
     information?: Record<string, string> | null
-    /** When its provider gave its last word that nobody paid it. */
+    /** When it was marked as one nobody asks about again. */
     recheckedAt?: string | null
   } = {},
 ) {

@@ -37,12 +37,15 @@ module: its domain owner confirms it.
 - A payment is under way while an order of the convention awaits payment, and for 24 hours from
   the end of the hold of an expired order at most, while the order has a payment attempt its
   provider may still confirm: its late confirmation still needs the account.
-- An attempt may still be confirmed while nobody confirmed it and its provider has not given its
-  last word that nobody paid it. The provider gives that word when it answers the start of the
-  attempt by refusing to register it, and when it answers the question asked once more after
-  the order expired
-  ([0104](0104-ask-the-provider-once-more-about-each-payment-attempt-of-an-expired-order.md)). A
-  provider that did not answer said nothing: its attempt counts on, for the 24 hours.
+- An attempt may still be confirmed while nobody confirmed it, but for one its provider refused
+  to register when it started: the provider knows no such attempt and confirms nothing of it,
+  so it keeps no account in place. That is the one case in which the account waits for no more
+  than the provider's word. Every other attempt counts for the 24 hours: one whose start the
+  provider did not answer, and one the provider answered about as not paid when asked once more
+  after the order expired
+  ([0104](0104-ask-the-provider-once-more-about-each-payment-attempt-of-an-expired-order.md)).
+  "Not paid" is not a provider's last word: it says that no payment has come yet, and a
+  transfer booked later is confirmed with the account the convention holds then.
 - While a payment is under way the provider account is not disconnected, and new credentials are
   refused, but for three accounts that lose nothing by giving way:
   - **The same account given again.** The provider's module tells whether two sets of credentials
@@ -85,6 +88,10 @@ module: its domain owner confirms it.
   refused to register is never confirmed, and it is what a mistyped merchant identifier leaves
   at every buyer. The one repair, the right identifier, names another account, so it would wait
   a day after the last of those buyers, with the shop selling nothing meanwhile.
+- **Free the account once the provider, asked once more, answers that nobody paid.** A little
+  over an hour in place of a day. Przelewy24's answer then says that no payment has come, not
+  that none will: a transfer booked after it would be notified to an account that is gone, with
+  the buyer's money at the provider and no ticket.
 - **Take a corrected merchant or point of sale identifier as the same account.** Nothing tells a
   mistyped identifier from a move to another account, which loses the payments under way.
 
@@ -103,9 +110,13 @@ module: its domain owner confirms it.
 - A provider's module answers one more question, with no call: whether two sets of credentials
   name one account.
 - A convention that moves to another account, or disconnects its own, waits for the hold of its
-  last order awaiting payment, and then for the provider's last word of each attempt of an order
-  that expired: a little over an hour where the provider answers the question asked once more,
-  a day where it does not.
+  last order awaiting payment, and then a day from the end of the hold of each expired order
+  with an attempt nobody confirmed. It waits for nothing after an order whose every such attempt
+  the provider refused to register.
+- A refused attempt and one asked about once more carry the same mark, and the moment of the
+  mark tells them apart: a refusal is marked with the moment the attempt started, which is
+  within the hold, and the question asked once more is marked an hour after the end of the
+  hold at the earliest. No column is added for it.
 - A mistyped merchant or point of sale identifier names another account. Przelewy24's check of
   credentials reads the point of sale and the API key alone, so an account with a wrong
   merchant identifier connects as ready and every payment fails at its registration. Such an

@@ -196,10 +196,10 @@ describe('errorMessage', () => {
 
     expect(errorMessage('request.busy')).not.toBe(unknownError)
     expect(i18n._(errorMessage('request.busy'))).toBe(
-      'Nie można tego teraz zapisać, bo trwa inna zmiana. Spróbuj ponownie za chwilę.',
+      'Nie można tego teraz zrobić, bo trwa inna zmiana. Spróbuj ponownie za chwilę.',
     )
     expect(errorMessage('request.busy').message).toBe(
-      'This cannot be saved right now, because another change is under way. Try again in a moment.',
+      'This cannot be done right now, because another change is under way. Try again in a moment.',
     )
   })
 

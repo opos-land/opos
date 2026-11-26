@@ -1132,8 +1132,8 @@ msgid "This can be done only with a paid order."
 msgstr "This can be done only with a paid order."
 
 #: src/errors.ts
-msgid "This cannot be saved right now, because another change is under way. Try again in a moment."
-msgstr "This cannot be saved right now, because another change is under way. Try again in a moment."
+msgid "This cannot be done right now, because another change is under way. Try again in a moment."
+msgstr "This cannot be done right now, because another change is under way. Try again in a moment."
 
 #: src/errors.ts
 msgid "This change would delete something an order holds. Hide it instead: it leaves the offer and stays on its orders."

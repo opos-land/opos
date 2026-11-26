@@ -110,17 +110,21 @@ describe('manualOrderLines', () => {
 describe('manualOrderBody', () => {
   it('sends the reason and what was sold, a name and a note only when typed', () => {
     expect(
-      manualOrderBody({
-        ...EMPTY_MANUAL_ORDER,
-        reason: 'invoice',
-        note: ' Invoice 7 ',
-        ticketTypeId: 'standard',
-        addOnIds: ['room'],
-        quantities: { 'shirt-l': 2, 'pin-one': 0 },
-        holderName: ' Ada ',
-        ageBand: 'adult',
-        answers: { city: ' Gdynia ', club: '  ' },
-      }),
+      manualOrderBody(
+        catalog,
+        {
+          ...EMPTY_MANUAL_ORDER,
+          reason: 'invoice',
+          note: ' Invoice 7 ',
+          ticketTypeId: 'standard',
+          addOnIds: ['room'],
+          quantities: { 'shirt-l': 2, 'pin-one': 0 },
+          holderName: ' Ada ',
+          ageBand: 'adult',
+          answers: { city: ' Gdynia ', club: '  ' },
+        },
+        NOW,
+      ),
     ).toEqual({
       reason: 'invoice',
       note: 'Invoice 7',
@@ -137,13 +141,17 @@ describe('manualOrderBody', () => {
 
   it('has no ticket holder without a ticket: no age band, no answer, no add-on', () => {
     expect(
-      manualOrderBody({
-        ...EMPTY_MANUAL_ORDER,
-        addOnIds: ['room'],
-        quantities: { 'pin-one': 1 },
-        ageBand: 'adult',
-        answers: { city: 'Gdynia' },
-      }),
+      manualOrderBody(
+        catalog,
+        {
+          ...EMPTY_MANUAL_ORDER,
+          addOnIds: ['room'],
+          quantities: { 'pin-one': 1 },
+          ageBand: 'adult',
+          answers: { city: 'Gdynia' },
+        },
+        NOW,
+      ),
     ).toEqual({
       reason: 'desk',
       note: null,
@@ -152,5 +160,28 @@ describe('manualOrderBody', () => {
       ageBand: null,
       customFieldAnswers: [],
     })
+  })
+
+  it('sends of the merchandise only what the screen offers with the ticket type chosen', () => {
+    // The pin was counted before the ticket type was chosen, which does not offer it; so was a
+    // variant that is hidden.
+    const draft = {
+      ...EMPTY_MANUAL_ORDER,
+      ticketTypeId: 'standard',
+      quantities: { 'pin-one': 2, 'shirt-l': 1, 'shirt-old': 3 },
+    }
+
+    expect(manualOrderBody(catalog, draft, NOW).cart.items).toEqual([
+      { variantId: 'shirt-l', quantity: 1 },
+    ])
+    expect(manualOrderLines(catalog, draft, NOW).lines.map((line) => line.name)).toEqual([
+      'Standard',
+      'Shirt (L)',
+    ])
+    // Without a ticket every item is offered again, with what was counted of it.
+    expect(manualOrderBody(catalog, { ...draft, ticketTypeId: '' }, NOW).cart.items).toEqual([
+      { variantId: 'shirt-l', quantity: 1 },
+      { variantId: 'pin-one', quantity: 2 },
+    ])
   })
 })

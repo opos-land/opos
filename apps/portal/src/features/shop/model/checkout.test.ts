@@ -1,4 +1,4 @@
-import { type MyOrder, type Offer } from '@opos/contract'
+import { type MyOrder, type Offer, placeVisitorOrderSchema } from '@opos/contract'
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   beginCheckout,
@@ -8,6 +8,7 @@ import {
   type Draft,
   emptyDraft,
   extensionDraft,
+  fitToOffer,
   forgetDraftsAtSignOut,
   holderIssues,
   loadDraft,
@@ -236,6 +237,31 @@ describe('the ticket holder step', () => {
     expect(issue({ email: long, emailConfirmation: long })).toEqual({ email: 'too-long' })
   })
 
+  // An address the shop refuses is refused here, beside its field: placed with one, the order
+  // would come back from the Summary as invalid, with no field named.
+  it('takes an email exactly when the shop takes it for a visitor’s order', () => {
+    const emails = [
+      'ada@example.test',
+      'ada.lovelace+shop@mail.example.test',
+      'jan@gmail.com.',
+      'jan.@gmail.com',
+      'jan..k@gmail.com',
+      'jan@gmail.c',
+      'jan@gmail.com,',
+      'żaneta@poczta.pl',
+      'jan@poczta.żółw.pl',
+    ]
+    const taken = (email: string) =>
+      placeVisitorOrderSchema.shape.email.safeParse(email).success ? undefined : 'invalid'
+
+    for (const email of emails) {
+      const issues = holderIssues(offer(), filled({ email, emailConfirmation: email }), null)
+      expect(issues.email, email).toBe(taken(email))
+    }
+    expect(taken('ada@example.test')).toBeUndefined()
+    expect(taken('jan@gmail.com.')).toBe('invalid')
+  })
+
   // A signed-in buyer's email is the account's: nothing is typed and nothing is checked of it.
   it('asks no email of a signed-in buyer', () => {
     expect(
@@ -398,6 +424,123 @@ describe('the start of a checkout', () => {
   })
 })
 
+// The tab keeps a checkout for as long as it lives, and the offer changes meanwhile: what the
+// offer no longer holds is on no step, so the buyer could neither see it nor take it out.
+describe('a checkout whose offer changed since it was kept', () => {
+  const [first, second] = offer().ticketTypes
+
+  it('stays as it is while the offer holds all it chose', () => {
+    const draft = filled({
+      supporterPriceMinor: 20000,
+      addOnIds: [workshop!],
+      items: [{ variantId: small!, quantity: 2 }],
+      consentIds: [terms!, news!],
+      answers: { [city!]: 'Poznań', [fandom!]: 'Dune' },
+    })
+
+    const fitted = fitToOffer(offer(), draft)
+
+    expect(fitted.dropped).toBe(false)
+    expect(fitted.draft).toBe(draft)
+  })
+
+  it('loses the add-on, the variant and the supporter price no longer offered, and says so', () => {
+    const draft = filled({
+      supporterPriceMinor: 20000,
+      addOnIds: [workshop!, room!],
+      items: [
+        { variantId: small!, quantity: 2 },
+        { variantId: medium!, quantity: 1 },
+      ],
+    })
+    // The workshop is hidden, the pin is no longer sold with the ticket type, and the supporter
+    // price is gone.
+    const changed = offer({
+      ticketTypes: [
+        { ...first!, supporterPrices: [], addOnIds: [room!], merchandiseItemIds: [shirt!] },
+        second!,
+      ],
+      addOns: offer().addOns.filter((addOn) => addOn.id !== workshop),
+    })
+
+    const fitted = fitToOffer(changed, draft)
+
+    expect(fitted.dropped).toBe(true)
+    expect(fitted.draft).toEqual({
+      ...draft,
+      supporterPriceMinor: null,
+      addOnIds: [room],
+      items: [{ variantId: medium, quantity: 1 }],
+    })
+    expect(quoteOf(changed, fitted.draft)).toMatchObject({ totalMinor: 10000 + 8000 })
+  })
+
+  // What ran out is still offered: its step shows it, marked, and the buyer takes it out.
+  it('keeps what ran out and is still on its step', () => {
+    const draft = filled({ addOnIds: [workshop!], items: [{ variantId: medium!, quantity: 1 }] })
+    const [pinItem, shirtItem] = offer().items
+    const ranOut = offer({
+      addOns: offer().addOns.map((addOn) => ({ ...addOn, soldOut: addOn.id === workshop })),
+      items: [
+        pinItem!,
+        { ...shirtItem!, variants: [{ ...shirtItem!.variants[0]!, maxQuantity: 0 }] },
+      ],
+    })
+
+    expect(fitToOffer(ranOut, draft)).toEqual({ draft, dropped: false })
+  })
+
+  // A consent or a custom field the edition hid is on no screen: the order must not carry it.
+  it('loses a consent and an answer the edition no longer asks for, with nothing to say', () => {
+    const draft = filled({
+      consentIds: [terms!, news!],
+      answers: { [city!]: 'Poznań', [fandom!]: 'Dune' },
+    })
+    const changed = offer({
+      consents: offer().consents.filter((consent) => consent.id !== news),
+      customFields: offer().customFields.filter((field) => field.id !== fandom),
+    })
+
+    const fitted = fitToOffer(changed, draft)
+
+    expect(fitted.dropped).toBe(false)
+    expect(fitted.draft).toEqual({ ...draft, consentIds: [terms], answers: { [city!]: 'Poznań' } })
+    expect(orderBody(fitted.draft, 10000, 'token', false)).toMatchObject({
+      consentIds: [terms],
+      customFieldAnswers: [{ fieldId: city, answer: 'Poznań' }],
+    })
+  })
+
+  // The listing is where another ticket type is picked, and it carries over what was chosen.
+  it('keeps its add-ons and merchandise while its ticket type is gone from the offer', () => {
+    const draft = filled({ addOnIds: [room!], items: [{ variantId: small!, quantity: 1 }] })
+
+    expect(fitToOffer(offer({ ticketTypes: [second!] }), draft)).toEqual({ draft, dropped: false })
+  })
+
+  it('fits a "Buy more" checkout to what the ticket type of its order is offered', () => {
+    const more: Draft = {
+      ...emptyDraft(null),
+      extending: {
+        orderId: id(40),
+        number: 'ABCDEFGHJK',
+        holderName: 'Ada',
+        ticketTypeId: supporter!,
+        addOnIds: [],
+        itemIds: [],
+      },
+      addOnIds: [workshop!, room!],
+      items: [{ variantId: small!, quantity: 1 }],
+      step: 'summary',
+    }
+
+    const fitted = fitToOffer(offer(), more)
+
+    expect(fitted.dropped).toBe(true)
+    expect(fitted.draft).toMatchObject({ addOnIds: [room], items: [] })
+  })
+})
+
 describe('the order a checkout places', () => {
   it('is the cart with the ticket holder’s data and the total the buyer saw', () => {
     const draft = filled({
@@ -467,6 +610,7 @@ describe('a checkout that adds to a paid order', () => {
     status: 'paid',
     placedAt: '2027-05-01T10:00:00.000Z',
     holdEndsAt: null,
+    payable: false,
     holderName: 'Ada Lovelace',
     edition: { id: id(41), slug: '2027', name: 'Convention A 2027' },
     lines: [],
@@ -627,6 +771,24 @@ describe('an unfinished checkout', () => {
     stop()
     listener({ account: null }, { account: { id: 'a' } })
     expect(loadDraft('convention-a', '2026')).not.toBeNull()
+  })
+
+  // A sign-out clears it, also one this tab never saw: a tab that was asleep, or restored, when
+  // its session ended reads nothing of the account it showed. A visitor's goes on under the
+  // account that signs in.
+  it('is its account’s alone, while a visitor’s goes on under the account that signs in', () => {
+    saveDraft('convention-a', '2026', filled({ step: 'summary' }), 'account-a')
+
+    expect(loadDraft('convention-a', '2026', undefined, 'account-a')).toEqual(
+      filled({ step: 'summary' }),
+    )
+    expect(loadDraft('convention-a', '2026')).toBeNull()
+    expect(loadDraft('convention-a', '2026', undefined, 'account-b')).toBeNull()
+
+    saveDraft('convention-a', '2026', filled({ step: 'merch' }))
+    expect(loadDraft('convention-a', '2026', undefined, 'account-a')).toEqual(
+      filled({ step: 'merch' }),
+    )
   })
 
   it('reads nothing from what is not a checkout', () => {

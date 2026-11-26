@@ -785,6 +785,10 @@ msgstr "Merch"
 msgid "Merch only"
 msgstr "Merch only"
 
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Merchandise cannot be ordered without a ticket now. <0>Choose a ticket type in the shop.</0>"
+msgstr "Merchandise cannot be ordered without a ticket now. <0>Choose a ticket type in the shop.</0>"
+
 #: src/features/shop/components/summary-step.tsx
 msgid "Merchandise is picked up at the convention. It is not shipped."
 msgstr "Merchandise is picked up at the convention. It is not shipped."
@@ -1275,6 +1279,10 @@ msgstr "Size chart: {0}"
 msgid "Sold out"
 msgstr "Sold out"
 
+#: src/features/shop/pages/checkout-page.tsx
+msgid "Something you chose is no longer available. Go back to its step and change it."
+msgstr "Something you chose is no longer available. Go back to its step and change it."
+
 #: src/features/shop/pages/result-page.tsx
 msgid "Start a new order"
 msgstr "Start a new order"
@@ -1400,6 +1408,10 @@ msgstr "The QR code will be sent to your account’s address: <0>{accountEmail}<
 msgid "The rules of using OPOS. By creating an account you accept them."
 msgstr "The rules of using OPOS. By creating an account you accept them."
 
+#: src/features/shop/pages/checkout-page.tsx
+msgid "The shop no longer offers something you had chosen, so it was removed from your order. Check the order before you place it."
+msgstr "The shop no longer offers something you had chosen, so it was removed from your order. Check the order before you place it."
+
 #. placeholder {0}: item.name
 #. placeholder {1}: value.label
 #: src/features/shop/components/merch-step.tsx
@@ -1490,6 +1502,10 @@ msgstr "This profile holds nothing yet."
 #: src/features/shop/pages/checkout-page.tsx
 msgid "This ticket type does not offer what you had chosen, so it was removed: {0}."
 msgstr "This ticket type does not offer what you had chosen, so it was removed: {0}."
+
+#: src/features/shop/pages/checkout-page.tsx
+msgid "This ticket type is not on sale now. <0>Choose another one in the shop.</0>"
+msgstr "This ticket type is not on sale now. <0>Choose another one in the shop.</0>"
 
 #: src/features/shop/components/holder-step.tsx
 msgid "This ticket type is not sold for this age band."

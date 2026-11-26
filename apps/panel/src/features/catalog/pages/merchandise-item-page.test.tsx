@@ -310,10 +310,69 @@ describe('the axes of an item', () => {
 
     const dialog = await screen.findByRole('alertdialog')
     expect(within(dialog).getByText('Save the axes and remove variants?')).toBeDefined()
+    // The size chart stays with its value, so the modal does not name it.
+    expect(within(dialog).getByText(/every variant of the item goes with its stock/)).toBeDefined()
+    expect(within(dialog).queryByText(/size chart/)).toBeNull()
     expect(updateItem).not.toHaveBeenCalled()
     await confirm('Save the axes')
     await waitFor(() => expect(updateItem).toHaveBeenCalledTimes(1))
     expect(updateItem.mock.calls[0]![0]).toMatchObject({ body: { axes: [{ id: 'cut' }] } })
+  })
+
+  it('ask in a modal before saving a value whose label was cleared, which goes', async () => {
+    view('shirt')
+    await waitFor(() => expect(field('Value 1 of axis 2').value).toBe('S'))
+
+    type('Value 1 of axis 2', '')
+    press('Save the axes')
+
+    const dialog = await screen.findByRole('alertdialog')
+    expect(within(dialog).getByText('Save the axes and remove variants?')).toBeDefined()
+    expect(within(dialog).getByText(/A value left empty is removed as well\./)).toBeDefined()
+    expect(updateItem).not.toHaveBeenCalled()
+    await confirm('Save the axes')
+    await waitFor(() => expect(updateItem).toHaveBeenCalledTimes(1))
+    expect(updateItem.mock.calls[0]![0]).toMatchObject({
+      body: { axes: [{ id: 'cut' }, { id: 'size', values: [{ id: 'l', label: 'L' }] }] },
+    })
+  })
+
+  it('name the size chart alone where the item has no variant to lose', async () => {
+    readItems.mockResolvedValue([mug, { ...shirt, variants: [] }])
+    view('shirt')
+    await waitFor(() => expect(field('Value 1 of axis 1').value).toBe("Women's"))
+
+    type('Value 1 of axis 1', '')
+    press('Save the axes')
+
+    const dialog = await screen.findByRole('alertdialog')
+    expect(within(dialog).getByText('Save the axes and remove size charts?')).toBeDefined()
+    expect(within(dialog).getByText(/A removed value takes its size chart\./)).toBeDefined()
+    expect(within(dialog).getByText(/A value left empty is removed as well\./)).toBeDefined()
+    expect(within(dialog).queryByText(/variant/)).toBeNull()
+    expect(updateItem).not.toHaveBeenCalled()
+    await confirm('Save the axes')
+    await waitFor(() => expect(updateItem).toHaveBeenCalledTimes(1))
+    expect(updateItem.mock.calls[0]![0]).toMatchObject({
+      body: { axes: [{ id: 'cut', values: [{ id: 'm', label: "Men's" }] }, { id: 'size' }] },
+    })
+  })
+
+  it('name the variants and the size chart where a value takes both', async () => {
+    view('shirt')
+    await waitFor(() => expect(field('Value 1 of axis 1').value).toBe("Women's"))
+
+    press('Remove value 1 of axis 1')
+    press('Save the axes')
+
+    const dialog = await screen.findByRole('alertdialog')
+    expect(
+      within(dialog).getByText('Save the axes and remove variants and size charts?'),
+    ).toBeDefined()
+    expect(
+      within(dialog).getByText(/takes the variants that held it, and its size chart\./),
+    ).toBeDefined()
+    expect(updateItem).not.toHaveBeenCalled()
   })
 
   it('refuse an axis left without a name, and send nothing', async () => {
@@ -364,6 +423,22 @@ describe('the variants of an item', () => {
       body: { stock: 7 },
     })
     await waitFor(() => expect(notifySuccess).toHaveBeenCalledTimes(1))
+  })
+
+  it('leaves a stock the form did not change as someone else set it meanwhile', async () => {
+    putVariants.mockResolvedValue({
+      ...shirt,
+      variants: [variant('ws', ['w', 's'], 5), variant('ml', ['m', 'l'], 0)],
+    })
+    view('shirt')
+    await waitFor(() => expect(field("Women's · S: stock").value).toBe('12'))
+
+    fireEvent.click(box("Men's · L: exists"))
+    press('Save the variants and their stock')
+
+    await waitFor(() => expect(notifySuccess).toHaveBeenCalledTimes(1))
+    expect(putVariants).toHaveBeenCalledTimes(1)
+    expect(putStock).not.toHaveBeenCalled()
   })
 
   it('marks a variant unlimited, which holds no number', async () => {
@@ -452,6 +527,19 @@ describe('the pictures of an item', () => {
     })
   })
 
+  it('are added once, however often the button is pressed while the image is read', async () => {
+    view('shirt')
+    const chooser = await screen.findByLabelText<HTMLInputElement>('New picture')
+    fireEvent.change(chooser, { target: { files: [png()] } })
+
+    press('Add the picture')
+    press('Add the picture')
+
+    await waitFor(() => expect(addPicture).toHaveBeenCalled())
+    await waitFor(() => expect(notifyFailure).not.toHaveBeenCalled())
+    expect(addPicture).toHaveBeenCalledTimes(1)
+  })
+
   it('are removed only once the modal is confirmed', async () => {
     view('shirt')
 
@@ -490,6 +578,40 @@ describe('the size charts of an item', () => {
       params: { editionId: 'edition-2026', itemId: 'shirt', valueId: 'm' },
       body: { file: { name: 'chart.png', type: 'image/png', data: 'AAAA' } },
     })
+  })
+
+  it('leave what the other editors hold unsaved when one is set', async () => {
+    view('shirt')
+    await waitFor(() => expect(field("Women's · S: stock").value).toBe('12'))
+    type("Women's · S: stock", '99')
+    press('Add a value to axis 2')
+    type('Value 3 of axis 2', 'XL')
+    readItems.mockResolvedValue([
+      mug,
+      {
+        ...shirt,
+        axes: [
+          {
+            ...shirt.axes[0]!,
+            values: [
+              shirt.axes[0]!.values[0]!,
+              value('m', "Men's", { fileId: 'chart-m', width: 400, height: 300 }),
+            ],
+          },
+          shirt.axes[1]!,
+        ],
+      },
+    ])
+
+    const mens = within(screen.getByRole('region', { name: "Cut: Men's" }))
+    fireEvent.change(mens.getByLabelText("New size chart of Cut: Men's"), {
+      target: { files: [png('chart.png')] },
+    })
+    fireEvent.click(mens.getByRole('button', { name: 'Set the size chart' }))
+
+    expect(await screen.findByRole('img', { name: "Size chart of Cut: Men's" })).toBeDefined()
+    expect(field("Women's · S: stock").value).toBe('99')
+    expect(field('Value 3 of axis 2').value).toBe('XL')
   })
 
   it('are removed only once the modal is confirmed', async () => {

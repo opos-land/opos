@@ -4,6 +4,7 @@ import { type EditionShop, SHOP_CONDITIONS, updateEditionShopSchema } from '@opo
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useId, useState } from 'react'
 import { Link, useParams } from 'react-router'
+import { changedFrom } from '../../../shared/lib/changes'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import {
   Alert,
@@ -71,9 +72,25 @@ export function EditionShopPage() {
             editionSlug={edition.slug}
             canWrite={canWrite}
           />
-          <ClosedMessage shop={shop.data} editionId={edition.id} canWrite={canWrite} />
-          <Faq shop={shop.data} editionId={edition.id} canWrite={canWrite} />
-          <Reminder shop={shop.data} editionId={edition.id} canWrite={canWrite} />
+          {/* What the edition holds by now fills each form anew. */}
+          <ClosedMessage
+            key={`message ${shop.data.salesClosedMessage ?? ''}`}
+            shop={shop.data}
+            editionId={edition.id}
+            canWrite={canWrite}
+          />
+          <Faq
+            key={`faq ${shop.data.faqUrl ?? ''}`}
+            shop={shop.data}
+            editionId={edition.id}
+            canWrite={canWrite}
+          />
+          <Reminder
+            key={JSON.stringify([shop.data.reminderDaysBefore, shop.data.openingHours])}
+            shop={shop.data}
+            editionId={edition.id}
+            canWrite={canWrite}
+          />
         </>
       )}
     </>
@@ -368,7 +385,8 @@ function Reminder({
     if (wrong) return
     update.mutate({
       params: { editionId },
-      body: { reminderDaysBefore, openingHours: hours.trim() || null },
+      // Only what was changed here: the rest stays as someone else may have set it meanwhile.
+      body: changedFrom(shop, { reminderDaysBefore, openingHours: hours.trim() || null }),
     })
   }
 

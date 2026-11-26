@@ -303,8 +303,6 @@ export function priceCart(
     return { problem: { kind: 'add-on', id: cart.addOnIds[0]! } }
   } else if (cart.items.length === 0) {
     return { problem: { kind: 'empty' } }
-  } else if (!offer.merchOnly) {
-    return { problem: { kind: 'merch-only' } }
   }
 
   const wanted = new Set<string>()
@@ -358,6 +356,9 @@ export function priceCart(
     quantities.set(variantId, quantity)
     taken.set(item.id, ofItem)
   }
+  // Merchandise alone while merch-only orders are off. The offer says they are off also once no
+  // variant is left to sell, so a variant that cannot be had is named first.
+  if (!extending && !cart.ticket && !offer.merchOnly) return { problem: { kind: 'merch-only' } }
   for (const item of offered) {
     for (const variant of item.variants) {
       const quantity = quantities.get(variant.id)
@@ -566,6 +567,11 @@ export const orderResultSchema = z.object({
   status: z.enum(ORDER_STATUSES),
   /** When the hold of an order awaiting payment ends: a payment attempt starts only within it. */
   holdEndsAt: timestamp.nullable(),
+  /**
+   * Whether a payment attempt would start now: the order awaits payment within its hold, by the
+   * shop's own clock. The page offers another try by this, never by the clock of its device.
+   */
+  payable: z.boolean(),
   /** Why the last attempt failed, when its provider reported it and the order still awaits. */
   failureReason: z.enum(FAILURE_REASONS).nullable(),
   /** For an order that needs review: where the money is, as the provider's module words it. */

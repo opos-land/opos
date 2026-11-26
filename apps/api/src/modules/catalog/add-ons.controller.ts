@@ -79,6 +79,8 @@ export class AddOnsController {
       const { editionId, addOnId } = input.params
       const stored = await this.addOns.get(editionId, addOnId)
       const changes = limitAfter(stored, input.body)
+      // A new place moves other add-ons too: all are locked first, in the order of an order.
+      if (changes.position !== undefined) await this.addOns.lockAll(editionId)
       if (changes.capacity !== undefined) {
         await this.holds.fits('add-on', editionId, stored.id, changes.capacity)
       }

@@ -112,18 +112,23 @@ export function manualOrderLines(catalog: Catalog, draft: ManualOrderDraft, at: 
   return { lines, totalMinor: lines.reduce((total, line) => total + line.amountMinor, 0) }
 }
 
-/** The draft as the API takes it. Without a ticket there is no ticket holder to describe. */
-export function manualOrderBody(draft: ManualOrderDraft) {
+/**
+ * The draft as the API takes it. Without a ticket there is no ticket holder to describe. Of the
+ * merchandise it carries what the screen offers at that moment and no more: a variant counted
+ * before another ticket type was chosen, which does not offer it, has no field left to change.
+ */
+export function manualOrderBody(catalog: Catalog, draft: ManualOrderDraft, at: Date) {
   const withTicket = draft.ticketTypeId !== ''
+  const offered = offeredTo(catalog, draft.ticketTypeId, at).items.flatMap((item) => item.variants)
   return {
     reason: draft.reason,
     note: draft.note.trim() || null,
     cart: {
       ticket: withTicket ? { ticketTypeId: draft.ticketTypeId } : null,
       addOnIds: withTicket ? draft.addOnIds : [],
-      items: Object.entries(draft.quantities)
-        .filter(([, quantity]) => quantity > 0)
-        .map(([variantId, quantity]) => ({ variantId, quantity })),
+      items: offered
+        .map((variant) => ({ variantId: variant.id, quantity: draft.quantities[variant.id] ?? 0 }))
+        .filter(({ quantity }) => quantity > 0),
     },
     holderName: draft.holderName.trim(),
     ageBand: withTicket && draft.ageBand !== '' ? draft.ageBand : null,

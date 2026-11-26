@@ -155,6 +155,10 @@ msgstr "A percent of the price"
 msgid "A QR code has 32 characters: letters and digits."
 msgstr "A QR code has 32 characters: letters and digits."
 
+#: src/features/catalog/components/axes-editor.tsx
+msgid "A removed value takes its size chart."
+msgstr "A removed value takes its size chart."
+
 #: src/features/orders/pages/manual-order-page.tsx
 msgid "A sale made outside the shop. What it sells is handed over as you record it: the order has no QR code and sends no email. A person who should hold a QR code ahead of the edition gets a 100% discount code instead, and places the order in the shop."
 msgstr "A sale made outside the shop. What it sells is handed over as you record it: the order has no QR code and sends no email. A person who should hold a QR code ahead of the edition gets a 100% discount code instead, and places the order in the shop."
@@ -182,6 +186,10 @@ msgstr "A teen from the age of"
 #: src/features/catalog/pages/ticket-holders-page.tsx
 msgid "A ticket holder is a child, a teen or an adult by their age on the first day of the edition. A child enters with a guardian present, a teen with a guardian’s written consent brought on paper."
 msgstr "A ticket holder is a child, a teen or an adult by their age on the first day of the edition. A child enters with a guardian present, a teen with a guardian’s written consent brought on paper."
+
+#: src/features/catalog/components/axes-editor.tsx
+msgid "A value left empty is removed as well."
+msgstr "A value left empty is removed as well."
 
 #: src/features/orders/model/labels.ts
 msgid "A variant was swapped"
@@ -2182,6 +2190,10 @@ msgstr "On: the shop also takes an order with no ticket"
 msgid "Once an axis is added or removed, every variant of the item goes with its stock. A removed value takes the variants that held it, and its size chart."
 msgstr "Once an axis is added or removed, every variant of the item goes with its stock. A removed value takes the variants that held it, and its size chart."
 
+#: src/features/catalog/components/axes-editor.tsx
+msgid "Once an axis is added or removed, every variant of the item goes with its stock. A removed value takes the variants that held it."
+msgstr "Once an axis is added or removed, every variant of the item goes with its stock. A removed value takes the variants that held it."
+
 #: src/features/catalog/components/add-on-picture.tsx
 msgid "One picture, which the shop shows with the add-on. It is for everyone once the add-on is shown in the shop of a published edition."
 msgstr "One picture, which the shop shows with the add-on. It is for everyone once the add-on is shown in the shop of a published edition."
@@ -2895,6 +2907,14 @@ msgstr "Save the age bands"
 #: src/features/catalog/components/axes-editor.tsx
 msgid "Save the axes"
 msgstr "Save the axes"
+
+#: src/features/catalog/components/axes-editor.tsx
+msgid "Save the axes and remove size charts?"
+msgstr "Save the axes and remove size charts?"
+
+#: src/features/catalog/components/axes-editor.tsx
+msgid "Save the axes and remove variants and size charts?"
+msgstr "Save the axes and remove variants and size charts?"
 
 #: src/features/catalog/components/axes-editor.tsx
 msgid "Save the axes and remove variants?"

@@ -60,6 +60,12 @@ const QR_CODE_CID = 'qr-code@opos'
 /** What writing an email answers when the email is not to be sent. */
 const WITHDRAWN = 'withdrawn'
 
+/** The emails that say an order is paid and carry its QR code. */
+const OF_A_PAID_ORDER: readonly ClaimedEmail['kind'][] = [
+  'order-confirmation',
+  'order-email-changed',
+]
+
 /**
  * How long a failed send waits for its next try, by how many tries have failed: a minute, then
  * twice as long each time, up to six hours.
@@ -76,7 +82,7 @@ interface Picture {
 /** Whom an email is written for: the language it is in, and where an account signs in. */
 interface Reader {
   locale: Locale
-  /** For an address with an account; null for one with none. */
+  /** For the address of the account the order is on; null for any other. */
   signInLink: string | null
 }
 
@@ -169,7 +175,9 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
     // noted as it is made, so that nothing of it is kept with what the email said.
     const handedOver: string[] = []
     const claimed = await this.context.withTenant(tenantId, async () => {
-      const email = await this.emails.claim(emailId, now, new Date(now.getTime() + LEASE_MS))
+      // The lease runs from the claim, not from `now`: a long run claims its last emails minutes
+      // after it began.
+      const email = await this.emails.claim(emailId, now, new Date(Date.now() + LEASE_MS))
       if (!email) return undefined
       // An email that cannot be written is tried again later, as one that could not be sent.
       const composed = await this.compose(email, now, handedOver).catch((error: unknown) => {
@@ -207,7 +215,8 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
    * The email as it is sent: to whom, in what language, saying what. It is written from the
    * order as it stands now, so one that hands the order over, with its QR code and a link, goes
    * only to the address the order has: queued for an address the order has left since, it is
-   * withdrawn instead. What it hands the order over with is added to `handedOver`.
+   * withdrawn instead. So is one that says the order is paid, with its QR code, once the order
+   * no longer is. What it hands the order over with is added to `handedOver`.
    */
   private async compose(
     email: ClaimedEmail,
@@ -216,21 +225,25 @@ export class OrderEmailsOutbox implements OnApplicationBootstrap, OnApplicationS
   ): Promise<Composed | typeof WITHDRAWN> {
     const order = await this.emails.order(email.orderId)
     if (!order) throw new Error('The order of the email is not there')
-    if (HANDING_OVER_EMAIL_KINDS.includes(email.kind) && email.recipient !== order.email) {
+    const left = HANDING_OVER_EMAIL_KINDS.includes(email.kind) && email.recipient !== order.email
+    const noLongerPaid = OF_A_PAID_ORDER.includes(email.kind) && order.status !== 'paid'
+    if (left || noLongerPaid) {
       await this.emails.withdraw(email.id, now)
       return WITHDRAWN
     }
     const written = await this.written(email, order, now, handedOver)
     if (written === WITHDRAWN) return WITHDRAWN
-    const account = await this.emails.account(email.recipient)
+    const account = await this.emails.account(email.recipient, order.id)
     const locale = recipientLocale({ account: account?.locale, tenant: order.conventionLocale })
+    // The way to sign in is told only where signing in shows the order: on the account it is on.
+    const signInLink = account?.holdsOrder ? `${this.portalUrl}/login` : null
     // Whether an address has an account is told to nobody. What is kept of the email is so
     // written as for an address with none: in the convention's language, with no way to sign in.
     const keptLocale = recipientLocale({ tenant: order.conventionLocale })
     return {
       to: email.recipient,
       locale,
-      content: written.write({ locale, signInLink: account ? `${this.portalUrl}/login` : null }),
+      content: written.write({ locale, signInLink }),
       kept: {
         locale: keptLocale,
         content: written.write({ locale: keptLocale, signInLink: null }),

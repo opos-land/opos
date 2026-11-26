@@ -72,6 +72,9 @@ export class DiscountCodesController {
       const { editionId, codeId } = input.params
       const { ticketTypeIds, addOnIds, itemIds, ended, validFrom, validUntil, ...terms } =
         input.body
+      const applies = { ticketTypeIds, addOnIds, itemIds }
+      // What the code is to apply to comes before the code, as an order locks them.
+      await this.codes.holdNamed(editionId, applies)
       const stored = await this.codes.locked(editionId, codeId)
       // A code that changes its kind lets go of the other kind's value, unless the change names it.
       const kind = terms.kind ?? stored.kind
@@ -99,7 +102,6 @@ export class DiscountCodesController {
         const held = await this.codes.uses(stored.id)
         if (held > terms.usageLimit) throw belowHeld(held)
       }
-      const applies = { ticketTypeIds, addOnIds, itemIds }
       await this.checkApplies(editionId, applies)
       await this.codes.change(editionId, stored.id, {
         ...(terms.code !== undefined && { code: terms.code }),

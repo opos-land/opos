@@ -58,6 +58,7 @@ import {
   clearDraft,
   type Draft,
   extensionDraft,
+  fitToOffer,
   holderIssues,
   loadDraft,
   orderBody,
@@ -182,26 +183,40 @@ function Checkout({
   const money = useMoney(offer.currency)
   const shop = `/conventions/${tenantSlug}/${editionSlug}/shop`
   const signedIn = account !== null
+  /** The account the checkout is entered under and kept for: a visitor's is nobody's. */
+  const accountId = account?.id ?? null
 
   const [begun] = useState(() => {
-    if (extending) {
-      // "Buy more" has a checkout of its own, kept apart from the edition's.
-      const kept = loadDraft(tenantSlug, editionSlug, extending.id)
-      return {
-        draft: kept ? resumeExtension(offer, kept, extending) : extensionDraft(offer, extending),
-        removedAddOns: [],
-        ask: false,
-      }
-    }
-    return beginCheckout(
-      offer,
-      loadDraft(tenantSlug, editionSlug),
-      wanted,
-      // A signed-in buyer's name is filled in from the account.
-      account ? [account.firstName, account.lastName].filter(Boolean).join(' ') : '',
-    )
+    const kept = loadDraft(tenantSlug, editionSlug, extending?.id, accountId)
+    const start = extending
+      ? {
+          // "Buy more" has a checkout of its own, kept apart from the edition's.
+          draft: kept ? resumeExtension(offer, kept, extending) : extensionDraft(offer, extending),
+          removedAddOns: [],
+          ask: false,
+        }
+      : beginCheckout(
+          offer,
+          kept,
+          wanted,
+          // A signed-in buyer's name is filled in from the account.
+          account ? [account.firstName, account.lastName].filter(Boolean).join(' ') : '',
+        )
+    // The tab may have kept it for long: what the shop no longer offers leaves it.
+    const fitted = start.draft && fitToOffer(offer, start.draft)
+    return { ...start, draft: fitted ? fitted.draft : null, dropped: !!fitted?.dropped }
   })
   const [draft, setDraft] = useState(begun.draft)
+  /** Whether the checkout lost something the shop no longer offers: the buyer is told. */
+  const [dropped, setDropped] = useState(begun.dropped)
+  const [fittedTo, setFittedTo] = useState(offer)
+  // The offer was read again, as it is after the shop refused an order: the checkout follows it.
+  if (fittedTo !== offer) {
+    setFittedTo(offer)
+    const fitted = draft && fitToOffer(offer, draft)
+    if (fitted && fitted.draft !== draft) setDraft(fitted.draft)
+    if (fitted?.dropped) setDropped(true)
+  }
   /** Whether the buyer still has to say what becomes of the merchandise chosen before. */
   const [asking, setAsking] = useState(begun.ask)
   const [removed, setRemoved] = useState(begun.removedAddOns)
@@ -212,14 +227,16 @@ function Checkout({
   const [newTotal, setNewTotal] = useState<number | null>(null)
   const heading = useRef<HTMLHeadingElement>(null)
   const form = useRef<HTMLFormElement>(null)
+  /** The order this checkout placed, once it has. */
+  const placedId = useRef<string | null>(null)
 
   const change = (changes: Partial<Draft>) =>
     setDraft((current) => (current ? { ...current, ...changes } : current))
 
   // Kept in the tab on every change, so a reload resumes on the same step with the same data.
   useEffect(() => {
-    if (draft) saveDraft(tenantSlug, editionSlug, draft)
-  }, [draft, tenantSlug, editionSlug])
+    if (draft) saveDraft(tenantSlug, editionSlug, draft, accountId)
+  }, [draft, tenantSlug, editionSlug, accountId])
 
   const step = draft?.step
   useEffect(() => {
@@ -260,6 +277,7 @@ function Checkout({
     // The page shows what came of it itself.
     meta: { success: false, failure: false },
     onSuccess: ({ placed, redirectUrl }) => {
+      placedId.current = placed.orderId
       if (redirectUrl) leaveTo(redirectUrl)
       else void navigate(`${shop}/result/${placed.orderId}`, { replace: true })
     },
@@ -282,13 +300,27 @@ function Checkout({
         if (named.kind === 'variant') return change({ step: 'merch' })
       }
       if (code === 'order.total-changed' && typeof named.totalMinor === 'number') {
-        // A total never changes silently: the buyer is shown the new one and confirms it.
+        // A total never changes silently: the buyer is shown the new one and confirms it. With
+        // a discount code the total shown is the shop's own price of the cart, so that is asked
+        // again; nothing is placed while it is.
+        if (entered !== '') void coded.refetch()
         return setNewTotal(named.totalMinor)
       }
       if (code === 'order.email-refused') change({ step: 'holder' })
       notifyFailure(error)
     },
   })
+
+  // Back from the provider's page, a browser may show this page again out of its memory, as it
+  // was left: with its order placed and nothing more to do here. The order's result takes over.
+  useEffect(() => {
+    const shown = (event: PageTransitionEvent) => {
+      if (!event.persisted || placedId.current === null) return
+      void navigate(`${shop}/result/${placedId.current}`, { replace: true })
+    }
+    window.addEventListener('pageshow', shown)
+    return () => window.removeEventListener('pageshow', shown)
+  }, [navigate, shop])
 
   // Nothing chosen and nothing kept: the listing is where a checkout starts.
   if (!draft) return <Navigate to={shop} replace />
@@ -343,6 +375,11 @@ function Checkout({
   const quote = applied ? coded.data : local
   const lines = 'problem' in quote ? [] : quote.lines
   const totalMinor = 'problem' in quote ? 0 : quote.totalMinor
+  // What of the cart cannot be had as the offer now stands. A cart with nothing in it is not
+  // one of them: its step asks for something to order.
+  const problem = 'problem' in local && local.problem.kind !== 'empty' ? local.problem : null
+  /** What ran out since it was chosen, as the shop said on refusing the order or as the offer shows. */
+  const marked = ranOut ?? (problem && 'id' in problem ? problem.id : null)
   const refused = coded.isError && errorCode(coded.error) === 'discount-code.refused'
   const discount: DiscountState = {
     applied,
@@ -353,7 +390,13 @@ function Checkout({
   const issues = holderIssues(offer, draft, account?.email ?? null)
   const locale = isLocale(i18n.locale) ? i18n.locale : activeLocale()
   const here = `${location.pathname}${location.search}`
+  /**
+   * An order of merchandise alone with no item, as one the shop took all the items out of: the
+   * Merch step asks for one, and the Summary has no order to show.
+   */
   const emptyMerchOnly = merchOnly && !draft.extending && draft.items.length === 0
+  /** Such an order with no item to add either: the offer sells no merchandise alone now. */
+  const noMerchAlone = emptyMerchOnly && !offer.merchOnly
   /** "Buy more" with nothing chosen: there is nothing to order. */
   const nothingMore =
     draft.extending !== null && draft.addOnIds.length === 0 && draft.items.length === 0
@@ -362,6 +405,9 @@ function Checkout({
   // A buyer who is not signed in is offered, before the email is asked, to go on without an
   // account or to sign in or create one.
   const gate = current === 'holder' && !signedIn && !draft.asVisitor
+
+  /** The order is being placed, or is placed and the page is about to be left. */
+  const placing = place.isPending || place.isSuccess
 
   const go = (to: StepId) => {
     setRanOut(null)
@@ -380,11 +426,20 @@ function Checkout({
     // An order of merchandise alone needs at least one item.
     if (current === 'merch' && emptyMerchOnly) return
     if (current === 'summary') {
+      // What the first step asks holds when the order is placed too. A checkout that reached
+      // the Summary without it, as one kept from before the edition asked for it, goes back.
+      if (steps.includes('holder') && Object.keys(issues).length > 0) {
+        setTried((left) => new Set(left).add('holder'))
+        return go('holder')
+      }
       const missing = summaryIssues(offer, draft, totalMinor)
       if (missing.consents.length > 0 || missing.provider || missing.guardian) return
       if ('problem' in quote) return
       // Never at a price the buyer has not seen: the code's is still being asked.
       if (discount.pending) return
+      // One order a checkout: none while it is being placed, and none once it is, while the
+      // browser still leaves for the provider or for the result.
+      if (placing) return
       setNewTotal(null)
       place.mutate({ draft, totalMinor, withCode: applied })
       return
@@ -427,6 +482,24 @@ function Checkout({
           </Trans>
         </Notice>
       )}
+      {dropped && (
+        <Notice>
+          <Trans>
+            The shop no longer offers something you had chosen, so it was removed from your order.
+            Check the order before you place it.
+          </Trans>
+        </Notice>
+      )}
+      {problem?.kind === 'ticket-type' && (
+        <p className="text-destructive" role="alert">
+          <Trans>
+            This ticket type is not on sale now.{' '}
+            <Link to={shop} className={linkClass}>
+              Choose another one in the shop.
+            </Link>
+          </Trans>
+        </p>
+      )}
 
       <h2 ref={heading} tabIndex={-1} className="text-xl font-semibold outline-none">
         {i18n._(stepName(current, merchOnly))}
@@ -467,7 +540,7 @@ function Checkout({
               tenantSlug={tenantSlug}
               offer={offer}
               draft={draft}
-              ranOut={ranOut}
+              ranOut={marked}
               change={change}
             />
           )}
@@ -476,7 +549,7 @@ function Checkout({
               offer={offer}
               draft={draft}
               tenantSlug={tenantSlug}
-              ranOut={ranOut}
+              ranOut={marked}
               preorderDeadline={
                 offer.merchPreorderDeadline &&
                 formatDateTime(new Date(offer.merchPreorderDeadline), locale, timeZone, {
@@ -487,7 +560,26 @@ function Checkout({
               change={change}
             />
           )}
-          {current === 'summary' && (
+          {current === 'summary' && (problem?.kind === 'merch-only' || noMerchAlone) && (
+            <p className="text-destructive" role="alert">
+              <Trans>
+                Merchandise cannot be ordered without a ticket now.{' '}
+                <Link to={shop} className={linkClass}>
+                  Choose a ticket type in the shop.
+                </Link>
+              </Trans>
+            </p>
+          )}
+          {current === 'summary' &&
+            problem &&
+            !['ticket-type', 'merch-only'].includes(problem.kind) && (
+              <p className="text-destructive" role="alert">
+                <Trans>
+                  Something you chose is no longer available. Go back to its step and change it.
+                </Trans>
+              </p>
+            )}
+          {current === 'summary' && !problem && !emptyMerchOnly && (
             <>
               {newTotal !== null && (
                 <Notice>
@@ -516,11 +608,12 @@ function Checkout({
               )}
             </>
           )}
-          {current === 'merch' && emptyMerchOnly && tried.has('merch') && (
-            <p className="text-destructive" role="alert">
-              <Trans>Add at least one item to order.</Trans>
-            </p>
-          )}
+          {emptyMerchOnly &&
+            (current === 'merch' ? tried.has('merch') : current === 'summary' && !noMerchAlone) && (
+              <p className="text-destructive" role="alert">
+                <Trans>Add at least one item to order.</Trans>
+              </p>
+            )}
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
             {index > 0 ? (
               <Button type="button" variant="outline" onClick={() => go(steps[index - 1]!)}>
@@ -529,17 +622,20 @@ function Checkout({
             ) : (
               <span />
             )}
-            {current === 'summary' ? (
-              <Button type="submit" disabled={place.isPending || discount.pending}>
+            {current !== 'summary' ? (
+              <Button type="submit">
+                <Trans>Next</Trans>
+              </Button>
+            ) : problem || emptyMerchOnly ? (
+              // Nothing to place while a part of the order cannot be had: the page says which.
+              <span />
+            ) : (
+              <Button type="submit" disabled={placing || discount.pending}>
                 {totalMinor > 0 ? (
                   <Trans>Order and pay</Trans>
                 ) : (
                   <Trans context="the button that places an order with nothing to pay">Order</Trans>
                 )}
-              </Button>
-            ) : (
-              <Button type="submit">
-                <Trans>Next</Trans>
               </Button>
             )}
           </div>

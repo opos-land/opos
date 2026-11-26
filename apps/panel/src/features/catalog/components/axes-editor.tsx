@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { Button, FormField, Input, IrreversibleAction } from '../../../shared/ui'
 import { useCurrentTenant } from '../../tenants'
 import { catalogKey, updateItemOptions } from '../api/catalog'
-import { axesBody, axesFields, type AxisFields, reshapes } from '../model/merchandise'
+import { axesBody, axesFields, type AxisFields, takenByAxes } from '../model/merchandise'
 
 const replaced = <T,>(list: readonly T[], index: number, entry: T) =>
   list.map((held, at) => (at === index ? entry : held))
@@ -14,8 +14,10 @@ const without = <T,>(list: readonly T[], index: number) => list.filter((_, at) =
 
 /**
  * The option axes of an item, such as its cut and its size, with the values of each, saved as a
- * whole list. Saving axes that take variants away asks first in a modal: once an axis is added or
- * removed no variant fits the axes any more, and a removed value takes the variants that held it.
+ * whole list. Saving axes that take variants or size charts away asks first in a modal that names
+ * which: once an axis is added or removed no variant fits the axes any more, and a removed value
+ * takes the variants that held it and its size chart. A value whose label is cleared is removed as
+ * well.
  */
 export function AxesEditor({ item, canWrite }: { item: MerchandiseItem; canWrite: boolean }) {
   const { t } = useLingui()
@@ -30,6 +32,7 @@ export function AxesEditor({ item, canWrite }: { item: MerchandiseItem; canWrite
     onSuccess: () => queryClient.invalidateQueries({ queryKey: catalogKey(api) }),
   })
   const body = axesBody(axes)
+  const taken = takenByAxes(item, axes)
   const save = () => {
     setInvalid(!body)
     return body ? update.mutateAsync({ params, body }) : Promise.resolve()
@@ -146,17 +149,35 @@ export function AxesEditor({ item, canWrite }: { item: MerchandiseItem; canWrite
             <Trans>Add an axis</Trans>
           </Button>
         )}
-        {body && reshapes(item, axes) ? (
+        {body && taken ? (
           <IrreversibleAction
             label={<Trans>Save the axes</Trans>}
-            title={<Trans>Save the axes and remove variants?</Trans>}
+            title={
+              taken === 'variants' ? (
+                <Trans>Save the axes and remove variants?</Trans>
+              ) : taken === 'size-charts' ? (
+                <Trans>Save the axes and remove size charts?</Trans>
+              ) : (
+                <Trans>Save the axes and remove variants and size charts?</Trans>
+              )
+            }
             action={<Trans>Save the axes</Trans>}
             onConfirm={save}
           >
-            <Trans>
-              Once an axis is added or removed, every variant of the item goes with its stock. A
-              removed value takes the variants that held it, and its size chart.
-            </Trans>
+            {taken === 'variants' ? (
+              <Trans>
+                Once an axis is added or removed, every variant of the item goes with its stock. A
+                removed value takes the variants that held it.
+              </Trans>
+            ) : taken === 'size-charts' ? (
+              <Trans>A removed value takes its size chart.</Trans>
+            ) : (
+              <Trans>
+                Once an axis is added or removed, every variant of the item goes with its stock. A
+                removed value takes the variants that held it, and its size chart.
+              </Trans>
+            )}{' '}
+            <Trans>A value left empty is removed as well.</Trans>
           </IrreversibleAction>
         ) : (
           <Button disabled={update.isPending} onClick={() => void save()}>

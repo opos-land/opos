@@ -47,6 +47,26 @@ describe('seal and open', () => {
     ).toThrow(/could not be opened/)
   })
 
+  // A shorter tag is fewer bits to guess for someone who writes the database and changes the bytes.
+  it.each([15, 12, 8, 4])('refuses a value whose tag was cut to %i bytes', (length) => {
+    const [version, iv, text, tag] = seal(key, 'secret-value', mine).split('.')
+    const whole = Buffer.from(tag!, 'base64url')
+    const cut = whole.subarray(0, length).toString('base64url')
+
+    expect(whole).toHaveLength(16)
+    expect(() => open(key, [version, iv, text, cut].join('.'), mine)).toThrow(/could not be opened/)
+  })
+
+  it('refuses a value whose nonce is not the 12 bytes it seals with', () => {
+    const [version, iv, text, tag] = seal(key, 'secret-value', mine).split('.')
+    const longer = Buffer.concat([Buffer.from(iv!, 'base64url'), Buffer.alloc(4)])
+
+    expect(Buffer.from(iv!, 'base64url')).toHaveLength(12)
+    expect(() =>
+      open(key, [version, longer.toString('base64url'), text, tag].join('.'), mine),
+    ).toThrow(/could not be opened/)
+  })
+
   // A sealed value copied into another row, by someone who writes the database and holds no key,
   // opens nothing there.
   it('opens only for what it was sealed for', () => {

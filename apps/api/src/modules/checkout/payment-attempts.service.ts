@@ -4,12 +4,14 @@ import { type OrderResult, RESULT_TOKEN_HOURS, type StartedAttempt } from '@opos
 import { parseAcceptLanguage } from '@opos/i18n'
 import { TenantContextService, type TenantInContext } from '../../common/als/tenant-context.service'
 import { notFound } from '../../common/errors/api-error'
+import { RouteRateLimiter } from '../../common/rate-limit/route-rate-limit'
 import { ENV, type Env } from '../../config/env'
 import { CredentialsVault, PaymentProviders } from '../payments/payment-providers'
 import { type Credentials } from '../payments/provider'
 import { providerUnavailable } from '../shop/shop.errors'
 import { alreadyPaid, holdEnded } from './checkout.errors'
 import { hashOf } from './codes'
+import { withinHold } from './hold'
 import { attemptOf, PaymentConfirmations } from './payment-confirmations.service'
 import { type PayableOrder, PaymentsRepository } from './payments.repository'
 
@@ -38,6 +40,7 @@ export class PaymentAttempts {
     private readonly providers: PaymentProviders,
     private readonly vault: CredentialsVault,
     private readonly context: TenantContextService,
+    private readonly limiter: RouteRateLimiter,
     @Inject(ENV) env: Pick<Env, 'API_URL' | 'PORTAL_URL'>,
   ) {
     this.apiUrl = env.API_URL.replace(/\/+$/, '')
@@ -59,6 +62,9 @@ export class PaymentAttempts {
     const first = await this.context.withTenant(tenant.id, async () => {
       const order = await this.opened(tenant.id, orderId, opener, new Date())
       this.payable(order, new Date())
+      // Counted for the order once its opener may open it, so nobody else spends its starts, and
+      // before the provider is asked: each start asks about every attempt before it.
+      await this.limiter.consume('paymentAttemptsOfOrder', `order:${order.id}`)
       const account = await this.account(tenant.id)
       const earlier = (await this.payments.attempts(order.id)).filter(
         (attempt) => attempt.status === 'started' || attempt.status === 'failed',
@@ -118,7 +124,8 @@ export class PaymentAttempts {
   /** What the result page shows of the order: its status and number alone. */
   result(tenant: TenantInContext, orderId: string, token: string): Promise<OrderResult> {
     return this.context.withTenant(tenant.id, async () => {
-      const order = await this.opened(tenant.id, orderId, { token }, new Date())
+      const at = new Date()
+      const order = await this.opened(tenant.id, orderId, { token }, at)
       const attempts = await this.payments.attempts(order.id)
       const last = attempts.at(-1)
       const confirmed = attempts.findLast((attempt) => attempt.moneyWith !== null)
@@ -127,6 +134,8 @@ export class PaymentAttempts {
         status: order.status,
         holdEndsAt:
           order.status === 'awaiting-payment' ? (order.holdEndsAt?.toISOString() ?? null) : null,
+        // What starting an attempt would answer, so the page offers a try only while one starts.
+        payable: withinHold(order, at),
         // Why the last try failed, for as long as nothing came after it.
         failureReason:
           order.status === 'awaiting-payment' && last?.status === 'failed'
@@ -175,7 +184,7 @@ export class PaymentAttempts {
   private payable(order: PayableOrder, at: Date) {
     if (order.status === 'expired') throw holdEnded()
     if (order.status !== 'awaiting-payment') throw alreadyPaid()
-    if (!order.holdEndsAt || order.holdEndsAt.getTime() <= at.getTime()) throw holdEnded()
+    if (!withinHold(order, at)) throw holdEnded()
   }
 
   /** The account the order is paid into, with its credentials opened. */

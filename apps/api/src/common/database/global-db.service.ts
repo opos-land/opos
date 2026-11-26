@@ -409,20 +409,22 @@ export class GlobalDbService {
   /**
    * The editions whose reminder may be due around `now`: those that set a number of days, whose
    * reminder has not gone out, published, of tenants not suspended, and starting within the
-   * days a reminder may be set to. It answers the identifiers and the tenant's time zone alone;
-   * whether the reminder is due at this hour, and whom it goes to, the tenant's own transaction
-   * reads.
+   * days a reminder may be set to, the soonest first, a page at a time. It answers the
+   * identifiers, the tenant's time zone and the place a page continues from alone, the edition's
+   * start as the database writes it, so the next page compares with it whole; whether the
+   * reminder is due at this hour, and whom it goes to, the tenant's own transaction reads.
    */
   remindersPending(
     now: Date,
-    { limit = 100, tenantId }: JobScope = {},
-  ): Promise<{ tenantId: string; editionId: string; timezone: string }[]> {
+    { limit = 100, tenantId, after }: JobScope & { after?: { startsAt: string; id: string } } = {},
+  ): Promise<{ tenantId: string; editionId: string; timezone: string; startsAt: string }[]> {
     const DAY = 24 * 60 * 60_000
     return this.db
       .select({
         tenantId: editionShops.tenantId,
         editionId: editionShops.editionId,
         timezone: tenants.timezone,
+        startsAt: sql<string>`${editions.startsAt}::text`,
       })
       .from(editionShops)
       .innerJoin(editions, eq(editions.id, editionShops.editionId))
@@ -436,6 +438,10 @@ export class GlobalDbService {
           gt(editions.startsAt, now),
           lte(editions.startsAt, new Date(now.getTime() + 62 * DAY)),
           tenantId === undefined ? undefined : eq(editionShops.tenantId, tenantId),
+          // The page after the last edition of the one before, in the order they are read in.
+          after === undefined
+            ? undefined
+            : sql`(${editions.startsAt}, ${editionShops.editionId}) > (${after.startsAt}::timestamptz, ${after.id}::uuid)`,
         ),
       )
       .orderBy(asc(editions.startsAt), asc(editionShops.editionId))

@@ -116,6 +116,32 @@ describe('a phone that is no scanner yet', () => {
     expect(await screen.findByText(/pairing code does not work/i)).toBeDefined()
     expect(localStorage.getItem('opos.scanner')).toBeNull()
   })
+
+  // A link pasted into the address of the tab that shows the scanner already loads no page anew:
+  // only the part after the `#` changes.
+  it('spends the code of a link opened in the tab that shows the scanner already', async () => {
+    view()
+    expect(await screen.findByText(/Open the pairing link/)).toBeDefined()
+
+    window.location.hash = '#the-pairing-code'
+
+    expect(await screen.findByRole('heading', { name: 'Main gate' })).toBeDefined()
+    expect(device.pair).toHaveBeenCalledWith('the-pairing-code')
+    expect(JSON.parse(localStorage.getItem('opos.scanner')!)).toMatchObject({ token: 'the-token' })
+    expect(window.location.hash).toBe('')
+  })
+
+  it('spends a new code in the same tab after one that no longer works', async () => {
+    device.pair.mockRejectedValueOnce(new ORPCError('scanner.code-refused', { status: 403 }))
+    view('#an-old-code')
+    expect(await screen.findByText(/pairing code does not work/i)).toBeDefined()
+
+    window.location.hash = '#a-new-code'
+
+    expect(await screen.findByRole('heading', { name: 'Main gate' })).toBeDefined()
+    expect(device.pair).toHaveBeenLastCalledWith('a-new-code')
+    expect(window.location.hash).toBe('')
+  })
 })
 
 describe('a scanner', () => {
@@ -131,6 +157,15 @@ describe('a scanner', () => {
     expect(await screen.findByRole('heading', { name: 'Main gate' })).toBeDefined()
     await waitFor(() => expect(window.location.hash).toBe(''))
     expect(device.pair).not.toHaveBeenCalled()
+  })
+
+  it('drops the code of a link opened in the tab it scans in', async () => {
+    view()
+    expect(await screen.findByRole('heading', { name: 'Main gate' })).toBeDefined()
+
+    window.location.hash = '#another-code'
+
+    await waitFor(() => expect(window.location.hash).toBe(''))
   })
 
   it('reads a code and shows whom to let in and what to hand over', async () => {
@@ -222,6 +257,44 @@ describe('a scanner', () => {
     expect(screen.queryByRole('checkbox', { name: 'Room' })).toBeNull()
     // Entry is still to be marked: the add-on went alone.
     expect(screen.getByRole('checkbox', { name: /Entry/ })).toBeDefined()
+  })
+
+  // docs/specs/0007-scanner.md, H3: the second of two scanners is told when and by which the
+  // first handed it out.
+  it('reads the order again when another scanner was first, and shows its mark', async () => {
+    device.handOut.mockRejectedValue(
+      new ORPCError('scan.already-handed-out', {
+        status: 409,
+        data: {
+          lineId: 'line-entry',
+          handedOutAt: '2026-06-05T09:00:00.000Z',
+          scanner: 'Side gate',
+        },
+      }),
+    )
+    view()
+    await read()
+    fireEvent.click(await screen.findByRole('checkbox', { name: /Entry/ }))
+    device.scan.mockResolvedValue(
+      shown({
+        entry: {
+          lineId: 'line-entry',
+          ticketType: 'Standard',
+          perks: [],
+          handedOutAt: '2026-06-05T09:00:00.000Z',
+          handedOutBy: 'Side gate',
+        },
+      }),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mark as handed out' }))
+
+    expect(await screen.findByText(/Handed out .* by Side gate/)).toBeDefined()
+    expect(device.scan).toHaveBeenLastCalledWith('the-token', CODE)
+    expect(screen.queryByRole('checkbox', { name: /Entry/ })).toBeNull()
+    // The refusal stays on screen, and what is left is still offered.
+    expect(screen.getByText('This was already handed out.')).toBeDefined()
+    expect(screen.getByRole('checkbox', { name: 'Room' })).toBeDefined()
   })
 
   it('shows the add-ons of an order with no ticket, each to be marked', async () => {

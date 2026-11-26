@@ -81,6 +81,26 @@ export function variantsPlan(
 export const variantOf = (item: MerchandiseItem, valueIds: readonly string[]) =>
   item.variants.find((variant) => keyOf(variant.valueIds) === keyOf(valueIds))
 
+/**
+ * The stock saving the rows sets, once the API answered the item with the variants that exist: of
+ * a variant whose number the form changed from the one it was filled with, and of a variant the
+ * save made. A number the form did not change stays as the API holds it by now, which someone else
+ * may have set since the form was filled.
+ */
+export function stockWrites(
+  loaded: MerchandiseItem,
+  saved: MerchandiseItem,
+  stocks: readonly { valueIds: string[]; stock: number | null }[],
+): { variantId: string; stock: number | null }[] {
+  return stocks.flatMap(({ valueIds, stock }) => {
+    const variant = variantOf(saved, valueIds)
+    if (!variant || variant.stock === stock) return []
+    const before = variantOf(loaded, valueIds)
+    const untouched = before?.id === variant.id && before.stock === stock
+    return untouched ? [] : [{ variantId: variant.id, stock }]
+  })
+}
+
 /** An axis as its editor holds it: one that exists names its identifier, and so do its values. */
 export interface AxisFields {
   id?: string
@@ -94,6 +114,20 @@ export const axesFields = (item: MerchandiseItem): AxisFields[] =>
     name: axis.name,
     values: axis.values.map(({ id, label }) => ({ id, label })),
   }))
+
+/**
+ * What fills the editor of the axes anew once it changes: the item and the axes as the editor
+ * holds them. A size chart or a variant, which another editor saves, is no part of it, so saving
+ * there leaves what is typed here and not saved yet.
+ */
+export const axesKey = (item: MerchandiseItem) => JSON.stringify([item.id, axesFields(item)])
+
+/**
+ * What fills the editor of the variants anew once it changes: the item and its rows, which hold
+ * the values of the axes, the variants that exist, their stock and whether each is hidden. A size
+ * chart is no part of it.
+ */
+export const variantsKey = (item: MerchandiseItem) => JSON.stringify([item.id, variantRows(item)])
 
 const distinct = (texts: readonly string[]) =>
   new Set(texts.map((text) => text.toLowerCase())).size === texts.length
@@ -123,18 +157,31 @@ export function axesBody(
 }
 
 /**
- * Whether saving these axes takes variants away: every one once an axis is added or removed, and
- * those that held a value once the value is removed. An item with no variant loses none.
+ * What saving these axes takes away that the screen cannot bring back, null when nothing: every
+ * variant once an axis is added or removed, those that held a value once the value is removed, and
+ * the size chart of a value that goes. A value goes as the request drops it: left out, or its
+ * label left empty. An item with no variant loses none, and a value without a size chart goes with
+ * nothing else.
  */
-export function reshapes(item: MerchandiseItem, fields: readonly AxisFields[]): boolean {
-  if (item.variants.length === 0) return false
+export function takenByAxes(
+  item: MerchandiseItem,
+  fields: readonly AxisFields[],
+): 'variants' | 'size-charts' | 'both' | null {
   const keptAxes = new Set(fields.flatMap((axis) => axis.id ?? []))
-  if (fields.some((axis) => axis.id === undefined)) return true
-  if (item.axes.some((axis) => !keptAxes.has(axis.id))) return true
   const keptValues = new Set(
-    fields.flatMap((axis) => axis.values.flatMap((entry) => entry.id ?? [])),
+    fields.flatMap((axis) =>
+      axis.values.flatMap((entry) => (entry.label.trim() ? (entry.id ?? []) : [])),
+    ),
   )
-  return item.variants.some((variant) => variant.valueIds.some((id) => !keptValues.has(id)))
+  const charted = item.axes.flatMap((axis) => axis.values.filter((value) => value.sizeChart))
+  const sizeCharts = charted.some((value) => !keptValues.has(value.id))
+  const variants =
+    item.variants.length > 0 &&
+    (fields.some((axis) => axis.id === undefined) ||
+      item.axes.some((axis) => !keptAxes.has(axis.id)) ||
+      item.variants.some((variant) => variant.valueIds.some((id) => !keptValues.has(id))))
+  if (variants) return sizeCharts ? 'both' : 'variants'
+  return sizeCharts ? 'size-charts' : null
 }
 
 /** Why a chosen file cannot be a picture or a size chart, before it is sent; null when it can. */

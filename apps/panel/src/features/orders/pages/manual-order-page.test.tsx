@@ -67,6 +67,15 @@ vi.mock('../../catalog', () => ({
         axes: [],
         variants: [{ id: 'pin-one', valueIds: [], stock: 5, hidden: false }],
       },
+      {
+        // Offered with no ticket type.
+        id: 'mug',
+        name: 'Mug',
+        amountMinor: 3500,
+        hidden: false,
+        axes: [],
+        variants: [{ id: 'mug-one', valueIds: [], stock: 5, hidden: false }],
+      },
     ],
   }),
   customFieldsOptions: () => ({
@@ -182,6 +191,22 @@ describe('the new manual order page', () => {
           cart: { ticket: null, addOnIds: [], items: [{ variantId: 'pin-one', quantity: 1 }] },
           ageBand: null,
         },
+      }),
+    )
+  })
+
+  it('records no merchandise the ticket type chosen afterwards does not offer', async () => {
+    view()
+
+    fireEvent.change(await screen.findByLabelText('Mug'), { target: { value: '2' } })
+    fireEvent.change(screen.getByLabelText('Ticket type'), { target: { value: 'standard' } })
+    expect(screen.queryByLabelText('Mug')).toBeNull()
+    fireEvent.change(screen.getByLabelText('Age band'), { target: { value: 'adult' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Record the order' }))
+
+    await waitFor(() =>
+      expect(createManual.mock.calls[0]?.[0]).toMatchObject({
+        body: { cart: { ticket: { ticketTypeId: 'standard' }, addOnIds: [], items: [] } },
       }),
     )
   })

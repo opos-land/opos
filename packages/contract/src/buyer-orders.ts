@@ -101,6 +101,11 @@ export const myOrderSchema = z.object({
   placedAt: timestamp,
   /** When the hold of an order awaiting payment ends: "Pay now" starts only within it. */
   holdEndsAt: timestamp.nullable(),
+  /**
+   * Whether "Pay now" would start a payment attempt now: the order awaits payment within its
+   * hold, by the shop's own clock. The list offers it by this, never by the clock of its device.
+   */
+  payable: z.boolean(),
   /** The ticket holder, by whom a buyer tells their orders apart. */
   holderName: z.string(),
   edition: z.object({ id: z.uuid(), slug: z.string(), name: z.string() }),

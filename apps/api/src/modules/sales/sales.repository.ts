@@ -51,14 +51,18 @@ export class SalesRepository {
       .select({
         status: orders.status,
         orders: count(),
-        totalMinor: sql<number>`coalesce(sum(${orders.totalMinor}), 0)::int`,
+        // A sum of totals outgrows the four bytes one total fits: it is read as the eight it is.
+        totalMinor: sql<number>`coalesce(sum(${orders.totalMinor}), 0)`.mapWith(Number),
       })
       .from(orders)
       .where(and(eq(orders.editionId, editionId), inArray(orders.status, [...HELD])))
       .groupBy(orders.status) as Promise<{ status: Held; orders: number; totalMinor: number }[]>
   }
 
-  /** What the lines of the orders that hold take of the catalog, by status. */
+  /**
+   * What the lines of the orders that hold take of the catalog, by status. An order that needs
+   * review having expired took nothing again: it holds nothing, as the shop counts it.
+   */
   held(editionId: string) {
     return this.context
       .tx()
@@ -71,7 +75,13 @@ export class SalesRepository {
       })
       .from(orderLines)
       .innerJoin(orders, eq(orders.id, orderLines.orderId))
-      .where(and(eq(orders.editionId, editionId), inArray(orders.status, [...HELD])))
+      .where(
+        and(
+          eq(orders.editionId, editionId),
+          inArray(orders.status, [...HELD]),
+          eq(orders.holds, true),
+        ),
+      )
       .groupBy(
         orders.status,
         orderLines.ticketTypeId,
@@ -111,7 +121,7 @@ export class SalesRepository {
         .select({
           day: sql<string>`to_char(coalesce(${orders.paidAt}, ${orders.placedAt}) at time zone ${timeZone}, 'YYYY-MM-DD')`,
           status: orders.status,
-          totalMinor: sql<number>`coalesce(sum(${orders.totalMinor}), 0)::int`,
+          totalMinor: sql<number>`coalesce(sum(${orders.totalMinor}), 0)`.mapWith(Number),
           tickets: sql<number>`coalesce(sum(${ticketsOf.tickets}), 0)::int`,
         })
         .from(orders)

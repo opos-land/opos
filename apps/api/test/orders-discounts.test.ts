@@ -6,7 +6,7 @@ import { ROUTE_RATE_LIMITS } from '../src/common/rate-limit/route-rate-limit'
 import { STAND_IN_TOKEN } from '../src/modules/checkout/bot-check'
 import { OrderExpiry } from '../src/modules/checkout/order-expiry.service'
 import { createApp } from './app'
-import { deleteCreatedAccounts } from './auth'
+import { deleteCreatedAccounts, session } from './auth'
 import { type OrderDesk, orderDesk } from './order-desk'
 import {
   addDiscountCode,
@@ -15,6 +15,8 @@ import {
   addTicketType,
   closeTenantDb,
   deleteCreatedTenants,
+  type Member,
+  member,
   offerWith,
   setColumn,
 } from './tenants'
@@ -49,9 +51,16 @@ const quote = (d: OrderDesk, body: object, ip = from()) =>
     .set('X-Forwarded-For', ip)
     .send({ ticket: { ticketTypeId: d.standard }, ...body })
 /** A visitor's order for the ticket type with a code, at the total the buyer saw. */
-const placeWith = (d: OrderDesk, discountCode: string, expectedTotalMinor: number, more = {}) =>
+const placeWith = (
+  d: OrderDesk,
+  discountCode: string | undefined,
+  expectedTotalMinor: number,
+  more = {},
+  ip = from(),
+) =>
   request(app.getHttpServer())
     .post(`/public/tenants/${d.t.slug}/editions/${d.slug}/shop/orders`)
+    .set('X-Forwarded-For', ip)
     .send({
       cart: { ticket: { ticketTypeId: d.standard } },
       holderName: 'Ada Lovelace',
@@ -63,6 +72,28 @@ const placeWith = (d: OrderDesk, discountCode: string, expectedTotalMinor: numbe
       discountCode,
       expectedTotalMinor,
       ...more,
+    })
+/** The same order placed by a signed-in account, under its own email. */
+const placeAs = (
+  buyer: Member,
+  d: OrderDesk,
+  discountCode: string,
+  expectedTotalMinor: number,
+  ip: string,
+) =>
+  request(app.getHttpServer())
+    .post(`/editions/${d.edition}/shop/orders`)
+    .use(session(buyer.token))
+    .set('X-Tenant-Slug', d.t.slug)
+    .set('X-Forwarded-For', ip)
+    .send({
+      cart: { ticket: { ticketTypeId: d.standard } },
+      holderName: 'Ada Lovelace',
+      ageBand: 'adult',
+      providerConsentAccepted: true,
+      botCheckToken: STAND_IN_TOKEN,
+      discountCode,
+      expectedTotalMinor,
     })
 
 describe('a discount code at the Summary', () => {
@@ -135,6 +166,79 @@ describe('a discount code at the Summary', () => {
     expect(res.body).toMatchObject({ code: 'request.rate-limited' })
     // A cart with no code is still priced.
     await quote(d, {}, ip).expect(200)
+  })
+
+  // Placing an order is no way around the limit: one whose code cannot be used is a try as a
+  // quote's is, and an address out of tries is refused before its code is looked at.
+  it('is tried only so often from one address by an order too, a visitor’s or an account’s', async () => {
+    const d = await orderDesk(app)
+    await addDiscountCode(d.t.id, d.edition, { code: 'early10', ticketTypeIds: [d.standard] })
+    const buyer = await member()
+    const ip = from()
+    const { limit } = ROUTE_RATE_LIMITS.discountCodeTries
+    await quote(d, { discountCode: 'guess-in-a-quote' }, ip).expect(409)
+    for (let tried = 2; tried < limit; tried += 1) {
+      const res = await placeWith(d, `guess-${tried}`, 9000, {}, ip).expect(409)
+      expect(res.body).toMatchObject(usedUp)
+    }
+    const last = await placeAs(buyer, d, 'the-last-guess', 9000, ip).expect(409)
+    expect(last.body).toMatchObject(usedUp)
+
+    // A code that can be used is answered as one that cannot: nothing more is told of either.
+    const answers = [
+      await placeWith(d, 'one-more', 9000, {}, ip),
+      await placeAs(buyer, d, 'and-another', 9000, ip),
+      await placeWith(d, 'early10', 9000, {}, ip),
+      await placeAs(buyer, d, 'early10', 9000, ip),
+    ]
+
+    for (const res of answers) {
+      expect(res.status).toBe(429)
+      expect(res.body).toMatchObject({ code: 'request.rate-limited' })
+    }
+    // An order with no code is still placed.
+    await placeWith(d, undefined, 10000, {}, ip).expect(201)
+  })
+
+  // Sent together, the orders of one address are not all answered before the first is counted.
+  it('is tried no more often by orders sent together than by orders sent one by one', async () => {
+    const d = await orderDesk(app)
+    const buyer = await member()
+    const ip = from()
+    const { limit } = ROUTE_RATE_LIMITS.discountCodeTries
+
+    const answers = await Promise.all([
+      ...Array.from({ length: limit + 4 }, (_, tried) =>
+        placeWith(d, `guess-${tried}`, 9000, {}, ip),
+      ),
+      placeAs(buyer, d, 'a-guess-signed-in', 9000, ip),
+    ])
+
+    const told = answers.filter((res) => res.status === 409)
+    for (const res of told) expect(res.body).toMatchObject(usedUp)
+    expect(told.length).toBeGreaterThan(0)
+    expect(told.length).toBeLessThanOrEqual(limit)
+    expect(answers.filter((res) => res.status === 429)).toHaveLength(limit + 5 - told.length)
+    // Counted, the address is out of tries.
+    await placeWith(d, 'one-more', 9000, {}, ip).expect(429)
+  })
+
+  // Using a code is no try of one: buyers behind one address use a code as often as they buy.
+  it('spends no try by an order whose code can be used, a visitor’s or an account’s', async () => {
+    const d = await orderDesk(app)
+    await addDiscountCode(d.t.id, d.edition, { code: 'early10', ticketTypeIds: [d.standard] })
+    const buyer = await member()
+    const ip = from()
+    const { limit } = ROUTE_RATE_LIMITS.discountCodeTries
+    for (let placed = 0; placed < limit; placed += 1) {
+      const email = `buyer-${placed}@example.test`
+      await placeWith(d, 'early10', 9000, { email, emailConfirmation: email }, ip).expect(201)
+    }
+    await placeAs(buyer, d, 'early10', 9000, ip).expect(201)
+
+    const res = await placeWith(d, 'nobody-knows', 9000, {}, ip).expect(409)
+
+    expect(res.body).toMatchObject(usedUp)
   })
 
   it('never lowers a ticket type excluded from discounts', async () => {

@@ -563,6 +563,28 @@ describe('the limits of what is sold', () => {
     expect(await s.orders()).toHaveLength(1)
   })
 
+  // The last variant a merch-only shop sold: the next buyer returns to the Merch step for it.
+  it('name the variant that ran out also when merchandise alone has nothing else left', async () => {
+    const s = await shop()
+    const pin = await addMerchandiseItem(s.t.id, s.edition, { stock: 1 })
+    await setCatalogSettings(s.t.id, s.edition, { merchOnlyEnabled: true })
+    const alone = (email: string) => ({
+      cart: { ticket: null, items: [{ variantId: pin.variantId, quantity: 1 }] },
+      ageBand: null,
+      expectedTotalMinor: 5000,
+      email,
+      emailConfirmation: email,
+    })
+
+    await s.place(alone('a@example.test')).expect(201)
+    const res = await s.place(alone('b@example.test')).expect(409)
+
+    expect(res.body).toMatchObject({
+      code: 'order.unavailable',
+      params: { kind: 'variant', id: pin.variantId },
+    })
+  })
+
   it('count what an order holds, and no longer what an expired one held', async () => {
     const s = await shop({ capacity: 1 })
     const held = await addOrder(s.t.id, s.edition, { ticketTypeId: s.standard })
@@ -583,6 +605,22 @@ describe('the limits of what is sold', () => {
     const [first] = await s.orders()
     await setColumn('orders', String(first!.id), 'status', 'paid')
     await s.place().expect(201)
+  })
+
+  // Carts that share no ticket type wait for nothing of each other's stock or capacity.
+  it('let one email hold no fourth order awaiting payment placed at the same moment', async () => {
+    const s = await shop()
+    const types = [s.standard]
+    for (const name of ['Second', 'Third', 'Fourth', 'Fifth', 'Sixth']) {
+      types.push(await addTicketType(s.t.id, s.edition, { name }))
+    }
+
+    const answers = await Promise.all(
+      types.map((ticketTypeId) => s.place({ cart: { ticket: { ticketTypeId } } })),
+    )
+
+    expect(answers.map((res) => res.status).sort()).toEqual([201, 201, 201, 409, 409, 409])
+    expect(await s.orders()).toHaveLength(MAX_UNPAID_ORDERS)
   })
 })
 

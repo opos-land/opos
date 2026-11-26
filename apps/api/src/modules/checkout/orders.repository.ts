@@ -28,6 +28,7 @@ import { TenantContextService } from '../../common/als/tenant-context.service'
 import { isUuid } from '../../common/uuid'
 import { providerAccountLockKey } from '../shop/provider-account-lock'
 import { orderNumber } from './codes'
+import { unpaidOrdersLockKey } from './unpaid-orders-lock'
 
 /** An order as it is written when it is placed. */
 export interface NewOrder {
@@ -152,10 +153,18 @@ export class OrdersRepository {
       )
   }
 
-  /** How many orders of the edition await payment under the email. */
+  /**
+   * How many orders of the edition await payment under the email. The count is taken under a
+   * lock of the email in the edition, held until the order is written: another order of the same
+   * email waits here, whatever its cart, and then counts this one. It comes after the order's
+   * other locks, so no order waits for it while it holds a row another needs.
+   */
   async unpaid(editionId: string, email: string): Promise<number> {
-    const [row] = await this.context
-      .tx()
+    const tx = this.context.tx()
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(${unpaidOrdersLockKey(editionId, email)}::bigint)`,
+    )
+    const [row] = await tx
       .select({ unpaid: count() })
       .from(orders)
       .where(
@@ -356,6 +365,23 @@ export class OrdersRepository {
       addOnIds: ids(lines.map((line) => line.addOnId)),
       itemIds: ids(lines.map((line) => line.itemId)),
     }
+  }
+
+  /**
+   * Locks the row of the order a "Buy more" order adds to; any other order locks nothing. It
+   * comes right after the lock of the order's own row and before any limit, as placing a "Buy
+   * more" order takes them: what then makes the order paid joins the QR code under that lock,
+   * and never waits for it while it holds a limit.
+   */
+  async lockExtended(order: { tenantId: string; orderId: string }) {
+    const first = alias(orders, 'first')
+    await this.context
+      .tx()
+      .select({ id: first.id })
+      .from(orders)
+      .innerJoin(first, eq(first.id, orders.extendsOrderId))
+      .where(and(eq(orders.tenantId, order.tenantId), eq(orders.id, order.orderId)))
+      .for('update', { of: first })
   }
 
   /**

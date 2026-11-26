@@ -241,6 +241,26 @@ describe('revoking a scanner', () => {
     expect((again.body as Scanner).revokedAt).toBe((res.body as Scanner).revokedAt)
   })
 
+  // The answer is the scanner as its list shows it to the same org: an org who reads no team is
+  // told no address of another's scanner, revoked now or long ago.
+  it('tells who enabled it only to an org who may read the team', async () => {
+    const c = await convention()
+    const org = await member()
+    await addEditionAccess(c.t.id, await addOrg(c.t.id, org), c.edition, { tickets: 'write' })
+    const scanner = await addScanner(c.t.id, c.edition, { name: 'Gate of the head' })
+    const own = enabled(await c.as(org, 'post', '', { name: 'Gate of the org' }).expect(201))
+
+    const res = await c.as(org, 'delete', `/${scanner.id}`).expect(200)
+
+    expect((res.body as Scanner).enabledBy).toBeNull()
+    const again = await c.as(org, 'delete', `/${scanner.id}`).expect(200)
+    expect((again.body as Scanner).enabledBy).toBeNull()
+    const asHead = await c.head('delete', `/${scanner.id}`).expect(200)
+    expect((asHead.body as Scanner).enabledBy).toBe(c.t.head.email)
+    const ofOwn = await c.as(org, 'delete', `/${own.id}`).expect(200)
+    expect((ofOwn.body as Scanner).enabledBy).toBe(org.email)
+  })
+
   it('knows the scanners of its own edition alone', async () => {
     const c = await convention()
     const other = await convention()

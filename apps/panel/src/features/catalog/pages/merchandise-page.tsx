@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PlusIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
+import { changedFrom } from '../../../shared/lib/changes'
 import { usePageTitle } from '../../../shared/lib/page-title'
 import {
   Badge,
@@ -79,7 +80,17 @@ export function MerchandisePage() {
         ) : shop.isError ? (
           <ErrorMessage error={shop.error} />
         ) : (
-          <Selling shop={shop.data} editionId={edition.id} canWrite={canWrite} />
+          <Selling
+            // What the edition holds by now fills the form anew.
+            key={JSON.stringify([
+              shop.data.merchPreorderDeadline,
+              shop.data.merchOnlyEnabled,
+              shop.data.pickupInformation,
+            ])}
+            shop={shop.data}
+            editionId={edition.id}
+            canWrite={canWrite}
+          />
         )}
       </Section>
       <Section title={<Trans>Items of the edition</Trans>}>
@@ -152,9 +163,8 @@ function Selling({
   const { api } = useCurrentTenant()
   const time = useTenantTime()
   const queryClient = useQueryClient()
-  const [deadline, setDeadline] = useState(
-    shop.merchPreorderDeadline ? time.toInput(shop.merchPreorderDeadline) : '',
-  )
+  const loaded = shop.merchPreorderDeadline ? time.toInput(shop.merchPreorderDeadline) : ''
+  const [deadline, setDeadline] = useState(loaded)
   const [merchOnly, setMerchOnly] = useState(shop.merchOnlyEnabled)
   const [pickUp, setPickUp] = useState(shop.pickupInformation ?? '')
   const [invalid, setInvalid] = useState(false)
@@ -172,11 +182,14 @@ function Selling({
     if (deadline === '' || merchPreorderDeadline !== null) {
       update.mutate({
         params: { editionId },
-        body: {
-          merchPreorderDeadline,
+        // Only what was changed here: the rest stays as someone else may have set it meanwhile.
+        body: changedFrom(shop, {
+          // A field left as it was filled keeps the moment it was filled from.
+          merchPreorderDeadline:
+            deadline === loaded ? shop.merchPreorderDeadline : merchPreorderDeadline,
           merchOnlyEnabled: merchOnly,
           pickupInformation: pickUp.trim() || null,
-        },
+        }),
       })
     }
   }

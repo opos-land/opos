@@ -28,7 +28,7 @@ import { PicturesEditor } from '../components/pictures-editor'
 import { SizeChartsEditor } from '../components/size-charts-editor'
 import { VariantsEditor } from '../components/variants-editor'
 import { useMoney } from '../hooks/use-money'
-import { EMPTY_ITEM, itemFields } from '../model/merchandise'
+import { axesKey, EMPTY_ITEM, itemFields, variantsKey } from '../model/merchandise'
 
 /**
  * One merchandise item (`/editions/:editionSlug/merchandise/:itemId`), or a new one at
@@ -123,8 +123,6 @@ export function MerchandiseItemPage() {
   }
 
   const params = { editionId: edition.id, itemId: item.id }
-  // What the API answered fills each editor anew once it changed.
-  const shape = JSON.stringify([item.axes, item.variants])
   return (
     <>
       <PageHeader title={item.name} description={edition.name} />
@@ -140,10 +138,11 @@ export function MerchandiseItemPage() {
         />
       </Section>
       <Section title={<Trans>Option axes</Trans>}>
-        <AxesEditor key={shape} item={item} canWrite={canWrite} />
+        {/* What the API answered fills each editor anew once what that editor holds changed. */}
+        <AxesEditor key={axesKey(item)} item={item} canWrite={canWrite} />
       </Section>
       <Section title={<Trans>Variants and stock</Trans>}>
-        <VariantsEditor key={shape} item={item} canWrite={canWrite} />
+        <VariantsEditor key={variantsKey(item)} item={item} canWrite={canWrite} />
       </Section>
       <Section title={<Trans>Pictures</Trans>}>
         <PicturesEditor item={item} canWrite={canWrite} />

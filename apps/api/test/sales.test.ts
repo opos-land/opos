@@ -124,6 +124,40 @@ describe('the dashboard of an edition’s sales', () => {
     ])
   })
 
+  // An order paid after it expired, for what was sold meanwhile, needs review and took nothing
+  // again (docs/specs/0004-checkout-and-orders.md, H1 and Y7): it is an order to settle, and
+  // nothing it names is held.
+  it('counts nothing of what an order that needs review no longer holds', async () => {
+    const { d, workshop, room, pin, order, pins } = await desk()
+    await order({ addOnIds: [workshop], variants: pins(1) })
+    await order({
+      status: 'needs-review',
+      reviewCause: 'unavailable',
+      holds: false,
+      addOnIds: [workshop],
+      variants: pins(2),
+    })
+    // One that needs review for its amount keeps what it held when it got there.
+    await order({
+      status: 'needs-review',
+      reviewCause: 'amount',
+      addOnIds: [workshop],
+      variants: pins(3),
+    })
+
+    const report = await sales(d)
+
+    expect(report.orders).toMatchObject({ paid: 1, needsReview: 2 })
+    expect(report.ticketTypes).toEqual([{ id: d.standard, name: 'Standard', sold: 1, pending: 1 }])
+    expect(report.addOns).toEqual([
+      { id: workshop, name: 'Workshop', kind: 'limited', sold: 1, pending: 1 },
+      { id: room, name: 'Sleeping room', kind: 'headcount', sold: 0, pending: 0 },
+    ])
+    expect(report.items[0]!.variants).toEqual([
+      { id: pin.variantId, labels: [], sold: 1, pending: 3 },
+    ])
+  })
+
   it('lists the answers to each custom field with how many paid orders gave each', async () => {
     const { d, city, order } = await desk()
     for (const answer of ['Poznań', 'Gdynia', 'Poznań']) {
@@ -189,6 +223,21 @@ describe('the dashboard of an edition’s sales', () => {
 
     expect((await sales(d)).days).toEqual([
       { day: '2027-03-05', paidMinor: 5000, manualMinor: 0, tickets: 1 },
+    ])
+  })
+
+  // The total of one order fits the database's four-byte integer; the sum of an edition's need not.
+  it('sums a revenue larger than the largest total one order may carry', async () => {
+    const { d, order } = await desk()
+    for (let placed = 0; placed < 3; placed += 1) {
+      await order({ totalMinor: 1_000_000_000, placedAt: '2027-03-05T12:00:00Z' })
+    }
+
+    const report = await sales(d)
+
+    expect(report.revenue).toEqual({ paidMinor: 3_000_000_000, manualMinor: 0 })
+    expect(report.days).toEqual([
+      { day: '2027-03-05', paidMinor: 3_000_000_000, manualMinor: 0, tickets: 3 },
     ])
   })
 

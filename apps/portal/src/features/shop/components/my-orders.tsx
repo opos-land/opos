@@ -18,12 +18,6 @@ import { OrderLines } from './order-lines'
 /** How often the list asks again while an order of it awaits its payment. */
 const ASK_AGAIN_MS = 5000
 
-/** Whether the order still awaits payment within its hold, judged at `at`. */
-const held = (order: MyOrder, at: number) =>
-  order.status === 'awaiting-payment' &&
-  order.holdEndsAt !== null &&
-  new Date(order.holdEndsAt).getTime() > at
-
 /**
  * The orders of the signed-in account in a convention, on the convention's page
  * (docs/specs/0009-buyer-self-service.md, U1-U4): each with its status and what it holds; a paid
@@ -35,9 +29,10 @@ export function MyOrders({ tenantSlug, timeZone }: { tenantSlug: string; timeZon
   const orders = useQuery({
     ...myOrdersOptions(tenantSlug),
     enabled: signedIn,
-    // A buyer back from the provider sees "Paid" by itself once the payment is confirmed.
+    // A buyer back from the provider sees "Paid" by itself once the payment is confirmed. An
+    // order is within its hold by the shop's word, never by the clock of this device.
     refetchInterval: (query) =>
-      query.state.data?.some((order) => held(order, Date.now())) ? ASK_AGAIN_MS : false,
+      query.state.data?.some((order) => order.payable) ? ASK_AGAIN_MS : false,
   })
 
   if (!signedIn) return null
@@ -52,8 +47,9 @@ export function MyOrders({ tenantSlug, timeZone }: { tenantSlug: string; timeZon
             order={order}
             tenantSlug={tenantSlug}
             timeZone={timeZone}
-            // Judged when the list was last read, which it does again while an order awaits.
-            payable={held(order, orders.dataUpdatedAt)}
+            // As the shop judged it when the list was last read, which it is again while an
+            // order awaits.
+            payable={order.payable}
             onChanged={() => void orders.refetch()}
           />
         ))}

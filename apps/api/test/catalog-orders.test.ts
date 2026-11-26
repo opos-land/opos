@@ -9,6 +9,7 @@ import {
   addAddOn,
   addConsent,
   addCustomField,
+  addDiscountCode,
   addEdition,
   addMerchandiseItem,
   addOrder,
@@ -18,6 +19,7 @@ import {
   makeShopReady,
   type Member,
   openTransaction,
+  setColumn,
   sleep,
   storedRows,
   tenantWithHead,
@@ -270,6 +272,114 @@ describe('a capacity and a stock', () => {
 
     expect(change.status).toBe(409)
     expect(change.body).toMatchObject(belowHeld(2))
+  })
+})
+
+// An order locks the add-ons of its cart by identifier (docs/ARCHITECTURE.md, invariant 9). A
+// change that touches several add-ons takes them the same way, so neither waits for the other
+// while it holds a row the other needs.
+describe('a change of several add-ons at once', () => {
+  it.each([
+    ['a new place with a new capacity', 'patch', 200],
+    ['a deletion, after which the rest close ranks', 'delete', 204],
+  ] as const)('takes them as an order being placed does: %s', async (_, method, status) => {
+    const c = await convention()
+    const limited = { kind: 'limited', capacity: 10 } as const
+    const [first, second] = [
+      await addAddOn(c.t.id, c.edition, limited),
+      await addAddOn(c.t.id, c.edition, limited),
+    ].sort() as [string, string]
+    // The one an order locks second stands first in the list: moved or deleted, it moves the
+    // other.
+    await setColumn('add_ons', second, 'position', 1)
+    await setColumn('add_ons', first, 'position', 2)
+
+    const res = await whilePlacing(
+      // An order being placed with both holds the first, and has not reached the second.
+      (sql) => sql`select id from add_ons where id = ${first} for update`,
+      () =>
+        c.as(
+          method,
+          `/add-ons/${second}`,
+          method === 'patch' ? { capacity: 5, position: 2 } : undefined,
+        ),
+      // It takes the second without waiting: the change holds neither of the two yet.
+      (sql) => sql`select id from add_ons where id = ${second} for update nowait`,
+    )
+
+    expect(res.status).toBe(status)
+    const left = (await storedRows('add_ons', c.t.id)).map((row) => [row.id, row.position])
+    expect(left).toEqual(
+      method === 'patch'
+        ? expect.arrayContaining([
+            [first, 1],
+            [second, 2],
+          ])
+        : [[first, 1]],
+    )
+  })
+})
+
+// An order takes its locks in one order: the ticket type, the add-ons, the variants, and the
+// discount code last (docs/ARCHITECTURE.md, invariant 9). A change that needs a row an order
+// locks and a row an order asks for later waits for the first while it holds nothing of the
+// second: the two never wait for each other.
+describe('a change that needs two of the rows an order takes', () => {
+  it('holds a discount code only once the ticket types and add-ons it names are free', async () => {
+    const c = await convention()
+    const standard = await addTicketType(c.t.id, c.edition)
+    const room = await addAddOn(c.t.id, c.edition)
+    const applies = { ticketTypeIds: [standard], addOnIds: [room] }
+    const code = await addDiscountCode(c.t.id, c.edition, { usageLimit: 1, ...applies })
+    const change = { usageLimit: 5, ...applies, itemIds: [] }
+
+    for (const table of ['ticket_types', 'add_ons'] as const) {
+      const res = await whilePlacing(
+        // An order being placed with the code holds what it buys, and has not reached the code.
+        (sql) => sql`
+          select id from ${sql(table)} where id in (${standard}, ${room}) for update
+        `,
+        () => c.as('patch', `/discount-codes/${code.id}`, change),
+        // It takes the code, its last lock, without waiting: the change does not hold it yet.
+        (sql) => sql`select id from discount_codes where id = ${code.id} for update nowait`,
+      )
+
+      expect(res.status).toBe(200)
+      expect(res.body).toMatchObject(change)
+    }
+  })
+
+  it('deletes a merchandise item only once its variants are free', async () => {
+    const c = await convention()
+    const pin = await addMerchandiseItem(c.t.id, c.edition, { stock: 5 })
+
+    const res = await whilePlacing(
+      // An order being placed with the variant holds it, and has not written its line.
+      (sql) => sql`select id from merchandise_variants where id = ${pin.variantId} for update`,
+      () => c.as('delete', `/merchandise-items/${pin.id}`),
+      // The line names the item, which it finds free: the deletion does not hold it yet.
+      async (sql) => {
+        await sql`select id from merchandise_items where id = ${pin.id} for key share nowait`
+        await sql`
+          insert into orders (tenant_id, edition_id, number, status, email, holder_name,
+            total_minor, holds, hold_ends_at, result_token_hash)
+          values (${c.t.id}, ${c.edition}, 'MEANWH3333', 'awaiting-payment', 'b@example.test',
+            'Ada', 5000, true, '2099-01-01T00:00:00Z', repeat('0', 64))
+        `
+        await sql`
+          insert into order_lines (tenant_id, edition_id, order_id, kind, merchandise_item_id,
+            merchandise_variant_id, quantity, unit_amount_minor, amount_minor)
+          select tenant_id, edition_id, id, 'merchandise', ${pin.id}, ${pin.variantId}, 1, 5000,
+            5000
+          from orders where number = 'MEANWH3333' and tenant_id = ${c.t.id}
+        `
+      },
+    )
+
+    // The order was placed first: what it holds is never deleted.
+    expect(res.status).toBe(409)
+    expect(res.body).toMatchObject(inUse)
+    expect(await storedRows('merchandise_items', c.t.id)).toHaveLength(1)
   })
 })
 

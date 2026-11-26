@@ -4,7 +4,7 @@ import { i18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { ORPCError } from '@orpc/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSession } from '../../../shared/lib/session'
@@ -235,6 +235,72 @@ describe('CheckoutPage', () => {
     expect(screen.getByLabelText<HTMLInputElement>(/name or nickname/).value).toBe('Jan Kowal')
   })
 
+  // C19: a sign-out clears the checkout, also one the tab did not see, as when it was asleep or
+  // restored after its session ended. What an account entered is shown to nobody else.
+  it('begins anew in a tab that kept the checkout of an account it no longer shows', async () => {
+    const theirs = kept({
+      step: 'summary',
+      holderName: 'Jan Kowal',
+      email: '',
+      emailConfirmation: '',
+      asVisitor: false,
+    })
+    saveDraft('convention-a', '2027', theirs, account.id)
+    view()
+
+    expect(await stepHeading('Ticket holder')).toBeDefined()
+    press('Continue without an account')
+    expect(screen.getByLabelText<HTMLInputElement>(/name or nickname/).value).toBe('')
+    cleanup()
+
+    saveDraft('convention-a', '2027', theirs, account.id)
+    const other = { ...account, id: 'account-2', firstName: 'Ewa', lastName: 'Nowak' }
+    useSession.setState({ status: 'ready', account: other as never })
+    view()
+
+    expect(await stepHeading('Ticket holder')).toBeDefined()
+    expect(screen.getByLabelText<HTMLInputElement>(/name or nickname/).value).toBe('Ewa Nowak')
+  })
+
+  // C3: signing in keeps everything already entered, and the checkout is the account's from then.
+  it('goes on with what a visitor entered once they sign in, as the account’s own', async () => {
+    saveDraft('convention-a', '2027', kept({ step: 'add-ons' }))
+    useSession.setState({ status: 'ready', account: account as never })
+    view()
+
+    expect(await stepHeading('Add-ons')).toBeDefined()
+    fireEvent.click(screen.getByRole('checkbox', { name: /Sleeping room/ }))
+    expect(loadDraft('convention-a', '2027')).toBeNull()
+    expect(loadDraft('convention-a', '2027', undefined, account.id)).toMatchObject({
+      holderName: 'Ada',
+      addOnIds: [ids.room],
+    })
+  })
+
+  // What the first step asks holds again when the order is placed: a checkout that reaches
+  // the Summary without it goes back there, with the field marked, and places nothing.
+  it('returns a buyer whose first step does not hold from the Summary, and places nothing', async () => {
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({
+        step: 'summary',
+        email: '',
+        emailConfirmation: '',
+        consentIds: [ids.terms],
+        providerConsent: true,
+      }),
+    )
+    view()
+    await stepHeading('Summary')
+
+    press('Order and pay')
+
+    expect(await stepHeading('Ticket holder')).toBeDefined()
+    expect(screen.getAllByText('Fill in this field.')).toHaveLength(2)
+    expect(api.place).not.toHaveBeenCalled()
+  })
+
   it('stops a signed-in buyer whose account email the provider cannot take, and says so', async () => {
     const long = `${'a'.repeat(39)}@example.test`
     useSession.setState({ status: 'ready', account: { ...account, email: long } as never })
@@ -375,6 +441,59 @@ describe('CheckoutPage', () => {
     // The order is placed: the checkout is forgotten, and its result page opens with the token.
     expect(loadDraft('convention-a', '2027')).toBeNull()
     expect(window.sessionStorage.getItem('opos-order-result:order-1')).toBe('token-1')
+  })
+
+  // The provider's page takes a moment to open, and the checkout is still on the screen
+  // meanwhile: its order is placed, and another press places no second one.
+  it('places no second order while the browser leaves for the provider', async () => {
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({ step: 'summary', consentIds: [ids.terms], providerConsent: true }),
+    )
+    view()
+    await stepHeading('Summary')
+
+    press('Order and pay')
+    await waitFor(() => expect(api.leave).toHaveBeenCalled())
+    // The placing has ended; only the page that leaves is awaited.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)))
+    const order = screen.getByRole<HTMLButtonElement>('button', { name: 'Order and pay' })
+    fireEvent.submit(order.closest('form')!)
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)))
+
+    expect(api.place).toHaveBeenCalledTimes(1)
+    expect(api.leave).toHaveBeenCalledTimes(1)
+    expect(order.disabled).toBe(true)
+  })
+
+  // Back from the provider's page, a browser may show the checkout again out of its memory, as
+  // it was left: its order is placed and its button stays off, so the order's result takes over.
+  it('opens the result of the placed order once the browser brings the page back', async () => {
+    const shown = (persisted: boolean) =>
+      act(() => {
+        window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted }))
+      })
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({ step: 'summary', consentIds: [ids.terms], providerConsent: true }),
+    )
+    view()
+    await stepHeading('Summary')
+
+    // A checkout brought back with no order placed goes on where it was.
+    shown(true)
+    expect(screen.getByRole('button', { name: 'Order and pay' })).toBeDefined()
+
+    press('Order and pay')
+    await waitFor(() => expect(api.leave).toHaveBeenCalled())
+    // A page shown as it loads was not brought back.
+    shown(false)
+    expect(screen.queryByText('The result')).toBeNull()
+
+    shown(true)
+    expect(await screen.findByText('The result')).toBeDefined()
   })
 
   // docs/specs/0008-discount-codes.md, K1: a valid code appears as a line of its own, and the
@@ -587,6 +706,117 @@ describe('CheckoutPage', () => {
     expect(api.leave).not.toHaveBeenCalled()
   })
 
+  // O5 for the ticket type itself: nothing is placed, and the checkout says what ran out and
+  // where another one is picked, instead of an empty order nothing can be done with.
+  it('says that the ticket type is not on sale once it ran out, and offers no order to place', async () => {
+    api.place.mockRejectedValue(
+      new ORPCError('order.unavailable', {
+        status: 409,
+        data: { kind: 'ticket-type', id: ids.standard },
+      }),
+    )
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({ step: 'summary', consentIds: [ids.terms], providerConsent: true }),
+    )
+    view()
+    await stepHeading('Summary')
+    const gone = offer()
+    gone.ticketTypes[0]!.state = 'sold-out'
+    api.offer.mockResolvedValue(gone)
+
+    press('Order and pay')
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toMatch(/This ticket type is not on sale now\./)
+    expect(
+      within(alert)
+        .getByRole('link', { name: 'Choose another one in the shop.' })
+        .getAttribute('href'),
+    ).toBe(shop)
+    // No total of nothing, and no button that would place it.
+    expect(screen.queryByRole('rowheader', { name: 'Total due' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Order/ })).toBeNull()
+    expect(screen.getByRole('heading', { name: 'Summary', level: 2 })).toBeDefined()
+  })
+
+  it('tells at the Summary that something chosen ran out, and marks it on its step', async () => {
+    const out = offer()
+    out.addOns[0]!.soldOut = true
+    api.offer.mockResolvedValue(out)
+    saveDraft('convention-a', '2027', kept({ step: 'summary', addOnIds: [ids.workshop] }))
+    view()
+    await stepHeading('Summary')
+
+    expect(screen.getByRole('alert').textContent).toMatch(
+      /Something you chose is no longer available\./,
+    )
+    expect(screen.queryByRole('button', { name: /^Order/ })).toBeNull()
+    press('Back')
+    await stepHeading('Merch')
+    press('Back')
+    await stepHeading('Add-ons')
+    expect(screen.getByText('It ran out while you were ordering.')).toBeDefined()
+    fireEvent.click(screen.getByRole('checkbox', { name: /Painting workshop/ }))
+    expect(screen.queryByText('It ran out while you were ordering.')).toBeNull()
+    expect(screen.getByText(/Total: .*120[.,]00/)).toBeDefined()
+  })
+
+  // The tab keeps a checkout for days, and the shop changes meanwhile: what it no longer
+  // offers is on no step, so the buyer could not take it out.
+  it('takes out of a kept checkout what the shop no longer offers, and says so', async () => {
+    const changed = offer({ addOns: offer().addOns.filter((addOn) => addOn.id !== ids.workshop) })
+    changed.ticketTypes[0]!.addOnIds = [ids.room]
+    api.offer.mockResolvedValue(changed)
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({ step: 'summary', addOnIds: [ids.workshop, ids.room], consentIds: ['gone'] }),
+    )
+    view()
+    await stepHeading('Summary')
+
+    expect(screen.getByText(/no longer offers something you had chosen/)).toBeDefined()
+    expect(screen.getByText(/Total: .*120[.,]00/)).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Order and pay' })).toBeDefined()
+    expect(loadDraft('convention-a', '2027')).toMatchObject({
+      addOnIds: [ids.room],
+      consentIds: [],
+    })
+  })
+
+  it('takes out what the shop stopped offering while the buyer was ordering', async () => {
+    api.place.mockRejectedValueOnce(
+      new ORPCError('order.unavailable', {
+        status: 409,
+        data: { kind: 'add-on', id: ids.workshop },
+      }),
+    )
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({
+        step: 'summary',
+        addOnIds: [ids.workshop],
+        consentIds: [ids.terms],
+        providerConsent: true,
+      }),
+    )
+    view()
+    await stepHeading('Summary')
+    expect(screen.getByText(/Total: .*160[.,]00/)).toBeDefined()
+    const changed = offer({ addOns: offer().addOns.filter((addOn) => addOn.id !== ids.workshop) })
+    changed.ticketTypes[0]!.addOnIds = [ids.room]
+    api.offer.mockResolvedValue(changed)
+
+    press('Order and pay')
+
+    expect(await screen.findByText(/no longer offers something you had chosen/)).toBeDefined()
+    expect(screen.getByText(/Total: .*120[.,]00/)).toBeDefined()
+    expect(loadDraft('convention-a', '2027')).toMatchObject({ addOnIds: [] })
+  })
+
   // A total never changes silently: the buyer is shown the new one and confirms it.
   it('shows a new total and places nothing until the buyer confirms it', async () => {
     api.place.mockRejectedValueOnce(
@@ -611,6 +841,43 @@ describe('CheckoutPage', () => {
     press('Order and pay')
     await waitFor(() => expect(api.leave).toHaveBeenCalled())
     expect(api.place.mock.calls[1]![1]).toMatchObject({ expectedTotalMinor: 15000 })
+  })
+
+  // With a discount code the total is the shop's own price of the cart: it is asked again, or
+  // the buyer would confirm the old one for ever.
+  it('asks the shop for the price with the code again when the total changed', async () => {
+    api.quote.mockResolvedValueOnce({ currency: 'PLN', lines: [], totalMinor: 10800 })
+    api.quote.mockResolvedValue({ currency: 'PLN', lines: [], totalMinor: 13500 })
+    api.place.mockRejectedValueOnce(
+      new ORPCError('order.total-changed', { status: 409, data: { totalMinor: 13500 } }),
+    )
+    saveDraft(
+      'convention-a',
+      '2027',
+      kept({
+        step: 'summary',
+        discountCode: 'EARLY10',
+        consentIds: [ids.terms],
+        providerConsent: true,
+      }),
+    )
+    view()
+    await stepHeading('Summary')
+    await screen.findByText(/Code EARLY10 is applied/)
+    const due = () => screen.getByRole('rowheader', { name: 'Total due' }).closest('tr')!
+    expect(within(due()).getByText(/108[.,]00/)).toBeDefined()
+
+    press('Order and pay')
+
+    expect(await screen.findByText(/changed to .*135[.,]00/)).toBeDefined()
+    await waitFor(() => expect(within(due()).getByText(/135[.,]00/)).toBeDefined())
+    expect(api.leave).not.toHaveBeenCalled()
+    press('Order and pay')
+    await waitFor(() => expect(api.leave).toHaveBeenCalled())
+    expect(api.place.mock.calls[1]![1]).toMatchObject({
+      discountCode: 'EARLY10',
+      expectedTotalMinor: 13500,
+    })
   })
 
   it('says so when the bot check failed, and lets the buyer try again', async () => {
@@ -662,6 +929,44 @@ describe('CheckoutPage', () => {
     expect(screen.getByText(/picked up at the convention/)).toBeDefined()
   })
 
+  // An order of merchandise alone is its items: once the shop offers none of those chosen, the
+  // Summary has no order to show, and asks for an item as the Merch step does.
+  it('offers no order of merchandise alone to place once the shop took out all of it', async () => {
+    api.offer.mockResolvedValue(offer({ items: offer().items.filter(({ id }) => id !== ids.pin) }))
+    const alone = kept({
+      ticketTypeId: null,
+      ageBand: null,
+      answers: {},
+      items: [{ variantId: ids.pinVariant, quantity: 1 }],
+      step: 'summary',
+    })
+    saveDraft('convention-a', '2027', alone)
+    view('?ticketType=none')
+    await stepHeading('Summary')
+
+    expect(screen.getByText(/no longer offers something you had chosen/)).toBeDefined()
+    expect(screen.getByRole('alert').textContent).toBe('Add at least one item to order.')
+    expect(screen.queryByRole('rowheader', { name: 'Total due' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Order/ })).toBeNull()
+    press('Back')
+    expect(await stepHeading('Merch')).toBeDefined()
+
+    // With no merchandise left to offer there is no step to go back to: the shop is the way.
+    cleanup()
+    api.offer.mockResolvedValue(offer({ items: [], merchOnly: false }))
+    saveDraft('convention-a', '2027', alone)
+    view('?ticketType=none')
+    await stepHeading('Summary')
+
+    const alert = screen.getByRole('alert')
+    expect(alert.textContent).toMatch(/Merchandise cannot be ordered without a ticket now\./)
+    expect(
+      within(alert).getByRole('link', { name: 'Choose a ticket type in the shop.' }),
+    ).toBeDefined()
+    expect(screen.queryByRole('rowheader', { name: 'Total due' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Order/ })).toBeNull()
+  })
+
   // Picking another ticket type: the buyer says whether to keep the merchandise, and add-ons
   // the new one does not offer are removed, with a notice.
   it('asks what becomes of the merchandise when another ticket type is picked', async () => {
@@ -709,6 +1014,7 @@ describe('CheckoutPage, adding to a paid order', () => {
     status: 'paid',
     placedAt: '2027-05-01T10:00:00.000Z',
     holdEndsAt: null,
+    payable: false,
     holderName: 'Ada Lovelace',
     edition: { id: 'edition-1', slug: '2027', name: 'Convention A 2027' },
     lines: [],

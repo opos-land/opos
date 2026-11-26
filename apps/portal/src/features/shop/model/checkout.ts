@@ -5,6 +5,7 @@ import {
   type Offer,
   type PlaceOrder,
   type PlaceVisitorOrder,
+  placeVisitorOrderSchema,
   priceCart,
 } from '@opos/contract'
 import { z } from 'zod'
@@ -185,10 +186,62 @@ export function resumeExtension(offer: Offer, kept: Draft, order: MyOrder): Draf
   return steps.includes(draft.step) ? draft : { ...draft, step: steps[0] ?? 'summary' }
 }
 
+/**
+ * The checkout as the offer now allows it. The tab keeps one for as long as it lives, and the shop
+ * changes meanwhile: an add-on, a variant or a supporter price the checkout is no longer offered
+ * leaves it, and `dropped` says that the order lost something. A consent and an answer the edition
+ * no longer asks for leave it too, with nothing to say. None of them is on a step any more, so the
+ * buyer could not take it out. What merely ran out stays, for its step to mark. A checkout whose
+ * ticket type is gone from the offer stays whole: the listing moves it to another one.
+ */
+export function fitToOffer(offer: Offer, draft: Draft): { draft: Draft; dropped: boolean } {
+  const type = ticketTypeOf(offer, draft)
+  if (!draft.extending && draft.ticketTypeId !== null && !type) return { draft, dropped: false }
+  const addOns = new Set(offeredAddOns(offer, draft).map((addOn) => addOn.id))
+  const variants = new Set(
+    offeredItems(offer, draft).flatMap((item) => item.variants.map((variant) => variant.id)),
+  )
+  const consents = new Set(offer.consents.map((consent) => consent.id))
+  const fields = new Set(offer.customFields.map((field) => field.id))
+
+  const chosen = draft.supporterPriceMinor
+  const supporterPriceMinor =
+    chosen !== null && type?.supporterPrices.includes(chosen) ? chosen : null
+  const addOnIds = draft.addOnIds.filter((id) => addOns.has(id))
+  const items = draft.items.filter((item) => variants.has(item.variantId))
+  const consentIds = draft.consentIds.filter((id) => consents.has(id))
+  const answers = Object.entries(draft.answers).filter(([fieldId]) => fields.has(fieldId))
+
+  const dropped =
+    supporterPriceMinor !== chosen ||
+    addOnIds.length !== draft.addOnIds.length ||
+    items.length !== draft.items.length
+  const same =
+    !dropped &&
+    consentIds.length === draft.consentIds.length &&
+    answers.length === Object.keys(draft.answers).length
+  if (same) return { draft, dropped }
+  return {
+    draft: {
+      ...draft,
+      supporterPriceMinor,
+      addOnIds,
+      items,
+      consentIds,
+      answers: Object.fromEntries(answers),
+    },
+    dropped,
+  }
+}
+
 /** What is wrong with a field of the first step. */
 export type FieldIssue = 'required' | 'invalid' | 'mismatch' | 'too-long' | 'not-allowed'
 
-const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+/**
+ * The email of a visitor's order as the shop takes it: its own rule, so the first step refuses
+ * beside the field what the shop would refuse once the order is placed.
+ */
+const EMAIL = placeVisitorOrderSchema.shape.email
 
 /** The key of a custom field's answer among the fields of the first step. */
 export const answerField = (fieldId: string) => `answer:${fieldId}`
@@ -219,7 +272,7 @@ export function holderIssues(
     const email = draft.email.trim().toLowerCase()
     const confirmation = draft.emailConfirmation.trim().toLowerCase()
     if (email === '') issues.email = 'required'
-    else if (!EMAIL.test(email)) issues.email = 'invalid'
+    else if (!EMAIL.safeParse(email).success) issues.email = 'invalid'
     else if (offer.provider && email.length > offer.provider.maxEmailLength) {
       issues.email = 'too-long'
     }
@@ -378,27 +431,48 @@ function tab<T>(act: (storage: Storage) => T): T | null {
   }
 }
 
-/** The checkout of the edition this tab holds, or null: anything that is not one is ignored. */
+/**
+ * A checkout as the tab keeps it: with the account it was entered under, null for a visitor's
+ * and for one kept before the account was noted.
+ */
+const keptSchema = draftSchema.extend({ accountId: z.string().nullable().default(null) })
+
+/**
+ * The checkout of the edition this tab holds for `accountId`, the account it shows, null for a
+ * visitor; anything that is not a checkout is ignored. One entered under an account is that
+ * account's alone: a sign-out clears it, and a tab that did not see the sign-out, asleep or
+ * restored after its session ended, reads nothing of it. A visitor's is read by whoever signs
+ * in, who goes on with what was entered.
+ */
 export function loadDraft(
   tenantSlug: string,
   editionSlug: string,
   extendsOrderId?: string,
+  accountId: string | null = null,
 ): Draft | null {
   const stored = tab((storage) => storage.getItem(keyOf(tenantSlug, editionSlug, extendsOrderId)))
   if (!stored) return null
   try {
-    const draft = draftSchema.safeParse(JSON.parse(stored))
-    return draft.success ? draft.data : null
+    const kept = keptSchema.safeParse(JSON.parse(stored))
+    if (!kept.success) return null
+    const { accountId: enteredUnder, ...draft } = kept.data
+    return enteredUnder === null || enteredUnder === accountId ? draft : null
   } catch {
     return null
   }
 }
 
-export function saveDraft(tenantSlug: string, editionSlug: string, draft: Draft) {
+/** Keeps the checkout in the tab, as entered under `accountId`: null for a visitor. */
+export function saveDraft(
+  tenantSlug: string,
+  editionSlug: string,
+  draft: Draft,
+  accountId: string | null = null,
+) {
   tab((storage) =>
     storage.setItem(
       keyOf(tenantSlug, editionSlug, draft.extending?.orderId),
-      JSON.stringify(draft),
+      JSON.stringify({ ...draft, accountId }),
     ),
   )
 }

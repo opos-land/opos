@@ -47,6 +47,7 @@ const order = (number: string, changes: Partial<MyOrder> = {}): MyOrder => ({
   status: 'paid',
   placedAt: '2027-05-01T10:00:00.000Z',
   holdEndsAt: null,
+  payable: false,
   holderName: 'Ada Lovelace',
   edition: { id: 'edition-1', slug: '2027', name: 'Convention A 2027' },
   lines: [{ kind: 'ticket', name: 'Standard', variant: [], quantity: 1, amountMinor: 12000 }],
@@ -59,6 +60,8 @@ const awaiting = (number: string, minutesLeft: number) =>
   order(number, {
     status: 'awaiting-payment',
     holdEndsAt: new Date(Date.now() + minutesLeft * MINUTE).toISOString(),
+    // The shop's own word on whether "Pay now" would start an attempt.
+    payable: minutesLeft > 0,
     bought: null,
   })
 
@@ -89,7 +92,10 @@ beforeEach(() => {
   api.payNow.mockResolvedValue({ redirectUrl: 'https://provider.test/pay/7' })
 })
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.useRealTimers()
+})
 
 // docs/specs/0009-buyer-self-service.md, U1-U4: a signed-in account sees, on a convention's
 // page, its orders in that convention with what it can do with each.
@@ -184,6 +190,23 @@ describe('the orders of an account on a convention’s page', () => {
 
     await waitFor(() => expect(api.leave).toHaveBeenCalledWith('https://provider.test/pay/7'))
     expect(api.payNow).toHaveBeenCalledWith('convention-a', 'edition-1', 'order-HELD222222')
+  })
+
+  // The shop says whether "Pay now" would start an attempt, by its own clock: the device's may
+  // be off by more than the hold.
+  it.each([
+    ['ahead', 60],
+    ['behind', -60],
+  ])('offer "Pay now" by the shop’s word, with the device’s clock an hour %s', async (_, skew) => {
+    const listed = [awaiting('HELD222222', 20), awaiting('LATE222222', -5)]
+    vi.useFakeTimers({ toFake: ['Date'], now: Date.now() + skew * MINUTE })
+    api.list.mockResolvedValue(listed)
+    view()
+
+    expect(within(await item('HELD222222')).getByRole('button', { name: 'Pay now' })).toBeDefined()
+    const late = await item('LATE222222')
+    expect(within(late).queryByRole('button', { name: 'Pay now' })).toBeNull()
+    expect(within(late).getByText(/The time to pay for this order has ended/)).toBeDefined()
   })
 
   it('read the orders again when an order turns out paid or expired meanwhile', async () => {

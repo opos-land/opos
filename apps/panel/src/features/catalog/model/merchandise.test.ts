@@ -4,12 +4,15 @@ import { parseMoney } from '@opos/i18n'
 import {
   axesBody,
   axesFields,
+  axesKey,
   EMPTY_ITEM,
   imageProblem,
   itemBody,
   itemFields,
-  reshapes,
+  stockWrites,
+  takenByAxes,
   variantRows,
+  variantsKey,
   variantsPlan,
 } from './merchandise'
 
@@ -126,6 +129,53 @@ describe('what saving the variants asks for', () => {
   })
 })
 
+describe('the stock saving the variants writes', () => {
+  const loaded = shirt([variant('v1', ['w', 's'], 12), variant('v2', ['w', 'l'], 50)])
+  const stocks = (first: number | null, second: number | null) => [
+    { valueIds: ['w', 's'], stock: first },
+    { valueIds: ['w', 'l'], stock: second },
+  ]
+
+  it('is that of a variant whose number the form changed', () => {
+    expect(stockWrites(loaded, loaded, stocks(20, 50))).toEqual([{ variantId: 'v1', stock: 20 }])
+    expect(stockWrites(loaded, loaded, stocks(12, null))).toEqual([
+      { variantId: 'v2', stock: null },
+    ])
+    expect(stockWrites(loaded, loaded, stocks(12, 50))).toEqual([])
+  })
+
+  it('leaves a number the form did not change as the API holds it by now', () => {
+    // Someone else lowered the stock of the second variant since the form was filled.
+    const saved = shirt([variant('v1', ['w', 's'], 12), variant('v2', ['w', 'l'], 20)])
+
+    expect(stockWrites(loaded, saved, stocks(12, 50))).toEqual([])
+    expect(stockWrites(loaded, saved, stocks(30, 50))).toEqual([{ variantId: 'v1', stock: 30 }])
+  })
+
+  it('sets the number of a variant the save made, and none that the API holds already', () => {
+    const saved = shirt([
+      variant('v1', ['w', 's'], 12),
+      // Made anew: the one the form was filled from is gone.
+      variant('v9', ['w', 'l'], 0),
+      variant('v3', ['m', 'l'], 0),
+    ])
+
+    expect(
+      stockWrites(loaded, saved, [...stocks(12, 50), { valueIds: ['m', 'l'], stock: 0 }]),
+    ).toEqual([{ variantId: 'v9', stock: 50 }])
+    expect(
+      stockWrites(loaded, saved, [...stocks(12, 50), { valueIds: ['m', 'l'], stock: 7 }]),
+    ).toEqual([
+      { variantId: 'v9', stock: 50 },
+      { variantId: 'v3', stock: 7 },
+    ])
+  })
+
+  it('writes nothing for a variant the API did not answer', () => {
+    expect(stockWrites(loaded, shirt(), stocks(20, 50))).toEqual([])
+  })
+})
+
 describe('the axes of an item, as their editor holds them', () => {
   it('are read from the item and written back with the identifiers they had', () => {
     const fields = axesFields(shirt())
@@ -182,22 +232,139 @@ describe('the axes of an item, as their editor holds them', () => {
     const item = shirt([variant('v1', ['w', 's'])])
     const fields = axesFields(item)
 
-    expect(reshapes(item, fields)).toBe(false)
-    expect(reshapes(item, [{ ...fields[0]!, name: 'Fit' }, fields[1]!])).toBe(false)
-    expect(reshapes(item, [...fields, { name: 'Colour', values: [{ label: 'Black' }] }])).toBe(true)
-    expect(reshapes(item, [fields[0]!])).toBe(true)
-    expect(reshapes(item, [fields[0]!, { ...fields[1]!, values: [fields[1]!.values[1]!] }])).toBe(
-      true,
+    expect(takenByAxes(item, fields)).toBeNull()
+    expect(takenByAxes(item, [{ ...fields[0]!, name: 'Fit' }, fields[1]!])).toBeNull()
+    expect(takenByAxes(item, [...fields, { name: 'Colour', values: [{ label: 'Black' }] }])).toBe(
+      'variants',
     )
+    expect(takenByAxes(item, [fields[0]!])).toBe('variants')
+    expect(
+      takenByAxes(item, [fields[0]!, { ...fields[1]!, values: [fields[1]!.values[1]!] }]),
+    ).toBe('variants')
     // A value added touches no variant.
     expect(
-      reshapes(item, [
+      takenByAxes(item, [
         fields[0]!,
         { ...fields[1]!, values: [...fields[1]!.values, { label: 'XL' }] },
       ]),
-    ).toBe(false)
+    ).toBeNull()
     // An item with no variant has none to lose.
-    expect(reshapes(shirt(), [fields[0]!])).toBe(false)
+    expect(takenByAxes(shirt(), [fields[0]!])).toBeNull()
+  })
+
+  it('take the variants of a value whose label is cleared, as the request leaves it out', () => {
+    const item = shirt([variant('v1', ['w', 's'])])
+    const [cut, size] = axesFields(item)
+    const cleared = [cut!, { ...size!, values: [{ id: 's', label: ' ' }, size!.values[1]!] }]
+
+    expect(axesBody(cleared)).toMatchObject({ axes: [{}, { values: [{ id: 'l', label: 'L' }] }] })
+    expect(takenByAxes(item, cleared)).toBe('variants')
+    // A new row left empty is no value yet: nothing goes with it.
+    expect(
+      takenByAxes(item, [cut!, { ...size!, values: [...size!.values, { label: '' }] }]),
+    ).toBeNull()
+  })
+
+  it('take the size chart of a value that goes, of an item with no variant too', () => {
+    const chart = { fileId: 'chart-w', width: 400, height: 300 }
+    const item: MerchandiseItem = {
+      ...shirt(),
+      axes: [
+        {
+          id: 'cut',
+          name: 'Cut',
+          values: [{ ...value('w', "Women's"), sizeChart: chart }, value('m', "Men's")],
+        },
+        shirt().axes[1]!,
+      ],
+    }
+    const [cut, size] = axesFields(item)
+
+    expect(takenByAxes(item, [cut!, size!])).toBeNull()
+    // The value without a chart goes with nothing.
+    expect(takenByAxes(item, [{ ...cut!, values: [cut!.values[0]!] }, size!])).toBeNull()
+    expect(takenByAxes(item, [{ ...cut!, values: [cut!.values[1]!] }, size!])).toBe('size-charts')
+    expect(
+      takenByAxes(item, [{ ...cut!, values: [{ id: 'w', label: '' }, cut!.values[1]!] }, size!]),
+    ).toBe('size-charts')
+    // An axis that goes takes its values, and their size charts.
+    expect(takenByAxes(item, [size!])).toBe('size-charts')
+  })
+
+  it('name what goes: the variants, the size charts, or both', () => {
+    const chart = { fileId: 'chart-w', width: 400, height: 300 }
+    const item: MerchandiseItem = {
+      ...shirt([variant('v1', ['w', 's']), variant('v2', ['m', 'l'])]),
+      axes: [
+        {
+          id: 'cut',
+          name: 'Cut',
+          values: [{ ...value('w', "Women's"), sizeChart: chart }, value('m', "Men's")],
+        },
+        shirt().axes[1]!,
+      ],
+    }
+    const [cut, size] = axesFields(item)
+
+    // The value that goes held a variant and a size chart.
+    expect(takenByAxes(item, [{ ...cut!, values: [cut!.values[1]!] }, size!])).toBe('both')
+    // The value that goes held a variant alone, and the size chart stays with its own.
+    expect(takenByAxes(item, [{ ...cut!, values: [cut!.values[0]!] }, size!])).toBe('variants')
+    expect(takenByAxes(item, [cut!, { ...size!, values: [size!.values[0]!] }])).toBe('variants')
+    // An axis added takes every variant, and no size chart.
+    expect(takenByAxes(item, [cut!, size!, { name: 'Colour', values: [{ label: 'Black' }] }])).toBe(
+      'variants',
+    )
+    // The axis that goes takes every variant, and the size chart of its value.
+    expect(takenByAxes(item, [size!])).toBe('both')
+  })
+})
+
+describe('what fills an editor of an item anew', () => {
+  const item = shirt([variant('v1', ['w', 's'], 12)])
+  const charted: MerchandiseItem = {
+    ...item,
+    axes: [
+      {
+        ...item.axes[0]!,
+        values: [
+          { ...value('w', "Women's"), sizeChart: { fileId: 'chart-w', width: 400, height: 300 } },
+          value('m', "Men's"),
+        ],
+      },
+      item.axes[1]!,
+    ],
+  }
+  const renamed: MerchandiseItem = {
+    ...item,
+    axes: [item.axes[0]!, { ...item.axes[1]!, values: [value('s', 'Small'), value('l', 'L')] }],
+  }
+
+  it('is not a size chart set or removed, which neither editor holds', () => {
+    expect(axesKey(charted)).toBe(axesKey(item))
+    expect(variantsKey(charted)).toBe(variantsKey(item))
+  })
+
+  it('is, for the axes, a name, a label or a value of theirs, and no variant', () => {
+    expect(axesKey(renamed)).not.toBe(axesKey(item))
+    expect(axesKey({ ...item, axes: [item.axes[0]!] })).not.toBe(axesKey(item))
+    expect(axesKey(shirt([variant('v1', ['w', 's'], 30), variant('v2', ['m', 'l'])]))).toBe(
+      axesKey(item),
+    )
+  })
+
+  it('is, for the variants, which exist, their stock, whether they are hidden and their names', () => {
+    expect(variantsKey(shirt([variant('v1', ['w', 's'], 30)]))).not.toBe(variantsKey(item))
+    expect(variantsKey(shirt([variant('v1', ['w', 's'], 12, true)]))).not.toBe(variantsKey(item))
+    expect(variantsKey(shirt())).not.toBe(variantsKey(item))
+    expect(variantsKey(renamed)).not.toBe(variantsKey(item))
+  })
+
+  it('is another item', () => {
+    const mug = { ...shirt([variant('only', [], 40)]), axes: [] }
+
+    expect(axesKey({ ...mug, id: 'cup' })).not.toBe(axesKey(mug))
+    expect(variantsKey({ ...mug, id: 'cup' })).not.toBe(variantsKey(mug))
   })
 })
 

@@ -430,6 +430,20 @@ export class MerchandiseRepository {
         axis.values.flatMap((value) => value.sizeChart?.fileId ?? []),
       ),
     }
+    // The variants first, by identifier, as an order locks them (docs/ARCHITECTURE.md,
+    // invariant 9): an order being placed with one is waited for here, before the item's own row
+    // is held, which the line of that order then names.
+    await tx
+      .select({ id: merchandiseVariants.id })
+      .from(merchandiseVariants)
+      .where(
+        and(
+          eq(merchandiseVariants.editionId, item.editionId),
+          eq(merchandiseVariants.merchandiseItemId, item.id),
+        ),
+      )
+      .orderBy(asc(merchandiseVariants.id))
+      .for('update')
     await tx.delete(merchandiseItems).where(this.inEdition(item.editionId, item.id))
     await arrange(
       tx,

@@ -97,10 +97,11 @@ and after every restore.
   sweep alone removes an account's file nothing points at.
   Another account is read only in a tenant transaction, through a tenant table, by a confirmed
   email behind a write permission and a rate limit of the tenant, or by the confirmed email of
-  an order as it is paid and of the recipient of an order's email as it is written, for its
-  language alone, which answers nothing to anyone; by its own publication, as the profile it
-  published and the avatar it uploaded, which answer its public name and never its identifier
-  or its email address
+  an order as it is paid and of the recipient of an order's email as it is written, which
+  answer nothing to anyone: the recipient's account is read for its language and for whether
+  the order is on it, and these shape the email to that address alone; by its own publication,
+  as the profile it published and the avatar it uploaded, which answer its public name and never
+  its identifier or its email address
   ([0071](adr/0071-let-anyone-read-the-profile-an-account-published.md)); or behind
   `@RequireAdmin`, as a tenant's head, as an account an entry of the log names, as an account
   whose profile was reported or taken down, or by its email address for a new tenant's first
@@ -131,7 +132,7 @@ and after every restore.
 | the emails of orders that are due      | the API's own job; identifiers alone, of tenants not suspended                                                                                                  |
 | a scanner by a hash                    | the pairing code or the token the caller sent, by its hash; it answers the scanner and its tenant alone, and the device is judged in that tenant's transaction  |
 | an order link by a hash                | the token the caller sent, by its hash; it answers the link's tenant alone, and the link and its order are read in that tenant's transaction                    |
-| the editions whose reminder may be due | the API's own job; identifiers and the tenant's time zone alone, of published editions of tenants not suspended                                                 |
+| the editions whose reminder may be due | the API's own job; identifiers, the tenant's time zone and the start a page continues from alone, of published editions of tenants not suspended                |
 | a published profile by its identifier  | the account's own publication: the public name and what the profile's page shows, of a profile published and not taken down, and nothing that names the account |
 | whose avatar a file is                 | the avatar is public from its upload; it answers the account to the API alone, which then serves the file                                                       |
 
@@ -674,11 +675,13 @@ steps of [adding a feature](#adding-a-feature).
   a whole. A ticket type has one price at a moment or none: an exclusion constraint keeps its
   tiers apart, and the API refuses them first by a code of its own
   ([0046](adr/0046-keep-the-price-tiers-of-a-ticket-type-apart-with-an-exclusion-constraint.md)).
-  A statement by identifier names the parent it acts within, whoever calls it. A picture or a
-  size chart of a merchandise item, and the picture of an add-on, is a file for everyone once
-  what it shows is not hidden and its edition is published, served under the convention's address
-  by the identifier its row holds; before that the edition's orgs read it through a route of
-  their own.
+  A statement by identifier names the parent it acts within, whoever calls it. A change that
+  writes several add-ons, a new place or a deletion, first locks the edition's add-ons by
+  identifier, as an order locks those of its cart, and a deletion of a merchandise item first
+  locks its variants (invariant 9). A picture or a size chart of a merchandise item, and the
+  picture of an add-on, is a file for everyone once what it shows is not hidden and its edition
+  is published, served under the convention's address by the identifier its row holds; before
+  that the edition's orgs read it through a route of their own.
 - **Checkout and orders.** A buyer needs no membership: a visitor's routes open the tenant from
   its address and answer an unpublished edition and a suspended tenant as an unknown address; an
   account's are tenant routes behind `@InTenant`, which answer an unpublished edition the same
@@ -696,9 +699,11 @@ steps of [adding a feature](#adding-a-feature).
   is queued in the transaction of its cause and sent by the outbox
   ([0049](adr/0049-send-the-emails-of-an-order-from-an-outbox-in-the-database.md)). The
   credentials of a provider account stay as they are while an order awaits payment: an order
-  being placed and a change of them share one lock of the tenant's account. `opos_app` never
-  updates an order's number, its prices or what a line sells, but for a merchandise line's
-  variant ([0058](adr/0058-let-the-api-change-the-variant-an-order-line-names.md)).
+  being placed and a change of them share one lock of the tenant's account. The orders awaiting
+  payment of an email in an edition are counted under a lock of that email in the edition, which
+  an order takes after the locks of invariant 9. `opos_app` never updates an order's number, its
+  prices or what a line sells, but for a merchandise line's variant
+  ([0058](adr/0058-let-the-api-change-the-variant-an-order-line-names.md)).
 - **Order management.** Every change an org makes of an order runs under the tenant's write lock
   and locks the order's row first, then the rows that carry the limits its lines touch, in the
   order placing takes them (invariant 9): the order a payment's confirmation takes too. A manual
@@ -714,7 +719,8 @@ steps of [adding a feature](#adding-a-feature).
   is queued without a text: the outbox writes it from the order as it stands when it is sent,
   under the lock of the order's row, so each thing an org changes is a kind of email of its own,
   and an email that would hand the order over to an address the order has left since is
-  withdrawn, never sent. What a sent email said is kept on its row, a subject and a text written
+  withdrawn, never sent. So is an email that says the order is paid, with its QR code, once the
+  order no longer is. What a sent email said is kept on its row, a subject and a text written
   apart from the email that goes out, as for an address with no account: in the convention's
   language and with no way to sign in. It holds neither the QR code nor the token of the order
   link: each is noted for leaving out where the outbox makes it, never by the kind of the email,
@@ -727,13 +733,18 @@ steps of [adding a feature](#adding-a-feature).
   asks the quote for the price of the cart with the code a buyer entered, and the API prices it
   with the contract's one function. Every code that cannot be used answers the quote alike, and
   a quote that tries a code counts against a rate limit of its own for the client's address
-  ([0062](adr/0062-keep-a-discount-codes-terms-in-the-api-and-refuse-every-unusable-code-alike.md)).
+  ([0062](adr/0062-keep-a-discount-codes-terms-in-the-api-and-refuse-every-unusable-code-alike.md));
+  an order whose code cannot be used counts against the same limit, and an address that limit
+  blocks places no order with a code. No more of an address's orders with a code are placed at
+  once than it has tries left, so placing them, one by one or together, is no other way to try
+  codes. An order that uses its code counts against nothing.
   A code is looked up within the edition the request names. An order names its code, and what
   the code took off is a line of the order below zero, the only one. A use is an order that
   holds: it is counted under the lock of the code's row, the last lock an order takes
   (invariant 9), when an order is placed, when a payment after the hold or an org settling a
-  review takes it again, and when an org changes the limit. A code an order names is never
-  deleted: the order's foreign key refuses it.
+  review takes it again, and when an org changes the limit. A change of a code takes the ticket
+  types and the add-ons it names before the code's row, as an order does. A code an order names
+  is never deleted: the order's foreign key refuses it.
 - **Sales reports.** The dashboard of an edition and its lists are read from the orders as they
   are, by queries that lock nothing: a report never slows a sale. What is sold is what "Paid"
   and "Paid - manual" orders hold; what orders awaiting payment and needing review hold is
@@ -769,8 +780,9 @@ steps of [adding a feature](#adding-a-feature).
   has left its address. The routes of an account's own orders are tenant routes that ask for no
   membership: their reads filter on the tenant and on the session's account, and another
   account's order is not there. A "Buy more" order names the account's own paid order of the
-  same edition, whose row is locked before any limit; it is priced by the contract's one
-  function against what that order's ticket type offers and what was bought on its QR code, and
+  same edition, whose row is locked before any limit, when the order is placed and when a
+  payment or an org makes it paid; it is priced by the contract's one function against what that
+  order's ticket type offers and what was bought on its QR code, and
   once paid joins the QR code that order then carries, while the two are under one email: an
   order an org moved to another address is added to no longer, and shares its code with nothing
   its old address bought

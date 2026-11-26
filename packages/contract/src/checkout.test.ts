@@ -329,6 +329,14 @@ describe('the price of a cart', () => {
 
     expect(priceCart(emptied, cart())).toEqual({ problem: { kind: 'ticket-type', id: STANDARD } })
   })
+
+  // Merch-only orders are on, and the offer says they are not once no variant is left to sell.
+  it('names the variant that ran out also when it was the last of merchandise sold alone', () => {
+    const emptied = offer({ merchOnly: false })
+    const alone = cart({ ticket: null, items: [{ variantId: WOMENS_M, quantity: 1 }] })
+
+    expect(priceCart(emptied, alone)).toEqual({ problem: { kind: 'variant', id: WOMENS_M } })
+  })
 })
 
 // A discount code lowers the lines it applies to together, as one line of the order
@@ -611,6 +619,7 @@ describe('the result of an order', () => {
     number: 'ABCDEFGHJK',
     status: 'awaiting-payment',
     holdEndsAt: '2026-05-01T10:30:00.000Z',
+    payable: true,
     failureReason: null,
     moneyWith: null,
     editionSlug: '2026',
@@ -626,8 +635,11 @@ describe('the result of an order', () => {
       'holdEndsAt',
       'moneyWith',
       'number',
+      'payable',
       'status',
     ])
+    // Whether another try can start is the shop's to say, by its own clock.
+    expect(orderResultSchema.safeParse({ ...result, payable: undefined }).success).toBe(false)
   })
 
   it.each(ORDER_STATUSES)('takes the status %s', (status) => {

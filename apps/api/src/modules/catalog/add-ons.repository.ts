@@ -109,6 +109,22 @@ export class AddOnsRepository {
     return this.get(editionId, row!.id)
   }
 
+  /**
+   * Locks every add-on of the edition by identifier, as an order locks those of its cart
+   * (docs/ARCHITECTURE.md, invariant 9). A change that gives the add-ons new places writes
+   * several of their rows: it takes them all this way first, before it locks one of its own, so
+   * it never holds an add-on an order waits for while it waits for one the order holds.
+   */
+  async lockAll(editionId: string) {
+    await this.context
+      .tx()
+      .select({ id: addOns.id })
+      .from(addOns)
+      .where(eq(addOns.editionId, editionId))
+      .orderBy(asc(addOns.id))
+      .for('update')
+  }
+
   /** An add-on hidden again keeps the moment it was first hidden at. */
   async update(editionId: string, id: string, changes: UpdateAddOn): Promise<AddOn> {
     const { position, hidden, ...fields } = changes
@@ -137,6 +153,7 @@ export class AddOnsRepository {
   /** Deletes the add-on, what offers it with it, and the rest close ranks. */
   async remove(editionId: string, id: string) {
     const tx = this.context.tx()
+    await this.lockAll(editionId)
     await tx.delete(addOns).where(this.inEdition(editionId, id))
     await arrange(tx, addOns, editionId, await orderOf(tx, addOns, editionId))
   }

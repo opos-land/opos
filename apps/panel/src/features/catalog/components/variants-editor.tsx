@@ -17,14 +17,14 @@ import {
 } from '../../../shared/ui'
 import { useCurrentTenant } from '../../tenants'
 import { catalogKey, putStockOptions, putVariantsOptions } from '../api/catalog'
-import { variantOf, type VariantRow, variantRows, variantsPlan } from '../model/merchandise'
+import { stockWrites, type VariantRow, variantRows, variantsPlan } from '../model/merchandise'
 
 const SAVED = { success: msg`The variants and their stock are saved.` }
 
 /**
  * The variants of an item and the stock of each: every combination of its axes as a row, ticked
- * while it exists. Saving sets which variants exist, then the stock of each one that changed; the
- * outcome is told once, when all of it is done.
+ * while it exists. Saving sets which variants exist, then the stock of each one whose number was
+ * changed here; the outcome is told once, when all of it is done.
  */
 export function VariantsEditor({ item, canWrite }: { item: MerchandiseItem; canWrite: boolean }) {
   const { t } = useLingui()
@@ -51,14 +51,8 @@ export function VariantsEditor({ item, canWrite }: { item: MerchandiseItem; canW
       const saved = bare
         ? item
         : await putVariants.mutateAsync({ params, body: { variants: plan.variants } })
-      for (const { valueIds, stock } of plan.stocks) {
-        const variant = variantOf(saved, valueIds)
-        if (variant && variant.stock !== stock) {
-          await putStock.mutateAsync({
-            params: { ...params, variantId: variant.id },
-            body: { stock },
-          })
-        }
+      for (const { variantId, stock } of stockWrites(item, saved, plan.stocks)) {
+        await putStock.mutateAsync({ params: { ...params, variantId }, body: { stock } })
       }
       notifySuccess(SAVED, undefined)
     } catch {

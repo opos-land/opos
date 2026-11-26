@@ -155,6 +155,10 @@ test('an org builds the catalog of an edition from nothing', async ({
   await page.getByRole('button', { name: 'Add the item' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Enamel pin' })).toBeVisible()
   await page.getByLabel('The item itself: stock').fill('200')
+  // The notification of the T-shirt's variants is gone by the time this save tells its own.
+  await expect(
+    notification(page, 'success', 'The variants and their stock are saved.'),
+  ).toBeHidden()
   await page.getByRole('button', { name: 'Save the variants and their stock' }).click()
   await expect(
     notification(page, 'success', 'The variants and their stock are saved.'),

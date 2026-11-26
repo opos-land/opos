@@ -96,13 +96,23 @@ export function newPlacementKey(): string {
 
 /**
  * What the checkout orders, as a text two checkouts that order the same share: all of it but the
- * step it is on and its placement key, whatever order the fields of an object were written in.
+ * step it is on and its placement key, whatever order the fields of an object were written in. Of
+ * the order "Buy more" adds to it holds which order that is alone. What is on that order's QR
+ * code already is nothing the checkout orders, and an order of this checkout placed with its
+ * answer lost joins it: the try sent again has to carry the key that order was placed with.
  */
 const contentOf = (draft: Draft) =>
-  JSON.stringify({ ...draft, step: null, placementKey: null }, (_, value: unknown) =>
-    typeof value === 'object' && value !== null && !Array.isArray(value)
-      ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => (a < b ? -1 : 1)))
-      : value,
+  JSON.stringify(
+    {
+      ...draft,
+      extending: draft.extending && { orderId: draft.extending.orderId },
+      step: null,
+      placementKey: null,
+    },
+    (_, value: unknown) =>
+      typeof value === 'object' && value !== null && !Array.isArray(value)
+        ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => (a < b ? -1 : 1)))
+        : value,
   )
 
 /**

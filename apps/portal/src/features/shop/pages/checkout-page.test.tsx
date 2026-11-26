@@ -1397,6 +1397,59 @@ describe('CheckoutPage, adding to a paid order', () => {
     await waitFor(() => expect(loadDraft('convention-a', '2027', 'order-first')).toBeNull())
   })
 
+  // The order a try placed, with its answer lost, is on the QR code of the order it adds to by
+  // the time the page is loaded again. The checkout orders what it ordered: it is sent with the
+  // key it was sent with before, and the shop answers with the order it placed then.
+  it('sends the same placement key after a reload, with its own lost order on the QR code since', async () => {
+    const lost = new TypeError('Failed to fetch')
+    api.place.mockRejectedValueOnce(lost)
+    const begun = {
+      ...kept({
+        step: 'summary',
+        asVisitor: false,
+        holderName: 'Ada Lovelace',
+        consents: [termsAccepted],
+        providerConsent: true,
+      }),
+      ticketTypeId: null,
+      ageBand: null,
+      answers: {},
+      items: [{ variantId: ids.shirtM, quantity: 1 }],
+      extending: {
+        orderId: 'order-first',
+        number: 'ABCDEFGHJK',
+        holderName: 'Ada Lovelace',
+        ticketTypeId: ids.standard,
+        addOnIds: [ids.room],
+        itemIds: [ids.pin],
+      },
+    }
+    saveDraft('convention-a', '2027', begun)
+    more()
+    await stepHeading('Summary')
+    press('Order and pay')
+    await waitFor(() => expect(api.notify).toHaveBeenCalledWith(lost))
+
+    cleanup()
+    api.mine.mockResolvedValue([
+      paid({
+        bought: { ticketTypeId: ids.standard, addOnIds: [ids.room], itemIds: [ids.pin, ids.shirt] },
+      }),
+    ])
+    more()
+    await stepHeading('Summary')
+    press('Order and pay')
+    await waitFor(() => expect(api.leave).toHaveBeenCalled())
+
+    expect(loadDraft('convention-a', '2027', 'order-first')).toBeNull()
+    expect(begun.placementKey).toMatch(/^[0-9a-f-]{36}$/)
+    expect(sentKeys()).toEqual([begun.placementKey, begun.placementKey])
+    expect(api.place.mock.calls[1]?.[1]).toMatchObject({
+      extendsOrderId: 'order-first',
+      cart: { ticket: null, addOnIds: [], items: [{ variantId: ids.shirtM, quantity: 1 }] },
+    })
+  })
+
   // A discount code lowers what is bought later as it lowers a first order: the shop prices the
   // cart as an addition to the order, which only the account's own quote can.
   it('takes a discount code: priced for the order it adds to, and placed with the code and that total', async () => {

@@ -771,6 +771,41 @@ describe('a checkout that adds to a paid order', () => {
       extending: { addOnIds: [room] },
     })
   })
+
+  // What is on the order's QR code already is not what the checkout orders. An order this very
+  // checkout placed, with its answer lost, joins it: the try sent again after a reload still
+  // carries the key that order was placed with.
+  it('keeps its placement key when only what was bought on its order changed', () => {
+    const kept = {
+      ...extensionDraft(offer(), paid()),
+      addOnIds: [workshop!],
+      items: [{ variantId: medium!, quantity: 1 }],
+      step: 'summary' as const,
+    }
+    const since = paid({ bought: { ...paid().bought!, itemIds: [pin!, shirt!] } })
+
+    const resumed = resumeExtension(offer(), kept, since)
+
+    expect(resumed.extending).toMatchObject({ orderId: id(40), itemIds: [pin, shirt] })
+    expect(rekeyed(kept, resumed)).toBe(resumed)
+  })
+
+  it('draws a new placement key once it orders something else, or adds to another order', () => {
+    const kept = {
+      ...extensionDraft(offer(), paid()),
+      addOnIds: [workshop!],
+      step: 'summary' as const,
+    }
+    // An add-on bought meanwhile leaves the checkout, which then orders less.
+    const boughtSince = paid({ bought: { ...paid().bought!, addOnIds: [room!, workshop!] } })
+    const resumed = resumeExtension(offer(), kept, boughtSince)
+    const other = { ...kept, extending: extensionDraft(offer(), paid({ id: id(42) })).extending }
+
+    expect(resumed.addOnIds).toEqual([])
+    expect(rekeyed(kept, resumed).placementKey).not.toBe(kept.placementKey)
+    expect(rekeyed(kept, other)).toEqual({ ...other, placementKey: expect.any(String) as string })
+    expect(rekeyed(kept, other).placementKey).not.toBe(kept.placementKey)
+  })
 })
 
 describe('an unfinished checkout', () => {

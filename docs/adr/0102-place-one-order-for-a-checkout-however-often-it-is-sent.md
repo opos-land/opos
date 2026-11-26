@@ -33,7 +33,10 @@ A checkout places one order, however often it is sent.
 - The key stands for what the checkout orders, not for the checkout the tab keeps. The portal
   draws a new one whenever anything of the checkout but the step it is on changes: the cart, the
   ticket holder's data, the email address, the answers to the custom fields, the consents or the
-  discount code. A try sent again unchanged carries the same key, and a changed checkout places
+  discount code. Of the order a "Buy more" checkout adds to, which order it is belongs to that
+  and what is on its QR code already does not: an order the checkout placed with its answer
+  lost joins that QR code, and the try sent again still carries its key. A try sent again
+  unchanged carries the same key, and a changed checkout places
   an order of its own. The portal does this in the one place every change of a checkout passes,
   never change by change. The API's refusals below stay as the second line, for a client that
   keeps its key over a change.

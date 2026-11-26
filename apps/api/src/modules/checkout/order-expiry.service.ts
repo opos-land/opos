@@ -60,12 +60,17 @@ export interface AskAgainResult {
 /** What one run that asks again takes: the rows of a job's run, and how many questions at most. */
 export type AskAgainScope = JobScope & { questions?: number }
 
+/** How many answers in a row a provider may not give about a convention's attempts in a run. */
+const UNANSWERED_IN_A_ROW = 2
+
 /**
- * What a run that asks again keeps count of: the questions it asked, and the tenants whose
- * provider did not answer or whose credentials do not open, which it asks nothing more of.
+ * What a run that asks again keeps count of: the questions it asked, the answers each tenant's
+ * provider did not give in a row, and the tenants it asks nothing more of: one whose provider
+ * did not answer so often in a row, or whose credentials do not open.
  */
 interface AskAgainRound {
   asked: number
+  unanswered: Map<string, number>
   out: Set<string>
 }
 
@@ -209,9 +214,10 @@ export class OrderExpiry implements OnApplicationBootstrap, OnApplicationShutdow
   /**
    * One run over the attempts to ask about again by `now`, a page at a time, each page after the
    * last attempt of the one before: an attempt left for the next run holds no other one back.
-   * Once a tenant's provider did not answer, or its credentials did not open, the tenant's other
-   * attempts wait for the next run unasked: a provider out of reach gets one question a
-   * convention a run. The run ends at the most questions it may ask.
+   * Once a tenant's provider did not answer twice in a row, or its credentials did not open, the
+   * tenant's other attempts wait for the next run unasked: a provider out of reach gets two
+   * questions a convention a run, and one answer that cannot be read, which may be of that
+   * attempt alone, stops no other. The run ends at the most questions it may ask.
    */
   async recheck(
     now = new Date(),
@@ -222,7 +228,7 @@ export class OrderExpiry implements OnApplicationBootstrap, OnApplicationShutdow
       from: new Date(now.getTime() - ASK_AGAIN_UNTIL_MS),
       to: new Date(now.getTime() - ASK_AGAIN_AFTER_MS),
     }
-    const round: AskAgainRound = { asked: 0, out: new Set() }
+    const round: AskAgainRound = { asked: 0, unanswered: new Map(), out: new Set() }
     let after: { holdEndsAt: Date; id: string } | undefined
     for (let page = 0; page < MAX_PAGES; page += 1) {
       const due = await this.global.attemptsToAskAgain(window, { ...scope, after })
@@ -293,9 +299,12 @@ export class OrderExpiry implements OnApplicationBootstrap, OnApplicationShutdow
         attemptOf(order, attempt),
       )
       if (answer.state === 'unavailable') {
-        round.out.add(tenantId)
+        const unanswered = (round.unanswered.get(tenantId) ?? 0) + 1
+        round.unanswered.set(tenantId, unanswered)
+        if (unanswered >= UNANSWERED_IN_A_ROW) round.out.add(tenantId)
         return 'waiting'
       }
+      round.unanswered.delete(tenantId)
       if (answer.state === 'paid') {
         // It decides as for every late payment, and throws while the payment cannot be settled.
         await this.confirmations.take(tenantId, attempt.id, answer.payment, now)

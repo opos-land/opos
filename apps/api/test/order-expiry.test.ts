@@ -352,26 +352,48 @@ describe('asking again about the attempts of an expired order', () => {
     expect(await s.stored(placed)).toMatchObject({ status: 'paid' })
   })
 
-  // A provider that did not answer about one attempt of a convention is asked about no other of
-  // them in that run: each question it does not answer takes its time, and it limits its API.
-  it('asks a provider out of reach once a run, and leaves the convention’s other attempts unasked', async () => {
+  // A provider that did not answer twice in a row about the attempts of a convention is asked
+  // about no other of them in that run: each question it does not answer takes its time, and it
+  // limits its API.
+  it('asks a provider out of reach twice a run, and leaves the convention’s other attempts unasked', async () => {
     const s = await shop()
     const first = await expired(s, { minutes: 3 * HOUR })
-    const second = await expired(s, { email: 'other@example.test' })
-    fake().pay(second.attemptId)
+    const second = await expired(s, { minutes: 2 * HOUR, email: 'second@example.test' })
+    const third = await expired(s, { email: 'other@example.test' })
+    fake().pay(third.attemptId)
     await connectFake(s.t.id, FAKE_ACCOUNT.stateUnavailable)
     const state = vi.spyOn(fake(), 'state')
 
-    expect(await recheck(s)).toEqual({ taken: 0, unpaid: 0, waiting: 2 })
+    expect(await recheck(s)).toEqual({ taken: 0, unpaid: 0, waiting: 3 })
 
-    expect(state).toHaveBeenCalledTimes(1)
-    expect(await attempt(s, first.attemptId)).toMatchObject({ rechecked_at: null })
-    expect(await attempt(s, second.attemptId)).toMatchObject({ rechecked_at: null })
+    expect(state).toHaveBeenCalledTimes(2)
+    for (const { attemptId } of [first, second, third]) {
+      expect(await attempt(s, attemptId)).toMatchObject({ rechecked_at: null })
+    }
 
     // The next run finds the provider back, and asks about each.
     await connectFake(s.t.id, 'demo')
-    expect(await recheck(s)).toEqual({ taken: 1, unpaid: 1, waiting: 0 })
-    expect(state).toHaveBeenCalledTimes(3)
+    expect(await recheck(s)).toEqual({ taken: 1, unpaid: 2, waiting: 0 })
+    expect(state).toHaveBeenCalledTimes(5)
+  })
+
+  // One answer that cannot be read may be of that attempt alone: the convention's next attempt
+  // is asked about in the same run.
+  it('asks about the next attempt of a convention after one answer that could not be read', async () => {
+    const s = await shop()
+    const unreadable = await expired(s, { minutes: 3 * HOUR })
+    const next = await expired(s, { email: 'other@example.test' })
+    fake().pay(next.attemptId)
+    const state = vi.spyOn(fake(), 'state')
+    state.mockImplementationOnce(() =>
+      Promise.resolve({ state: 'unavailable', reason: 'an answer that cannot be read' }),
+    )
+
+    expect(await recheck(s)).toEqual({ taken: 1, unpaid: 0, waiting: 1 })
+
+    expect(state).toHaveBeenCalledTimes(2)
+    expect(await attempt(s, unreadable.attemptId)).toMatchObject({ rechecked_at: null })
+    expect(await s.stored(next.placed)).toMatchObject({ status: 'paid' })
   })
 
   it('tries credentials that no longer open once a run, and asks nobody', async () => {

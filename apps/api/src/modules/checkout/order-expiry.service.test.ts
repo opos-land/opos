@@ -17,17 +17,19 @@ const MINUTE = 60_000
 /**
  * The job with what it reads and asks stood in for. A tenant is named after what asking about its
  * attempts meets: `answers` has a provider that says nobody paid, `down` one out of reach, and
- * `sealed` credentials that no longer open.
+ * `sealed` credentials that no longer open. An attempt named `unreadable` gets no answer that can
+ * be read, whatever its provider.
  */
 function job(due: { id: string; tenantId: string }[] = []) {
   const holdEndsAt = new Date('2027-05-01T10:00:00Z')
   const marked: string[] = []
-  const state = vi.fn((_provider: string, credentials: { tenant: string }) =>
-    Promise.resolve(
-      credentials.tenant === 'down'
-        ? { state: 'unavailable', reason: 'stood in for' }
-        : { state: 'not-paid' },
-    ),
+  const state = vi.fn(
+    (_provider: string, credentials: { tenant: string }, attempt: { id: string }) =>
+      Promise.resolve(
+        credentials.tenant === 'down' || attempt.id.startsWith('unreadable')
+          ? { state: 'unavailable', reason: 'stood in for' }
+          : { state: 'not-paid' },
+      ),
   )
   const open = vi.fn(({ tenantId }: { tenantId: string }) => {
     if (tenantId === 'sealed') throw new Error('The credentials do not open')
@@ -137,20 +139,38 @@ describe('the clocks of the expiry and of asking again', () => {
 })
 
 describe('one run of asking again', () => {
-  // A provider out of reach for one attempt of a convention is out of reach for its others: they
-  // wait for the next run unasked, and the attempts of other conventions are asked about.
-  it('asks a provider that did not answer about no other attempt of its convention', async () => {
+  // A provider that did not answer twice in a row about the attempts of a convention is out of
+  // reach for its others: they wait for the next run unasked, and the attempts of other
+  // conventions are asked about.
+  it('asks a provider that did not answer twice about no other attempt of its convention', async () => {
     const { expiry, marked, asked } = job([
       { id: 'a1', tenantId: 'down' },
       { id: 'b1', tenantId: 'answers' },
       { id: 'a2', tenantId: 'down' },
       { id: 'a3', tenantId: 'down' },
       { id: 'b2', tenantId: 'answers' },
+      { id: 'a4', tenantId: 'down' },
     ])
 
-    expect(await expiry.recheck()).toEqual({ taken: 0, unpaid: 2, waiting: 3 })
+    expect(await expiry.recheck()).toEqual({ taken: 0, unpaid: 2, waiting: 4 })
 
-    expect(asked()).toEqual(['down', 'answers', 'answers'])
+    expect(asked()).toEqual(['down', 'answers', 'down', 'answers'])
+    expect(marked).toEqual(['b1', 'b2'])
+  })
+
+  // One answer that cannot be read may be of that attempt alone: the next attempt is asked, and
+  // an answer read starts the count again.
+  it('goes on asking about a convention after one answer that could not be read', async () => {
+    const { expiry, marked, asked } = job([
+      { id: 'unreadable-1', tenantId: 'answers' },
+      { id: 'b1', tenantId: 'answers' },
+      { id: 'unreadable-2', tenantId: 'answers' },
+      { id: 'b2', tenantId: 'answers' },
+    ])
+
+    expect(await expiry.recheck()).toEqual({ taken: 0, unpaid: 2, waiting: 2 })
+
+    expect(asked()).toEqual(['answers', 'answers', 'answers', 'answers'])
     expect(marked).toEqual(['b1', 'b2'])
   })
 

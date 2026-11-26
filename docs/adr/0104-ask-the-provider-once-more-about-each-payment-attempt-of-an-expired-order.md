@@ -54,10 +54,12 @@ tickets module: its domain owner confirms it.
   the convention no longer holds an account of has nobody to ask, and is marked.
 - An attempt its provider refused to register carries the mark from its start: the provider
   answered then that it knows no such attempt, and is not asked about it.
-- Once a convention's provider did not answer about one attempt, or the convention's credentials
-  did not open, the run asks nothing about the convention's other attempts: they wait for the
-  next run. A provider out of reach gets one question a convention a run, 92 over the 23 hours
-  at most, however many attempts wait.
+- Once a convention's provider did not answer about two of its attempts in a row, or the
+  convention's credentials did not open, the run asks nothing about the convention's other
+  attempts: they wait for the next run. An answer read starts the count again, so one answer
+  that cannot be read, which may be of that attempt alone, stops no other. A provider out of
+  reach gets two questions a convention a run, 184 over the 23 hours at most, however many
+  attempts wait.
 - A run asks 500 questions at most, answered or not, the attempts whose hold ended longest ago
   first, and leaves the attempts after them to the next run.
 - The attempts are found across tenants by identifiers alone, of tenants not suspended, and each
@@ -80,6 +82,10 @@ tickets module: its domain owner confirms it.
 - **Ask about every attempt at every run until its provider answers.** A provider that refuses a
   replaced API key answers none of them, so each would be asked every run for the day, from the
   one address the API calls every convention's provider from.
+- **Leave a convention's other attempts after the first answer its provider did not give.** A
+  provider's module answers "unavailable" also for one transaction it cannot read; that attempt
+  comes first in every run until it leaves the window, and would keep the convention's later
+  attempts unasked for the day.
 - **Ask once, at the end of the day.** A buyer who paid would wait a day for the ticket. An hour
   covers the time a provider lets a buyer finish a payment started within the hold.
 - **Ask at once when the order expires.** The expiry already asks then; the payment this is for
